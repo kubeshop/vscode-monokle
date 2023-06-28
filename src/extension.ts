@@ -34,6 +34,9 @@ export function activate(context: vscode.ExtensionContext) {
     // TODO react to config changes
   });
 
+  // TODO
+  // onDidChangeWorkspaceFolders - folder can be added/removed from workspace anytime
+
   // Should be checked on each run.
   const settingsEnabled = vscode.workspace.getConfiguration('monokle').get('enabled');
   const settingsConfigurationPath = vscode.workspace.getConfiguration('monokle').get('configurationPath');

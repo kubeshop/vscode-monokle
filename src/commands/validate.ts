@@ -3,33 +3,40 @@ import { getValidator, saveValidationResults } from "../utils/validation";
 import { getWorkspaceFolders, getWorkspaceResources } from "../utils/workspace";
 
 export function getValidateCommand(context: ExtensionContext) {
+  // validator per root
+  // result file per root
+  // when revalidating, pick the right validator and validate with incremental results
+
   return async () => {
-    const roots = getWorkspaceFolders();
-    const resources = (await Promise.all(roots.map((root) => getWorkspaceResources(root)))).flat();
-
-    console.log(resources);
-
-    const validator = await getValidator();
-
-    console.log(validator);
-
-    const results = await validator.validate({
-      resources: resources,
-    });
-
-    console.log(results);
-
-    const resultsFilePath = await saveValidationResults(results, context.extensionPath);
-
-    console.log(resultsFilePath);
-
     const sarifExtension = extensions.getExtension('MS-SarifVSCode.sarif-viewer');
     if (!sarifExtension.isActive) {
       await sarifExtension.activate();
     }
 
-    await sarifExtension.exports.openLogs([
-      Uri.file(resultsFilePath),
-    ]);
+    const roots = getWorkspaceFolders();
+
+    const resultFiles = await Promise.all(roots.map(async (root) => {
+      const resources = await getWorkspaceResources(root);
+      console.log(resources);
+
+      //TODO read ws monookle.config and pass to getValidator
+
+      const validator = await getValidator(root.id);
+      console.log(validator);
+
+      const result = await validator.validate({
+        resources: resources,
+      });
+      console.log(result);
+
+      const resultsFilePath = await saveValidationResults(result, context.extensionPath, root.id);
+      console.log(resultsFilePath);
+
+      return Uri.file(resultsFilePath);
+    }));
+
+    console.log(resultFiles);
+
+    await sarifExtension.exports.openLogs(resultFiles);
   };
 }

@@ -11,8 +11,12 @@ type File = {
   path: string;
 };
 
-export function getWorkspaceFolders(): vscode.WorkspaceFolder[] {
-  return [...(vscode.workspace.workspaceFolders ?? [])];
+export function getWorkspaceFolders(): (vscode.WorkspaceFolder & {id: string})[] {
+  return [...(vscode.workspace.workspaceFolders ?? [])]
+    .map(folder => ({
+      id: crypto.createHash('md5').update(folder.uri.fsPath).digest('hex'),
+      ...folder,
+    }));
 }
 
 export async function getWorkspaceResources(workspace: vscode.WorkspaceFolder) {
