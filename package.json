@@ -20,7 +20,22 @@
         "command": "monokle-vsc.validate",
         "title": "Monokle: Validate"
       }
-    ]
+    ],
+    "configuration": {
+      "title": "Monokle",
+      "properties": {
+        "monokle.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whenever extension is enabled."
+        },
+        "monokle.configurationPath": {
+          "type": ["string", "null"],
+          "default": null,
+          "description": "Path to monokle.validation.yaml configuration file. If not set it will be searched in the workspace root."
+        }
+      }
+    }
   },
   "extensionDependencies": [
     "ms-sarifvscode.sarif-viewer"
