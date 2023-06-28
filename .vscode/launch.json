@@ -15,6 +15,17 @@
 			"outFiles": [
 				"${workspaceFolder}/out/**/*.js"
 			],
+		},
+		{
+			"name": "Watch and Run Extension",
+			"type": "extensionHost",
+			"request": "launch",
+			"args": [
+				"--extensionDevelopmentPath=${workspaceFolder}"
+			],
+			"outFiles": [
+				"${workspaceFolder}/out/**/*.js"
+			],
 			"preLaunchTask": "${defaultBuildTask}"
 		},
 		{
