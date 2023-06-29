@@ -4,6 +4,7 @@ import * as path from 'path';
 import * as crypto from 'crypto';
 
 import { Resource, extractK8sResources } from './extract';
+import { readConfig } from './validation';
 
 type File = {
   id: string;
@@ -22,6 +23,11 @@ export function getWorkspaceFolders(): (vscode.WorkspaceFolder & {id: string})[]
 export async function getWorkspaceResources(workspace: vscode.WorkspaceFolder) {
   const resourceFiles = await findYamlFiles(workspace.uri.fsPath);
   return convertFilesToK8sResources(resourceFiles);
+}
+
+export async function getWorkspaceLocalConfig(workspace: vscode.WorkspaceFolder) {
+  const configPath = path.normalize(path.join(workspace.uri.fsPath, 'monokle.validation.yaml'));
+  return readConfig(configPath);
 }
 
 // TODO

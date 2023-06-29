@@ -1,12 +1,8 @@
 import { ExtensionContext, extensions, Uri } from 'vscode';
 import { getValidator, saveValidationResults } from "../utils/validation";
-import { getWorkspaceFolders, getWorkspaceResources } from "../utils/workspace";
+import { getWorkspaceFolders, getWorkspaceLocalConfig, getWorkspaceResources } from "../utils/workspace";
 
 export function getValidateCommand(context: ExtensionContext) {
-  // validator per root
-  // result file per root
-  // when revalidating, pick the right validator and validate with incremental results
-
   return async () => {
     const sarifExtension = extensions.getExtension('MS-SarifVSCode.sarif-viewer');
     if (!sarifExtension.isActive) {
@@ -17,20 +13,21 @@ export function getValidateCommand(context: ExtensionContext) {
 
     const resultFiles = await Promise.all(roots.map(async (root) => {
       const resources = await getWorkspaceResources(root);
-      console.log(resources);
+      console.log('resources', resources);
 
-      //TODO read ws monookle.config and pass to getValidator
+      const workspaceLocalConfig = await getWorkspaceLocalConfig(root);
+      console.log('workspaceLocalConfig', workspaceLocalConfig);
 
-      const validator = await getValidator(root.id);
-      console.log(validator);
+      const validator = await getValidator(root.id, workspaceLocalConfig);
+      console.log('validator', validator);
 
       const result = await validator.validate({
         resources: resources,
       });
-      console.log(result);
+      console.log('result', result);
 
       const resultsFilePath = await saveValidationResults(result, context.extensionPath, root.id);
-      console.log(resultsFilePath);
+      console.log('resultsFilePath', resultsFilePath);
 
       return Uri.file(resultsFilePath);
     }));

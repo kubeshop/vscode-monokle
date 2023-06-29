@@ -39,6 +39,11 @@ export async function saveValidationResults(results: any, folderPath: string, fi
   return filePath;
 }
 
+export async function readConfig(path: string) {
+  const {readConfig} = await import('@monokle/validation');
+  return readConfig(path);
+}
+
 async function getDefaultValidator() {
   const {createDefaultMonokleValidator} = await import('@monokle/validation');
   return createDefaultMonokleValidator();
