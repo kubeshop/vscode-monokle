@@ -1,6 +1,6 @@
-import { LineCounter, parseAllDocuments, parseDocument } from "yaml";
-import { v5 } from "uuid";
-import { parse } from "path";
+import { LineCounter, parseAllDocuments, parseDocument } from 'yaml';
+import { v5 } from 'uuid';
+import { parse } from 'path';
 
 // TODO Below code is copied from monokle-cli/src/extract.ts and monokle-cli/src/resource.ts
 // should be extracted as separate package - https://github.com/kubeshop/monokle-core/issues/63.
@@ -44,10 +44,10 @@ export type KubernetesLike = {
   };
 };
 
-export const KUSTOMIZATION_KIND = "Kustomization";
-export const KUSTOMIZATION_API_GROUP = "kustomize.config.k8s.io";
+export const KUSTOMIZATION_KIND = 'Kustomization';
+export const KUSTOMIZATION_API_GROUP = 'kustomize.config.k8s.io';
 
-const RESOURCE_UUID_NAMESPACE = "6fa71997-8aa8-4b89-b987-cec4fd3de770";
+const RESOURCE_UUID_NAMESPACE = '6fa71997-8aa8-4b89-b987-cec4fd3de770';
 
 export const createResourceId = (
   fileId: string,
@@ -56,7 +56,7 @@ export const createResourceId = (
   namespace?: string | null
 ): string => {
   return v5(
-    `${fileId}${kind}${name}${namespace || ""}`,
+    `${fileId}${kind}${name}${namespace || ''}`,
     RESOURCE_UUID_NAMESPACE
   );
 };
@@ -79,7 +79,7 @@ export function createResourceName(
 
   try {
     //  metadata name
-    return typeof content.metadata.name === "string"
+    return typeof content.metadata.name === 'string'
       ? content.metadata.name.trim()
       : JSON.stringify(content.metadata.name).trim();
   } catch (error) {
@@ -165,7 +165,7 @@ export function extractK8sResources(files: File[]): Resource[] {
 }
 
 export function isYamlFile(file: File): boolean {
-  return file.path.endsWith(".yml") || file.path.endsWith(".yaml");
+  return file.path.endsWith('.yml') || file.path.endsWith('.yaml');
 }
 export function parseYamlDocument(text: string, lineCounter?: LineCounter) {
   return parseDocument(text, { lineCounter, uniqueKeys: false, strict: false });
@@ -186,21 +186,21 @@ export function parseAllYamlDocuments(text: string, lineCounter?: LineCounter) {
 function isKubernetesLike(content: any): content is KubernetesLike {
   return (
     content &&
-    typeof content.apiVersion === "string" &&
-    typeof content.kind === "string"
+    typeof content.apiVersion === 'string' &&
+    typeof content.kind === 'string'
   );
 }
 
 // some (older) kustomization yamls don't contain kind/group properties to identify them as such
 // they are identified only by their name
-function isUntypedKustomizationFile(filePath = ""): boolean {
+function isUntypedKustomizationFile(filePath = ''): boolean {
   return /kustomization*.yaml/.test(filePath.toLowerCase().trim());
 }
 
 function extractNamespace(content: any) {
   // namespace could be an object if it's a helm template value...
   return content.metadata?.namespace &&
-    typeof content.metadata.namespace === "string"
+    typeof content.metadata.namespace === 'string'
     ? content.metadata.namespace
     : undefined;
 }

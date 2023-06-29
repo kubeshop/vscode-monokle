@@ -1,6 +1,6 @@
 import { ExtensionContext, extensions, Uri } from 'vscode';
-import { getValidator, saveValidationResults } from "../utils/validation";
-import { getWorkspaceFolders, getWorkspaceLocalConfig, getWorkspaceResources } from "../utils/workspace";
+import { getValidator, saveValidationResults } from '../utils/validation';
+import { getWorkspaceFolders, getWorkspaceLocalConfig, getWorkspaceResources } from '../utils/workspace';
 
 export function getValidateCommand(context: ExtensionContext) {
   return async () => {
