@@ -4,15 +4,17 @@ import * as path from 'path';
 import * as crypto from 'crypto';
 
 import { Resource, extractK8sResources } from './extract';
-import { readConfig } from './validation';
+import { readConfig, validateFolder } from './validation';
 
-type File = {
+export type File = {
   id: string;
   name: string;
   path: string;
 };
 
-export function getWorkspaceFolders(): (vscode.WorkspaceFolder & {id: string})[] {
+export type WorkspaceFolder = vscode.WorkspaceFolder & {id: string};
+
+export function getWorkspaceFolders(): WorkspaceFolder[] {
   return [...(vscode.workspace.workspaceFolders ?? [])]
     .map(folder => ({
       id: crypto.createHash('md5').update(folder.uri.fsPath).digest('hex'),
@@ -20,37 +22,54 @@ export function getWorkspaceFolders(): (vscode.WorkspaceFolder & {id: string})[]
     }));
 }
 
-export async function getWorkspaceResources(workspace: vscode.WorkspaceFolder) {
-  const resourceFiles = await findYamlFiles(workspace.uri.fsPath);
+export async function getWorkspaceResources(workspaceFolder: WorkspaceFolder) {
+  const resourceFiles = await findYamlFiles(workspaceFolder.uri.fsPath);
   return convertFilesToK8sResources(resourceFiles);
 }
 
-export async function getWorkspaceLocalConfig(workspace: vscode.WorkspaceFolder) {
-  const configPath = path.normalize(path.join(workspace.uri.fsPath, 'monokle.validation.yaml'));
+export async function getWorkspaceLocalConfig(workspaceFolder: WorkspaceFolder) {
+  const configPath = path.normalize(path.join(workspaceFolder.uri.fsPath, 'monokle.validation.yaml'));
   return readConfig(configPath);
 }
 
-// TODO
-export function initializeWatcher(folderPath: string) {
-  const pattern = new vscode.RelativePattern(folderPath, '**/*.yaml');
-  const watcher = vscode.workspace.createFileSystemWatcher(pattern);
+export function initializeWorkspaceWatchers(workspaceFolders: WorkspaceFolder[], context: vscode.ExtensionContext) {
+  // On change we don't want to run whole validate command again (unless this is very first run @TODO).
+  // Because:
+  // The sarif output file is already there, initiated with sarif..openLogs
+  // This means sarif ext has a watcher on this file, whenever it changes it will update the sarif view.
+  // So we just need to update the sarif output file, based on new validation result.
+  // For that:
+  // - match changes with the workspace folder
+  // - get validator for each workspace folder
+  // - run validate command for each workspace folder (incremental?)
+  // - save validation results to sarif output file
+  // - sarif should reload automatically
+  return workspaceFolders.map((folder) => {
+    const pattern = new vscode.RelativePattern(folder.uri.fsPath, '**/*.{yaml,yml}');
+    const watcher = vscode.workspace.createFileSystemWatcher(pattern);
 
-  watcher.onDidChange((uri) => {
-    console.log(`File ${uri.fsPath} has been changed`);
-    // Do something when a .yaml file has been changed
+    const revalidateFolder = async () => {
+      console.log('revalidateFolder', folder);
+      validateFolder(folder, context);
+    };
+
+    watcher.onDidChange((uri) => {
+      console.log(`File ${uri.fsPath} has been changed`);
+      revalidateFolder();
+    });
+
+    watcher.onDidCreate((uri) => {
+      console.log(`File ${uri.fsPath} has been created`);
+      revalidateFolder();
+    });
+
+    watcher.onDidDelete((uri) => {
+      console.log(`File ${uri.fsPath} has been deleted`);
+      revalidateFolder();
+    });
+
+    return watcher;
   });
-
-  watcher.onDidCreate((uri) => {
-    console.log(`File ${uri.fsPath} has been created`);
-    // Do something when a .yaml file has been created
-  });
-
-  watcher.onDidDelete((uri) => {
-    console.log(`File ${uri.fsPath} has been deleted`);
-    // Do something when a .yaml file has been deleted
-  });
-
-  return watcher;
 }
 
 async function findYamlFiles(folderPath: string): Promise<File[]> {

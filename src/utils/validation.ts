@@ -1,5 +1,7 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
+import { WorkspaceFolder, getWorkspaceLocalConfig, getWorkspaceResources } from './workspace';
+import { ExtensionContext, Uri } from 'vscode';
 
 // Having multiple roots, each with different config will make it inefficient to reconfigure
 // validator multiple times for a single validation run. That's why we will need separate
@@ -23,6 +25,27 @@ export async function getValidator(validatorId: string, config?: any) {
   });
 
   return validator;
+}
+
+export async function validateFolder(root: WorkspaceFolder, context: ExtensionContext) {
+  const resources = await getWorkspaceResources(root);
+  console.log('resources', resources);
+
+  const workspaceLocalConfig = await getWorkspaceLocalConfig(root);
+  console.log('workspaceLocalConfig', workspaceLocalConfig);
+
+  const validator = await getValidator(root.id, workspaceLocalConfig);
+  console.log('validator', validator);
+
+  const result = await validator.validate({
+    resources: resources,
+  });
+  console.log('result', result);
+
+  const resultsFilePath = await saveValidationResults(result, context.extensionPath, root.id);
+  console.log('resultsFilePath', resultsFilePath);
+
+  return Uri.file(resultsFilePath);
 }
 
 export async function saveValidationResults(results: any, folderPath: string, fileName: string) {

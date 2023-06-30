@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { getValidateCommand } from './commands/validate';
+import { getWatchCommand } from './commands/watch';
 
 // watchers[] (to deregister on deactivate)
 
@@ -35,9 +36,8 @@ export function activate(context: vscode.ExtensionContext) {
   });
 
   // TODO
-  // onDidChangeWorkspaceFolders - folder can be added/removed from workspace anytime
+  // onDidChangeWorkspaceFolders - folders can be added/removed from workspace anytime
 
-  // Should be checked on each run.
   const settingsEnabled = vscode.workspace.getConfiguration('monokle').get('enabled');
   const settingsConfigurationPath = vscode.workspace.getConfiguration('monokle').get('configurationPath');
 
@@ -50,14 +50,15 @@ export function activate(context: vscode.ExtensionContext) {
   // The command has been defined in the package.json file
   // Now provide the implementation of the command with registerCommand
   // The commandId parameter must match the command field in package.json
-  let disposable = vscode.commands.registerCommand('monokle-vsc.validate', getValidateCommand(context));
+  const commandValidate = vscode.commands.registerCommand('monokle-vsc.validate', getValidateCommand(context));
+  const commandWatch = vscode.commands.registerCommand('monokle-vsc.watch', getWatchCommand(context));
 
-  context.subscriptions.push(disposable);
+  context.subscriptions.push(commandValidate, commandWatch);
 
   vscode.commands.executeCommand('monokle-vsc.validate');
+  vscode.commands.executeCommand('monokle-vsc.watch');
 }
 
 // This method is called when your extension is deactivated
-// deregister fs watchers
-// clear sarif logs
+// TODO deregister fs watchers, clear sarif logs?
 export function deactivate() {}

@@ -19,6 +19,10 @@
       {
         "command": "monokle-vsc.validate",
         "title": "Monokle: Validate"
+      },
+      {
+        "command": "monokle-vsc.watch",
+        "title": "Monokle: Watch"
       }
     ],
     "configuration": {
