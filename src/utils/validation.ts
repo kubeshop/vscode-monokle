@@ -49,8 +49,12 @@ export async function validateFolder(root: WorkspaceFolder, context: ExtensionCo
 }
 
 export async function saveValidationResults(results: any, folderPath: string, fileName: string) {
+  const sharedStorageDir = path.normalize(path.join(folderPath, '.monokle'));
+
+  await fs.mkdir(sharedStorageDir, { recursive: true });
+
   const resultsAsString = JSON.stringify(results);
-  const filePath = path.normalize(path.join(folderPath, `${fileName}.monokle.json`));
+  const filePath = path.normalize(path.join(sharedStorageDir, `${fileName}.validation.json`));
 
   await fs.writeFile(filePath, resultsAsString);
 
