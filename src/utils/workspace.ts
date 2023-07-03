@@ -1,10 +1,10 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import * as crypto from 'crypto';
 
 import { Resource, extractK8sResources } from './extract';
-import { readConfig, validateFolder } from './validation';
+import { getValidationResult, readConfig, validateFolder } from './validation';
+import { generateId } from './helpers';
 
 export type File = {
   id: string;
@@ -17,7 +17,7 @@ export type WorkspaceFolder = vscode.WorkspaceFolder & {id: string};
 export function getWorkspaceFolders(): WorkspaceFolder[] {
   return [...(vscode.workspace.workspaceFolders ?? [])]
     .map(folder => ({
-      id: crypto.createHash('md5').update(folder.uri.fsPath).digest('hex'),
+      id: generateId(folder.uri.fsPath),
       ...folder,
     }));
 }
@@ -81,7 +81,7 @@ async function findYamlFiles(folderPath: string): Promise<File[]> {
       const fullPath = path.normalize(path.join(folderPath, file));
 
       return {
-        id: crypto.createHash('md5').update(fullPath).digest('hex'),
+        id: generateId(fullPath),
         name: file,
         path: fullPath
       };

@@ -34,7 +34,10 @@
           "description": "Whenever extension is enabled."
         },
         "monokle.configurationPath": {
-          "type": ["string", "null"],
+          "type": [
+            "string",
+            "null"
+          ],
           "default": null,
           "description": "Path to monokle.validation.yaml configuration file. If not set it will be searched in the workspace root."
         }
@@ -50,7 +53,8 @@
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
-    "test": "node ./out/test/runTest.js"
+    "test": "node ./out/test/runTest.js",
+    "test:cc": "c8 node ./out/test/runTest.js"
   },
   "devDependencies": {
     "@types/glob": "^8.1.0",
@@ -67,6 +71,19 @@
   },
   "dependencies": {
     "@monokle/validation": "^0.23.4",
+    "c8": "^8.0.0",
     "uuid": "^9.0.0"
+  },
+  "c8": {
+    "reporter": [
+      "lcov",
+      "text"
+    ],
+    "exclude": [
+      "out/test/**"
+    ],
+    "include": [
+      "out/**"
+    ]
   }
 }

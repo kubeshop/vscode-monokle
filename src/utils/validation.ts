@@ -48,6 +48,18 @@ export async function validateFolder(root: WorkspaceFolder, context: ExtensionCo
   return Uri.file(resultsFilePath);
 }
 
+export async function getValidationResult(folderPath: string, fileName: string) {
+  const sharedStorageDir = path.normalize(path.join(folderPath, '.monokle'));
+  const filePath = path.normalize(path.join(sharedStorageDir, `${fileName}.validation.json`));
+
+  try {
+    const resultsAsString = await fs.readFile(filePath, 'utf8');
+    return JSON.parse(resultsAsString);
+  } catch (e) {
+    return null;
+  }
+}
+
 export async function saveValidationResults(results: any, folderPath: string, fileName: string) {
   const sharedStorageDir = path.normalize(path.join(folderPath, '.monokle'));
 
