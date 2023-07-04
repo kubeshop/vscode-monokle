@@ -1,0 +1,10 @@
+{
+  "folders": [
+    {
+      "path": "../folder-with-single-resource"
+    },
+    {
+      "path": "../folder-without-resources"
+    }
+  ]
+}

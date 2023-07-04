@@ -33,25 +33,38 @@
 			"type": "extensionHost",
 			"request": "launch",
 			"args": [
-				"${workspaceFolder}/src/test/fixtures/folder-with-single-resource/",
+				"${workspaceFolder}/out/test/fixtures/folder-with-single-resource",
 				"--extensionDevelopmentPath=${workspaceFolder}",
 				"--extensionTestsPath=${workspaceFolder}/out/test/suite/index"
 			],
 			"outFiles": [
 				"${workspaceFolder}/out/test/**/*.js"
-			]
+			],
+			"env": {
+				"EXTENSION_DIR": "${workspaceFolder}",
+				"FIXTURES_SOURCE_DIR": "${workspaceFolder}/src/test/fixtures",
+				"WORKSPACE_RESOURCES": "1",
+				"ROOT_PATH": "${workspaceFolder}/out/test/fixtures/folder-with-single-resource",
+			}
 		},
 		{
 			"name": "Watch and Test Extension",
 			"type": "extensionHost",
 			"request": "launch",
 			"args": [
+				"${workspaceFolder}/out/test/fixtures/folder-with-single-resource",
 				"--extensionDevelopmentPath=${workspaceFolder}",
 				"--extensionTestsPath=${workspaceFolder}/out/test/suite/index"
 			],
 			"outFiles": [
 				"${workspaceFolder}/out/test/**/*.js"
 			],
+			"env": {
+				"EXTENSION_DIR": "${workspaceFolder}",
+				"FIXTURES_SOURCE_DIR": "${workspaceFolder}/src/test/fixtures",
+				"WORKSPACE_RESOURCES": "1",
+				"ROOT_PATH": "${workspaceFolder}/out/test/fixtures/folder-with-single-resource",
+			},
 			"preLaunchTask": "${defaultBuildTask}"
 		}
 	]
