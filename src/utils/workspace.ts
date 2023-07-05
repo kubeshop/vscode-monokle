@@ -1,12 +1,13 @@
-import * as vscode from 'vscode';
-import * as fs from 'fs/promises';
-import * as path from 'path';
-
+import { RelativePattern, Uri, workspace } from 'vscode';
+import { readFile, readdir } from 'fs/promises';
+import { extname, join, normalize } from 'path';
 import { Resource, extractK8sResources } from './extract';
-import { getDefaultConfig, readConfig, validateFolder } from './validation';
+import { getDefaultConfig, getValidationResultPath, readConfig, validateFolder } from './validation';
 import { generateId } from './helpers';
+import { SarifWatcher } from './sarif';
+import type { WorkspaceFolder, ExtensionContext } from 'vscode';
 
-export type WorkspaceFolder = vscode.WorkspaceFolder & {id: string};
+export type Folder = WorkspaceFolder & {id: string};
 
 export type File = {
   id: string;
@@ -22,24 +23,24 @@ export type WorkspaceFolderConfig = {
 
 const LOCAL_CONFIG_FILE_NAME = 'monokle.validation.yaml';
 
-export function getWorkspaceFolders(): WorkspaceFolder[] {
-  return [...(vscode.workspace.workspaceFolders ?? [])]
+export function getWorkspaceFolders(): Folder[] {
+  return [...(workspace.workspaceFolders ?? [])]
     .map(folder => ({
       id: generateId(folder.uri.fsPath),
       ...folder,
     }));
 }
 
-export async function getWorkspaceResources(workspaceFolder: WorkspaceFolder) {
+export async function getWorkspaceResources(workspaceFolder: Folder) {
   const resourceFiles = await findYamlFiles(workspaceFolder.uri.fsPath);
   return convertFilesToK8sResources(resourceFiles);
 }
 
-export async function getWorkspaceConfig(workspaceFolder: WorkspaceFolder): Promise<WorkspaceFolderConfig> {
-  const settingsConfigurationPath = vscode.workspace.getConfiguration('monokle').get<string>('configurationPath');
+export async function getWorkspaceConfig(workspaceFolder: Folder): Promise<WorkspaceFolderConfig> {
+  const settingsConfigurationPath = workspace.getConfiguration('monokle').get<string>('configurationPath');
 
   if (settingsConfigurationPath) {
-    const configPath = path.normalize(settingsConfigurationPath);
+    const configPath = normalize(settingsConfigurationPath);
     // @TODO show error if config empty
 
     const config =  {
@@ -56,7 +57,7 @@ export async function getWorkspaceConfig(workspaceFolder: WorkspaceFolder): Prom
     return {
       type: 'file',
       config: localConfig,
-      path: path.normalize(path.join(workspaceFolder.uri.fsPath, 'monokle.validation.yaml')),
+      path: normalize(join(workspaceFolder.uri.fsPath, 'monokle.validation.yaml')),
     };
   }
 
@@ -66,7 +67,7 @@ export async function getWorkspaceConfig(workspaceFolder: WorkspaceFolder): Prom
   };
 }
 
-export function initializeWorkspaceWatchers(workspaceFolders: WorkspaceFolder[], context: vscode.ExtensionContext) {
+export function initializeWorkspaceWatchers(workspaceFolders: Folder[], context: ExtensionContext, sarifWatcher: SarifWatcher) {
   // On change we don't want to run whole validate command again (unless this is very first run @TODO).
   // Because:
   // The sarif output file is already there, initiated with sarif..openLogs
@@ -79,13 +80,14 @@ export function initializeWorkspaceWatchers(workspaceFolders: WorkspaceFolder[],
   // - save validation results to sarif output file
   // - sarif should reload automatically
   return workspaceFolders.map((folder) => {
-    const pattern = new vscode.RelativePattern(folder.uri.fsPath, '**/*.{yaml,yml}');
-    const watcher = vscode.workspace.createFileSystemWatcher(pattern);
+    const pattern = new RelativePattern(folder.uri.fsPath, '**/*.{yaml,yml}');
+    const watcher = workspace.createFileSystemWatcher(pattern);
+    const resultFile = getValidationResultPath(context.extensionPath, folder.id);
 
     const revalidateFolder = async () => {
       console.log('revalidateFolder', folder);
-      validateFolder(folder, context);
-      // @TODO store workspace config - .monokle/id.config.yaml (for entire workspace)
+      await validateFolder(folder, context);
+      await sarifWatcher.add(Uri.file(resultFile));
     };
 
     watcher.onDidChange((uri) => {
@@ -108,12 +110,12 @@ export function initializeWorkspaceWatchers(workspaceFolders: WorkspaceFolder[],
 }
 
 async function findYamlFiles(folderPath: string): Promise<File[]> {
-  const files = await fs.readdir(folderPath);
+  const files = await readdir(folderPath);
 
   return files
-    .filter(file => path.extname(file) === '.yaml' || path.extname(file) === '.yml')
+    .filter(file => extname(file) === '.yaml' || extname(file) === '.yml')
     .map(file => {
-      const fullPath = path.normalize(path.join(folderPath, file));
+      const fullPath = normalize(join(folderPath, file));
 
       return {
         id: generateId(fullPath),
@@ -125,7 +127,7 @@ async function findYamlFiles(folderPath: string): Promise<File[]> {
 
 async function convertFilesToK8sResources(files: File[]): Promise<Resource[]> {
   const filesWithContent = await Promise.all(files.map(async file => {
-    const content = await fs.readFile(file.path, 'utf-8');
+    const content = await readFile(file.path, 'utf-8');
 
     return {
       id: file.id,
@@ -137,7 +139,7 @@ async function convertFilesToK8sResources(files: File[]): Promise<Resource[]> {
   return extractK8sResources(filesWithContent);
 }
 
-async function getWorkspaceLocalConfig(workspaceFolder: WorkspaceFolder) {
-  const configPath = path.normalize(path.join(workspaceFolder.uri.fsPath, LOCAL_CONFIG_FILE_NAME));
+async function getWorkspaceLocalConfig(workspaceFolder: Folder) {
+  const configPath = normalize(join(workspaceFolder.uri.fsPath, LOCAL_CONFIG_FILE_NAME));
   return readConfig(configPath);
 }

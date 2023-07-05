@@ -1,7 +1,9 @@
-import * as fs from 'fs/promises';
-import * as path from 'path';
-import { WorkspaceFolder, getWorkspaceConfig, getWorkspaceResources } from './workspace';
-import { ExtensionContext, Uri } from 'vscode';
+import { mkdir, readFile, writeFile } from 'fs/promises';
+import { join, normalize } from 'path';
+import { getWorkspaceConfig, getWorkspaceResources } from './workspace';
+import { Uri } from 'vscode';
+import type { ExtensionContext } from 'vscode';
+import type { Folder } from './workspace';
 
 // Having multiple roots, each with different config will make it inefficient to reconfigure
 // validator multiple times for a single validation run. That's why we will need separate
@@ -27,11 +29,13 @@ export async function getValidator(validatorId: string, config?: any) {
   return validator;
 }
 
-export async function validateFolder(root: WorkspaceFolder, context: ExtensionContext) {
+export async function validateFolder(root: Folder, context: ExtensionContext) {
   const resources = await getWorkspaceResources(root);
   console.log(root.name, 'resources', resources);
 
-  // @TODO if(!resources.length) return;
+  if(!resources.length) {
+    return null;
+  }
 
   const workspaceConfig = await getWorkspaceConfig(root);
   console.log(root.name, 'workspaceConfig', workspaceConfig);
@@ -51,11 +55,11 @@ export async function validateFolder(root: WorkspaceFolder, context: ExtensionCo
 }
 
 export async function getValidationResult(folderPath: string, fileName: string) {
-  const sharedStorageDir = path.normalize(path.join(folderPath, '.monokle'));
-  const filePath = path.normalize(path.join(sharedStorageDir, `${fileName}.validation.json`));
+  const sharedStorageDir = normalize(join(folderPath, '.monokle'));
+  const filePath = normalize(join(sharedStorageDir, `${fileName}.validation.json`));
 
   try {
-    const resultsAsString = await fs.readFile(filePath, 'utf8');
+    const resultsAsString = await readFile(filePath, 'utf8');
     return JSON.parse(resultsAsString);
   } catch (e) {
     return null;
@@ -63,16 +67,20 @@ export async function getValidationResult(folderPath: string, fileName: string) 
 }
 
 export async function saveValidationResults(results: any, folderPath: string, fileName: string) {
-  const sharedStorageDir = path.normalize(path.join(folderPath, '.monokle'));
+  const sharedStorageDir = normalize(join(folderPath, '.monokle'));
 
-  await fs.mkdir(sharedStorageDir, { recursive: true });
+  await mkdir(sharedStorageDir, { recursive: true });
 
   const resultsAsString = JSON.stringify(results);
-  const filePath = path.normalize(path.join(sharedStorageDir, `${fileName}.validation.json`));
+  const filePath = normalize(join(sharedStorageDir, `${fileName}.validation.json`));
 
-  await fs.writeFile(filePath, resultsAsString);
+  await writeFile(filePath, resultsAsString);
 
   return filePath;
+}
+
+export function getValidationResultPath(folderPath: string, fileName: string) {
+  return normalize(join(folderPath, '.monokle', `${fileName}.validation.json`));
 }
 
 export async function readConfig(path: string) {
@@ -80,18 +88,12 @@ export async function readConfig(path: string) {
   return readConfig(path);
 }
 
-export async function getDefaultConfig(root: WorkspaceFolder) {
+export async function getDefaultConfig(root: Folder) {
   const validatorItem = VALIDATORS.get(root.id);
   const validator = validatorItem?.validator ?? await getDefaultValidator();
 
   return validator.config;
 }
-
-export type Config = {
-  type: 'default' | 'file' | 'config';
-  config?: any;
-  path?: string;
-};
 
 async function getDefaultValidator() {
   const {createDefaultMonokleValidator} = await import('@monokle/validation');

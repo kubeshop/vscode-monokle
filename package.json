@@ -18,11 +18,13 @@
     "commands": [
       {
         "command": "monokle-vsc.validate",
-        "title": "Monokle: Validate"
+        "category": "Monokle",
+        "title": "Validate"
       },
       {
         "command": "monokle-vsc.watch",
-        "title": "Monokle: Watch"
+        "category": "Monokle",
+        "title": "Watch"
       }
     ],
     "configuration": {

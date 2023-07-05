@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs/promises';
 import { parse, stringify } from 'yaml';
-import { WorkspaceFolder, getWorkspaceConfig, getWorkspaceFolders } from '../../utils/workspace';
+import { Folder, getWorkspaceConfig, getWorkspaceFolders } from '../../utils/workspace';
 import { getValidationResult } from '../../utils/validation';
 import { generateId } from '../../utils/helpers';
 
@@ -24,14 +24,31 @@ suite(`Monokle Extension Test Suite: ${process.env.ROOT_PATH}`, () => {
 
 	// This test should be run first since it checks for a result file
 	// created on VSCode instance start.
-	test('Validates resources on start', async () => {
+	test('Validates resources on start', async function () {
+		if (initialResources === 0) {
+			this.skip();
+		}
+
 		const folders = getWorkspaceFolders();
 
 		await assertEmptyValidationResults(extensionDir, folders[0]);
 
 		const result = await waitForValidationResults(extensionDir, folders[0]);
 		assertValidationResults(result);
-	}).timeout(1000 * 20);
+	}).timeout(1000 * 15);
+
+	test('Does not run validation on start when no resources', async function () {
+		if (initialResources > 0) {
+			this.skip();
+		}
+
+		const folders = getWorkspaceFolders();
+
+		await assertEmptyValidationResults(extensionDir, folders[0]);
+
+		const result = await waitForValidationResults(extensionDir, folders[0], 1000 * 10);
+		assert.strictEqual(result, null);
+	}).timeout(1000 * 15);
 
 	test('Exposes validate command', async function() {
 		const commands = await vscode.commands.getCommands(false);
@@ -43,7 +60,11 @@ suite(`Monokle Extension Test Suite: ${process.env.ROOT_PATH}`, () => {
 		assert.ok(commands.includes('monokle-vsc.watch'));
 	});
 
-	test('Validates resources on command run', async () => {
+	test('Validates resources on command run', async function() {
+		if (initialResources === 0) {
+			this.skip();
+		}
+
 		const folders = getWorkspaceFolders();
 
 		await assertEmptyValidationResults(extensionDir, folders[0]);
@@ -52,6 +73,21 @@ suite(`Monokle Extension Test Suite: ${process.env.ROOT_PATH}`, () => {
 
 		const result = await waitForValidationResults(extensionDir, folders[0]);
 		assertValidationResults(result);
+	}).timeout(1000 * 10);
+
+	test('Does not run validation on command when no resources', async function() {
+		if (initialResources > 0) {
+			this.skip();
+		}
+
+		const folders = getWorkspaceFolders();
+
+		await assertEmptyValidationResults(extensionDir, folders[0]);
+
+		await vscode.commands.executeCommand('monokle-vsc.validate');
+
+		const result = await waitForValidationResults(extensionDir, folders[0], 1000 * 7);
+		assert.strictEqual(result, null);
 	}).timeout(1000 * 10);
 
 	test('Validates resources on change (modification)', async function() {
@@ -119,22 +155,32 @@ suite(`Monokle Extension Test Suite: ${process.env.ROOT_PATH}`, () => {
 	});
 });
 
-async function assertEmptyValidationResults(extensionDir, workspaceFolder: WorkspaceFolder): Promise<void> {
+async function assertEmptyValidationResults(extensionDir, workspaceFolder: Folder): Promise<void> {
 	const result = await getValidationResult(extensionDir, generateId(workspaceFolder.uri.fsPath));
 
 	assert.ok(result === null);
 }
 
-async function waitForValidationResults(extensionDir, workspaceFolder: WorkspaceFolder): Promise<any> {
+async function waitForValidationResults(extensionDir, workspaceFolder: Folder, timeoutMs?: number): Promise<any> {
 	return new Promise((res) => {
+		let timeoutId = null;
+
 		const intervalId = setInterval(async () => {
 			const result = await getValidationResult(extensionDir, generateId(workspaceFolder.uri.fsPath));
 
 			if (result) {
 				clearInterval(intervalId);
+				timeoutId && clearTimeout(timeoutId);
 				res(result);
 			}
 		}, 250);
+
+		if (timeoutMs) {
+			timeoutId = setTimeout(() => {
+				clearInterval(intervalId);
+				res(null);
+			}, timeoutMs);
+		}
 	});
 }
 
@@ -148,11 +194,8 @@ function assertValidationResults(result) {
 
 // @TODO cover below scenarios:
 // reacts to on/off config change
-// reads local config (may be different per workspace folder)
 // revalidates resources when local validation config file changed
-// uses validation config defined in config path
 // does not run when turned off
-// does not run when no config file found or no yaml resources present (if there are no resources on start and then added, it should validate them)
 //
 // @TODO Run above for multiple folders (single, workspace, with and without config, with global config)
 //
