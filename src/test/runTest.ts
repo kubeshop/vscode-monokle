@@ -35,16 +35,19 @@ async function main() {
 			{
 				path: './folder-with-single-resource',
 				resources: 1,
+				config: 'default',
 			},
 			{
 				path: './folder-without-resources',
 				resources: 0,
+				config: 'file',
 			},
 			{
 				path: './workspace-1/workspace-1.code-workspace',
 				resources: 2,
 				isWorkspace: true,
 				folders: 2,
+				config: 'config'
 			},
 		];
 
@@ -71,6 +74,8 @@ async function main() {
 					WORKSPACE_RESOURCES: workspace.resources.toString(),
 					// eslint-disable-next-line @typescript-eslint/naming-convention
 					ROOT_PATH: testWorkspace,
+					// eslint-disable-next-line @typescript-eslint/naming-convention
+					WORKSPACE_CONFIG_TYPE: workspace.config,
 				}
 			});
 		}

@@ -6,5 +6,8 @@
     {
       "path": "../folder-without-resources"
     }
-  ]
+  ],
+  "settings": {
+    "monokle.configurationPath": "../sample-monokle.validation.yaml",
+  }
 }

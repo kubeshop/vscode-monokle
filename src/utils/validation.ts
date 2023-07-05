@@ -1,6 +1,6 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { WorkspaceFolder, getWorkspaceLocalConfig, getWorkspaceResources } from './workspace';
+import { WorkspaceFolder, getWorkspaceConfig, getWorkspaceResources } from './workspace';
 import { ExtensionContext, Uri } from 'vscode';
 
 // Having multiple roots, each with different config will make it inefficient to reconfigure
@@ -29,21 +29,23 @@ export async function getValidator(validatorId: string, config?: any) {
 
 export async function validateFolder(root: WorkspaceFolder, context: ExtensionContext) {
   const resources = await getWorkspaceResources(root);
-  console.log('resources', resources);
+  console.log(root.name, 'resources', resources);
 
-  const workspaceLocalConfig = await getWorkspaceLocalConfig(root);
-  console.log('workspaceLocalConfig', workspaceLocalConfig);
+  // @TODO if(!resources.length) return;
 
-  const validator = await getValidator(root.id, workspaceLocalConfig);
-  console.log('validator', validator);
+  const workspaceConfig = await getWorkspaceConfig(root);
+  console.log(root.name, 'workspaceConfig', workspaceConfig);
+
+  const validator = await getValidator(root.id, workspaceConfig.config);
+  console.log(root.name, 'validator', validator);
 
   const result = await validator.validate({
     resources: resources,
   });
-  console.log('result', result);
+  console.log(root.name, 'result', result);
 
   const resultsFilePath = await saveValidationResults(result, context.extensionPath, root.id);
-  console.log('resultsFilePath', resultsFilePath);
+  console.log(root.name, 'resultsFilePath', resultsFilePath);
 
   return Uri.file(resultsFilePath);
 }
@@ -77,6 +79,19 @@ export async function readConfig(path: string) {
   const {readConfig} = await import('@monokle/validation');
   return readConfig(path);
 }
+
+export async function getDefaultConfig(root: WorkspaceFolder) {
+  const validatorItem = VALIDATORS.get(root.id);
+  const validator = validatorItem?.validator ?? await getDefaultValidator();
+
+  return validator.config;
+}
+
+export type Config = {
+  type: 'default' | 'file' | 'config';
+  config?: any;
+  path?: string;
+};
 
 async function getDefaultValidator() {
   const {createDefaultMonokleValidator} = await import('@monokle/validation');

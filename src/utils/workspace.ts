@@ -3,8 +3,10 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 
 import { Resource, extractK8sResources } from './extract';
-import { getValidationResult, readConfig, validateFolder } from './validation';
+import { getDefaultConfig, readConfig, validateFolder } from './validation';
 import { generateId } from './helpers';
+
+export type WorkspaceFolder = vscode.WorkspaceFolder & {id: string};
 
 export type File = {
   id: string;
@@ -12,7 +14,13 @@ export type File = {
   path: string;
 };
 
-export type WorkspaceFolder = vscode.WorkspaceFolder & {id: string};
+export type WorkspaceFolderConfig = {
+  type: 'default' | 'file' | 'config';
+  config: any;
+  path?: string;
+};
+
+const LOCAL_CONFIG_FILE_NAME = 'monokle.validation.yaml';
 
 export function getWorkspaceFolders(): WorkspaceFolder[] {
   return [...(vscode.workspace.workspaceFolders ?? [])]
@@ -27,9 +35,35 @@ export async function getWorkspaceResources(workspaceFolder: WorkspaceFolder) {
   return convertFilesToK8sResources(resourceFiles);
 }
 
-export async function getWorkspaceLocalConfig(workspaceFolder: WorkspaceFolder) {
-  const configPath = path.normalize(path.join(workspaceFolder.uri.fsPath, 'monokle.validation.yaml'));
-  return readConfig(configPath);
+export async function getWorkspaceConfig(workspaceFolder: WorkspaceFolder): Promise<WorkspaceFolderConfig> {
+  const settingsConfigurationPath = vscode.workspace.getConfiguration('monokle').get<string>('configurationPath');
+
+  if (settingsConfigurationPath) {
+    const configPath = path.normalize(settingsConfigurationPath);
+    // @TODO show error if config empty
+
+    const config =  {
+      type: 'config',
+      config: await readConfig(configPath),
+      path: configPath,
+    };
+
+    return config as WorkspaceFolderConfig;
+  }
+
+  const localConfig = await getWorkspaceLocalConfig(workspaceFolder);
+  if (localConfig && Object.entries(localConfig).length > 0) {
+    return {
+      type: 'file',
+      config: localConfig,
+      path: path.normalize(path.join(workspaceFolder.uri.fsPath, 'monokle.validation.yaml')),
+    };
+  }
+
+  return {
+    type: 'default',
+    config: await getDefaultConfig(workspaceFolder),
+  };
 }
 
 export function initializeWorkspaceWatchers(workspaceFolders: WorkspaceFolder[], context: vscode.ExtensionContext) {
@@ -51,6 +85,7 @@ export function initializeWorkspaceWatchers(workspaceFolders: WorkspaceFolder[],
     const revalidateFolder = async () => {
       console.log('revalidateFolder', folder);
       validateFolder(folder, context);
+      // @TODO store workspace config - .monokle/id.config.yaml (for entire workspace)
     };
 
     watcher.onDidChange((uri) => {
@@ -100,4 +135,9 @@ async function convertFilesToK8sResources(files: File[]): Promise<Resource[]> {
   }));
 
   return extractK8sResources(filesWithContent);
+}
+
+async function getWorkspaceLocalConfig(workspaceFolder: WorkspaceFolder) {
+  const configPath = path.normalize(path.join(workspaceFolder.uri.fsPath, LOCAL_CONFIG_FILE_NAME));
+  return readConfig(configPath);
 }

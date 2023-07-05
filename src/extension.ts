@@ -2,7 +2,10 @@ import * as vscode from 'vscode';
 import { getValidateCommand } from './commands/validate';
 import { getWatchCommand } from './commands/watch';
 
-// watchers[] (to deregister on deactivate)
+export type MonokleSettings = {
+  enabled: boolean;
+  configurationPath: string;
+};
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
@@ -11,54 +14,41 @@ export function activate(context: vscode.ExtensionContext) {
   // This line of code will only be executed once when your extension is activated
   console.log('Congratulations, your extension "monokle-vsc" is now active!', vscode.workspace.workspaceFolders);
 
-  // High level flow:
-  // Init watcher for each workspace folder
-  // Validate each workspace folder on init
-  // - should look for monokle config file in each workspace separately
-  // - fallback to default config
-  // Show errors
-  // - should be shown as one, gathered from all workspaces
-
-  // Validating workspace:
-  // - find all yaml files
-  // - parse them and convert to resources
-  // - pass to validator (for multipe workspaces gather all and pass at once)
-
-  // Watching workspaces:
-  // TBD...
-
-  vscode.workspace.onDidChangeConfiguration((event) => {
-    if (!event.affectsConfiguration('monokle-vsc')) {
-      return;
+  const configurationWatcher = vscode.workspace.onDidChangeConfiguration((event) => {
+    if (event.affectsConfiguration('monokle.enabled')) {
+      const enabled = vscode.workspace.getConfiguration('monokle').get('enabled');
+      // @TODO
+      // disable - stop file watchers if running
+      // enabled - restart file watchers
     }
 
-    // TODO react to config changes
+    if (event.affectsConfiguration('monokle.configurationPath')) {
+      const configurationPath = vscode.workspace.getConfiguration('monokle').get('configurationPath');
+      // @TODO revalidate resources with new config
+    }
   });
+  context.subscriptions.push(configurationWatcher);
 
-  // TODO
-  // onDidChangeWorkspaceFolders - folders can be added/removed from workspace anytime
+  const workspaceWatcher = vscode.workspace.onDidChangeWorkspaceFolders(() => {
+    // @TODO revalidate resources and restart files watchers
+  });
+  context.subscriptions.push(workspaceWatcher);
 
-  const settingsEnabled = vscode.workspace.getConfiguration('monokle').get('enabled');
-  const settingsConfigurationPath = vscode.workspace.getConfiguration('monokle').get('configurationPath');
+  const commandValidate = vscode.commands.registerCommand('monokle-vsc.validate', getValidateCommand(context));
+  const commandWatch = vscode.commands.registerCommand('monokle-vsc.watch', getWatchCommand(context));
+  //@TODO Show configuration coomand - save config to a file and open it in editor
+  // File should have a format # Config for /path/to/folder\n# Based on /path/to/monokle.yaml|default\nconfig
+  context.subscriptions.push(commandValidate, commandWatch);
 
-  console.log(settingsEnabled, settingsConfigurationPath);
-
-  if (!settingsEnabled) {
+  const isEnabled = vscode.workspace.getConfiguration('monokle').get('enabled');
+  if (!isEnabled) {
       return;
   }
 
-  // The command has been defined in the package.json file
-  // Now provide the implementation of the command with registerCommand
-  // The commandId parameter must match the command field in package.json
-  const commandValidate = vscode.commands.registerCommand('monokle-vsc.validate', getValidateCommand(context));
-  const commandWatch = vscode.commands.registerCommand('monokle-vsc.watch', getWatchCommand(context));
-
-  context.subscriptions.push(commandValidate, commandWatch);
-
   vscode.commands.executeCommand('monokle-vsc.validate');
   vscode.commands.executeCommand('monokle-vsc.watch');
+
+  //@TODO on validation show message: Monokle: Validating workspace (root name, default, local, settings config)
 }
 
-// This method is called when your extension is deactivated
-// TODO deregister fs watchers, clear sarif logs?
 export function deactivate() {}

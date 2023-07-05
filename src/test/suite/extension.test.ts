@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs/promises';
 import { parse, stringify } from 'yaml';
-import { WorkspaceFolder, getWorkspaceFolders } from '../../utils/workspace';
+import { WorkspaceFolder, getWorkspaceConfig, getWorkspaceFolders } from '../../utils/workspace';
 import { getValidationResult } from '../../utils/validation';
 import { generateId } from '../../utils/helpers';
 
@@ -105,6 +105,17 @@ suite(`Monokle Extension Test Suite: ${process.env.ROOT_PATH}`, () => {
 		// how to make sure that new resource was validated?
 		const result = await waitForValidationResults(extensionDir, folders[0]);
 		assertValidationResults(result);
+	});
+
+	test('Uses correct validation config', async function () {
+		if (!process.env.WORKSPACE_CONFIG_TYPE) {
+			this.skip();
+		}
+
+		const folders = getWorkspaceFolders();
+		const config = await getWorkspaceConfig(folders[0]);
+
+		assert.equal(config.type, process.env.WORKSPACE_CONFIG_TYPE);
 	});
 });
 
