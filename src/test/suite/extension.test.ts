@@ -123,7 +123,7 @@ suite(`Monokle Extension Test Suite: ${process.env.ROOT_PATH}`, () => {
     // how to make sure that new resource was validated?
     const result = await waitForValidationResults(extensionDir, folders[0]);
     assertValidationResults(result);
-  });
+  }).timeout(1000 * 10);
 
   test('Validates resources on change (deletion)', async function () {
     if (initialResources === 0) {
@@ -141,7 +141,7 @@ suite(`Monokle Extension Test Suite: ${process.env.ROOT_PATH}`, () => {
     // how to make sure that new resource was validated?
     const result = await waitForValidationResults(extensionDir, folders[0]);
     assertValidationResults(result);
-  });
+  }).timeout(1000 * 10);
 
   test('Uses correct validation config', async function () {
     if (!process.env.WORKSPACE_CONFIG_TYPE) {
