@@ -1,6 +1,6 @@
-# monokle-vsc README
+# Monokle VSC Extension
 
-This is the README for your extension "monokle-vsc". After writing up a brief description, we recommend including the following sections.
+Monokle Visual Studio Code extensions let's you validate your Kubernetes resources directly in Visual Studio Code. It is a great complement to Monokle Cloud, Desktop and CLI.
 
 ## Features
 
