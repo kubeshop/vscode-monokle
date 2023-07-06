@@ -1,6 +1,6 @@
 import { RelativePattern, Uri, workspace } from 'vscode';
 import { readFile, readdir } from 'fs/promises';
-import { extname, join, normalize } from 'path';
+import { basename, extname, join, normalize } from 'path';
 import { Resource, extractK8sResources } from './extract';
 import { getDefaultConfig, getValidationResultPath, readConfig, validateFolder } from './validation';
 import { generateId } from './helpers';
@@ -20,6 +20,7 @@ export type WorkspaceFolderConfig = {
   config: any;
   owner: Folder,
   path?: string;
+  fileName?: string;
 };
 
 const LOCAL_CONFIG_FILE_NAME = 'monokle.validation.yaml';
@@ -49,6 +50,7 @@ export async function getWorkspaceConfig(workspaceFolder: Folder): Promise<Works
       config: await readConfig(configPath),
       owner: workspaceFolder,
       path: configPath,
+      fileName: basename(configPath),
     };
 
     return config as WorkspaceFolderConfig;
@@ -61,6 +63,7 @@ export async function getWorkspaceConfig(workspaceFolder: Folder): Promise<Works
       config: localConfig,
       owner: workspaceFolder,
       path: normalize(join(workspaceFolder.uri.fsPath, 'monokle.validation.yaml')),
+      fileName: 'monokle.validation.yaml',
     };
   }
 

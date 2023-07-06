@@ -6,6 +6,18 @@ import { getWorkspaceConfig, getWorkspaceResources } from './workspace';
 import type { ExtensionContext } from 'vscode';
 import type { Folder } from './workspace';
 
+// Use default map with full list of plugins so it's easier
+// for users to work with newly generated validation configuration file.
+const DEFAULT_PLUGIN_MAP = {
+  'open-policy-agent': true,
+  'resource-links': true,
+  'yaml-syntax': true,
+  'kubernetes-schema': true,
+  'pod-security-standards': false,
+  'practices': false,
+  'metadata': false,
+};
+
 // Having multiple roots, each with different config will make it inefficient to reconfigure
 // validator multiple times for a single validation run. That's why we will need separate
 // validator for each root (which will be reconfigured only when root related config changes).
@@ -98,6 +110,25 @@ export async function createTemporaryConfigFile(config: any, srcFolder: Folder, 
   const filePath = normalize(join(sharedStorageDir, fileName));
 
   await mkdir(sharedStorageDir, { recursive: true });
+
+  await writeFile(filePath, configDoc.toString());
+
+  return Uri.file(filePath);
+}
+
+export async function createDefaultConfigFile(destFolder: string) {
+  const configDoc = new Document();
+  configDoc.contents = {
+    plugins: DEFAULT_PLUGIN_MAP,
+  } as any;
+  configDoc.commentBefore = [
+    ' This is default validation configuration. You can adjust it freely to suit your needs.',
+    ' You can read more about Monokle validation configuration here:',
+    ' https://github.com/kubeshop/monokle-core/blob/main/packages/validation/docs/configuration.md#monokle-validation-configuration.',
+  ].join('\n');
+
+  const fileName = 'monokle.validation.yaml';
+  const filePath = normalize(join(destFolder, fileName));
 
   await writeFile(filePath, configDoc.toString());
 

@@ -5,6 +5,7 @@ import { getWatchCommand } from './commands/watch';
 import { SarifWatcher } from './utils/sarif';
 import { getShowPanelCommand } from './commands/show-panel';
 import { getShowConfigurationCommand } from './commands/show-configuration';
+import { getBootstrapConfigurationCommand } from './commands/bootstrap-configuration';
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
@@ -43,8 +44,9 @@ export function activate(context: vscode.ExtensionContext) {
   const commandWatch = vscode.commands.registerCommand('monokle-vsc.watch', getWatchCommand(context, sarifWatcher));
   const commandShowPanel = vscode.commands.registerCommand('monokle-vsc.showPanel', getShowPanelCommand());
   const commandShowConfiguration = vscode.commands.registerCommand('monokle-vsc.showConfiguration', getShowConfigurationCommand(context));
+  const commandBootstrapConfiguration = vscode.commands.registerCommand('monokle-vsc.bootstrapConfiguration', getBootstrapConfigurationCommand(context));
 
-  context.subscriptions.push(commandValidate, commandWatch, commandShowPanel, commandShowConfiguration);
+  context.subscriptions.push(commandValidate, commandWatch, commandShowPanel, commandShowConfiguration, commandBootstrapConfiguration);
 
   const isEnabled = vscode.workspace.getConfiguration('monokle').get('enabled');
   if (!isEnabled) {
