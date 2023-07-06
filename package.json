@@ -32,6 +32,11 @@
         "title": "Show panel"
       },
       {
+        "command": "monokle-vsc.showConfiguration",
+        "category": "Monokle",
+        "title": "Show configuration"
+      },
+      {
         "command": "monokle-vsc.watch",
         "category": "Monokle",
         "title": "Watch"

@@ -1,7 +1,8 @@
 import { mkdir, readFile, writeFile } from 'fs/promises';
 import { join, normalize } from 'path';
-import { getWorkspaceConfig, getWorkspaceResources } from './workspace';
 import { Uri } from 'vscode';
+import { Document } from 'yaml';
+import { getWorkspaceConfig, getWorkspaceResources } from './workspace';
 import type { ExtensionContext } from 'vscode';
 import type { Folder } from './workspace';
 
@@ -81,6 +82,26 @@ export async function saveValidationResults(results: any, folderPath: string, fi
 
 export function getValidationResultPath(folderPath: string, fileName: string) {
   return normalize(join(folderPath, '.monokle', `${fileName}.validation.json`));
+}
+
+export async function createTemporaryConfigFile(config: any, srcFolder: Folder, destPath: string) {
+  const configDoc = new Document();
+  configDoc.contents = config;
+  configDoc.commentBefore = [
+    ` The '${srcFolder.name}' folder uses default validation configuration. This file is readonly.`,
+    ` You can adjust configuration by generating local configuration file with 'Monokle: Bootstrap configuration' command`,
+    ` or by pointing to existing Monokle configuration file in 'monokle.configurationPath' setting.`
+  ].join('\n');
+
+  const fileName = `${srcFolder.id}.config.yaml`;
+  const sharedStorageDir = normalize(join(destPath, '.monokle', fileName));
+  const filePath = normalize(join(sharedStorageDir, fileName));
+
+  await mkdir(sharedStorageDir, { recursive: true });
+
+  await writeFile(filePath, configDoc.toString());
+
+  return Uri.file(filePath);
 }
 
 export async function readConfig(path: string) {

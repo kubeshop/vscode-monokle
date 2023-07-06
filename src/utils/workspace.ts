@@ -18,6 +18,7 @@ export type File = {
 export type WorkspaceFolderConfig = {
   type: 'default' | 'file' | 'config';
   config: any;
+  owner: Folder,
   path?: string;
 };
 
@@ -46,6 +47,7 @@ export async function getWorkspaceConfig(workspaceFolder: Folder): Promise<Works
     const config =  {
       type: 'config',
       config: await readConfig(configPath),
+      owner: workspaceFolder,
       path: configPath,
     };
 
@@ -57,6 +59,7 @@ export async function getWorkspaceConfig(workspaceFolder: Folder): Promise<Works
     return {
       type: 'file',
       config: localConfig,
+      owner: workspaceFolder,
       path: normalize(join(workspaceFolder.uri.fsPath, 'monokle.validation.yaml')),
     };
   }
@@ -64,6 +67,7 @@ export async function getWorkspaceConfig(workspaceFolder: Folder): Promise<Works
   return {
     type: 'default',
     config: await getDefaultConfig(workspaceFolder),
+    owner: workspaceFolder,
   };
 }
 
