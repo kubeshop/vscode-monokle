@@ -2,14 +2,16 @@ import * as assert from 'assert';
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs/promises';
+
 import { parse, stringify } from 'yaml';
 import { Folder, getWorkspaceConfig, getWorkspaceFolders } from '../../utils/workspace';
 import { getValidationResult } from '../../utils/validation';
 import { generateId } from '../../utils/helpers';
+import { STORAGE_DIR_NAME, COMMANDS } from '../../constants';
 
 suite(`Monokle Extension Test Suite: ${process.env.ROOT_PATH}`, () => {
   const extensionDir = process.env.EXTENSION_DIR;
-  const sharedStorageDir = path.resolve(extensionDir, '.monokle');
+  const sharedStorageDir = path.resolve(extensionDir, STORAGE_DIR_NAME);
   const fixturesSourceDir = process.env.FIXTURES_SOURCE_DIR;
 
   const initialResources = parseInt(process.env.WORKSPACE_RESOURCES ?? '0', 10);
@@ -50,16 +52,6 @@ suite(`Monokle Extension Test Suite: ${process.env.ROOT_PATH}`, () => {
     assert.strictEqual(result, null);
   }).timeout(1000 * 15);
 
-  test('Exposes validate command', async function() {
-    const commands = await vscode.commands.getCommands(false);
-    assert.ok(commands.includes('monokle-vsc.validate'));
-  });
-
-  test('Exposes watch command', async () => {
-    const commands = await vscode.commands.getCommands(false);
-    assert.ok(commands.includes('monokle-vsc.watch'));
-  });
-
   test('Validates resources on command run', async function() {
     if (initialResources === 0) {
       this.skip();
@@ -69,7 +61,7 @@ suite(`Monokle Extension Test Suite: ${process.env.ROOT_PATH}`, () => {
 
     await assertEmptyValidationResults(extensionDir, folders[0]);
 
-    await vscode.commands.executeCommand('monokle-vsc.validate');
+    await vscode.commands.executeCommand(COMMANDS.VALIDATE);
 
     const result = await waitForValidationResults(extensionDir, folders[0]);
     assertValidationResults(result);
@@ -84,7 +76,7 @@ suite(`Monokle Extension Test Suite: ${process.env.ROOT_PATH}`, () => {
 
     await assertEmptyValidationResults(extensionDir, folders[0]);
 
-    await vscode.commands.executeCommand('monokle-vsc.validate');
+    await vscode.commands.executeCommand(COMMANDS.VALIDATE);
 
     const result = await waitForValidationResults(extensionDir, folders[0], 1000 * 7);
     assert.strictEqual(result, null);
@@ -152,6 +144,26 @@ suite(`Monokle Extension Test Suite: ${process.env.ROOT_PATH}`, () => {
     const config = await getWorkspaceConfig(folders[0]);
 
     assert.equal(config.type, process.env.WORKSPACE_CONFIG_TYPE);
+  });
+
+  test('Exposes validate command', async function() {
+    const commands = await vscode.commands.getCommands(false);
+    assert.ok(commands.includes(COMMANDS.VALIDATE));
+  });
+
+  test('Exposes showPanel command', async () => {
+    const commands = await vscode.commands.getCommands(false);
+    assert.ok(commands.includes(COMMANDS.SHOW_PANEL));
+  });
+
+  test('Exposes showConfiguration command', async () => {
+    const commands = await vscode.commands.getCommands(false);
+    assert.ok(commands.includes(COMMANDS.SHOW_CONFIGURATION));
+  });
+
+  test('Exposes bootstrap configuration command', async () => {
+    const commands = await vscode.commands.getCommands(false);
+    assert.ok(commands.includes(COMMANDS.BOOTSTRAP_CONFIGURATION));
   });
 });
 

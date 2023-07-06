@@ -4,7 +4,8 @@ import { basename, extname, join, normalize } from 'path';
 import { Resource, extractK8sResources } from './extract';
 import { getDefaultConfig, getValidationResultPath, readConfig, validateFolder } from './validation';
 import { generateId } from './helpers';
-import { SarifWatcher } from './sarif';
+import { SarifWatcher } from './sarif-watcher';
+import { SETTINGS, DEFAULT_CONFIG_FILE_NAME } from '../constants';
 import type { WorkspaceFolder, ExtensionContext } from 'vscode';
 
 export type Folder = WorkspaceFolder & {id: string};
@@ -23,8 +24,6 @@ export type WorkspaceFolderConfig = {
   fileName?: string;
 };
 
-const LOCAL_CONFIG_FILE_NAME = 'monokle.validation.yaml';
-
 export function getWorkspaceFolders(): Folder[] {
   return [...(workspace.workspaceFolders ?? [])]
     .map(folder => ({
@@ -39,7 +38,7 @@ export async function getWorkspaceResources(workspaceFolder: Folder) {
 }
 
 export async function getWorkspaceConfig(workspaceFolder: Folder): Promise<WorkspaceFolderConfig> {
-  const settingsConfigurationPath = workspace.getConfiguration('monokle').get<string>('configurationPath');
+  const settingsConfigurationPath = workspace.getConfiguration(SETTINGS.NAMESPACE).get<string>(SETTINGS.CONFIGURATION_PATH);
 
   if (settingsConfigurationPath) {
     const configPath = normalize(settingsConfigurationPath);
@@ -62,8 +61,8 @@ export async function getWorkspaceConfig(workspaceFolder: Folder): Promise<Works
       type: 'file',
       config: localConfig,
       owner: workspaceFolder,
-      path: normalize(join(workspaceFolder.uri.fsPath, 'monokle.validation.yaml')),
-      fileName: 'monokle.validation.yaml',
+      path: normalize(join(workspaceFolder.uri.fsPath, DEFAULT_CONFIG_FILE_NAME)),
+      fileName: DEFAULT_CONFIG_FILE_NAME,
     };
   }
 
@@ -147,6 +146,6 @@ async function convertFilesToK8sResources(files: File[]): Promise<Resource[]> {
 }
 
 async function getWorkspaceLocalConfig(workspaceFolder: Folder) {
-  const configPath = normalize(join(workspaceFolder.uri.fsPath, LOCAL_CONFIG_FILE_NAME));
+  const configPath = normalize(join(workspaceFolder.uri.fsPath, DEFAULT_CONFIG_FILE_NAME));
   return readConfig(configPath);
 }

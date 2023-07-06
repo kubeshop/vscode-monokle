@@ -1,10 +1,9 @@
 import { validateFolder } from '../utils/validation';
 import { getWorkspaceFolders } from '../utils/workspace';
-import { SarifWatcher } from '../utils/sarif';
 import { canRun } from '../utils/commands';
-import type { ExtensionContext } from 'vscode';
+import type { RuntimeContext } from '../utils/runtime-context';
 
-export function getValidateCommand(context: ExtensionContext, sarifWatcher: SarifWatcher) {
+export function getValidateCommand(context: RuntimeContext) {
   return async () => {
     if (!canRun()) {
       return;
@@ -13,9 +12,9 @@ export function getValidateCommand(context: ExtensionContext, sarifWatcher: Sari
     const roots = getWorkspaceFolders();
 
     const resultFiles = (await Promise.all(roots.map(async (root) => {
-      return validateFolder(root, context);
+      return validateFolder(root, context.extensionContext);
     }))).filter(Boolean);
 
-    return sarifWatcher.replace(resultFiles);
+    return context.sarifWatcher.replace(resultFiles);
   };
 }

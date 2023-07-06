@@ -1,5 +1,5 @@
 {
-  "name": "monokle-vsc",
+  "name": "monokle",
   "author": "Kubeshop",
   "displayName": "Monokle",
   "description": "Monokle Visual Studio Code extension for validating Kubernetes resources.",
@@ -22,29 +22,24 @@
   "contributes": {
     "commands": [
       {
-        "command": "monokle-vsc.validate",
+        "command": "monokle.validate",
         "category": "Monokle",
         "title": "Validate"
       },
       {
-        "command": "monokle-vsc.showPanel",
+        "command": "monokle.showPanel",
         "category": "Monokle",
         "title": "Show panel"
       },
       {
-        "command": "monokle-vsc.showConfiguration",
+        "command": "monokle.showConfiguration",
         "category": "Monokle",
         "title": "Show configuration"
       },
       {
-        "command": "monokle-vsc.bootstrapConfiguration",
+        "command": "monokle.bootstrapConfiguration",
         "category": "Monokle",
         "title": "Bootstrap configuration"
-      },
-      {
-        "command": "monokle-vsc.watch",
-        "category": "Monokle",
-        "title": "Watch"
       }
     ],
     "configuration": {

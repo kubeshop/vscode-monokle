@@ -1,62 +1,71 @@
-import * as vscode from 'vscode';
-
+import { commands, workspace } from 'vscode';
+import { COMMANDS, SETTINGS } from './constants';
 import { getValidateCommand } from './commands/validate';
 import { getWatchCommand } from './commands/watch';
-import { SarifWatcher } from './utils/sarif';
 import { getShowPanelCommand } from './commands/show-panel';
 import { getShowConfigurationCommand } from './commands/show-configuration';
 import { getBootstrapConfigurationCommand } from './commands/bootstrap-configuration';
+import { RuntimeContext } from './utils/runtime-context';
+import { SarifWatcher } from './utils/sarif-watcher';
+import type { ExtensionContext } from 'vscode';
 
-// This method is called when your extension is activated
-// Your extension is activated the very first time the command is executed
-export function activate(context: vscode.ExtensionContext) {
-  // Use the console to output diagnostic information (console.log) and errors (console.error)
-  // This line of code will only be executed once when your extension is activated
-  console.log('Congratulations, your extension "monokle-vsc" is now active!', vscode.workspace.workspaceFolders);
+let runtimeContext: RuntimeContext;
 
-  const sarifWatcher = new SarifWatcher();
+export function activate(context: ExtensionContext) {
+  runtimeContext = new RuntimeContext(
+    context,
+    new SarifWatcher()
+  );
 
-  const configurationWatcher = vscode.workspace.onDidChangeConfiguration(async (event) => {
-    if (event.affectsConfiguration('monokle.enabled')) {
-      const enabled = vscode.workspace.getConfiguration('monokle').get('enabled');
+  const commandValidate = commands.registerCommand(COMMANDS.VALIDATE, getValidateCommand(runtimeContext));
+  const commandShowPanel = commands.registerCommand(COMMANDS.SHOW_PANEL, getShowPanelCommand());
+  const commandShowConfiguration = commands.registerCommand(COMMANDS.SHOW_CONFIGURATION, getShowConfigurationCommand(runtimeContext));
+  const commandBootstrapConfiguration = commands.registerCommand(COMMANDS.BOOTSTRAP_CONFIGURATION, getBootstrapConfigurationCommand());
+  const commandWatch = commands.registerCommand(COMMANDS.WATCH, getWatchCommand(runtimeContext));
+
+  const configurationWatcher = workspace.onDidChangeConfiguration(async (event) => {
+    if (event.affectsConfiguration(SETTINGS.ENABLED_PATH)) {
+      const enabled = workspace.getConfiguration(SETTINGS.NAMESPACE).get(SETTINGS.ENABLED);
       if (enabled) {
-        await vscode.commands.executeCommand('monokle-vsc.validate');
+        await commands.executeCommand(COMMANDS.VALIDATE);
       } else {
-        await sarifWatcher.clean();
+        await runtimeContext.sarifWatcher.clean();
       }
 
-      await vscode.commands.executeCommand('monokle-vsc.watch');
+      await commands.executeCommand(COMMANDS.WATCH);
     }
 
-    if (event.affectsConfiguration('monokle.configurationPath')) {
-      vscode.commands.executeCommand('monokle-vsc.validate');
+    if (event.affectsConfiguration(SETTINGS.CONFIGURATION_PATH_PATH)) {
+      commands.executeCommand(COMMANDS.VALIDATE);
     }
   });
-  context.subscriptions.push(configurationWatcher);
 
-  const workspaceWatcher = vscode.workspace.onDidChangeWorkspaceFolders(async () => {
-    await vscode.commands.executeCommand('monokle-vsc.validate');
-    await vscode.commands.executeCommand('monokle-vsc.watch');
+  const workspaceWatcher = workspace.onDidChangeWorkspaceFolders(async () => {
+    await commands.executeCommand(COMMANDS.VALIDATE);
+    await commands.executeCommand(COMMANDS.WATCH);
   });
-  context.subscriptions.push(workspaceWatcher);
 
-  const commandValidate = vscode.commands.registerCommand('monokle-vsc.validate', getValidateCommand(context, sarifWatcher));
-  const commandWatch = vscode.commands.registerCommand('monokle-vsc.watch', getWatchCommand(context, sarifWatcher));
-  const commandShowPanel = vscode.commands.registerCommand('monokle-vsc.showPanel', getShowPanelCommand());
-  const commandShowConfiguration = vscode.commands.registerCommand('monokle-vsc.showConfiguration', getShowConfigurationCommand(context));
-  const commandBootstrapConfiguration = vscode.commands.registerCommand('monokle-vsc.bootstrapConfiguration', getBootstrapConfigurationCommand(context));
+  context.subscriptions.push(
+    commandValidate,
+    commandWatch,
+    commandShowPanel,
+    commandShowConfiguration,
+    commandBootstrapConfiguration,
+    configurationWatcher,
+    workspaceWatcher
+  );
 
-  context.subscriptions.push(commandValidate, commandWatch, commandShowPanel, commandShowConfiguration, commandBootstrapConfiguration);
-
-  const isEnabled = vscode.workspace.getConfiguration('monokle').get('enabled');
+  const isEnabled = workspace.getConfiguration(SETTINGS.NAMESPACE).get(SETTINGS.ENABLED);
   if (!isEnabled) {
-      return;
+    return;
   }
 
-  vscode.commands.executeCommand('monokle-vsc.validate');
-  vscode.commands.executeCommand('monokle-vsc.watch');
-
-  //@TODO on validation show message: Monokle: Validating workspace (root name, default, local, settings config)
+  commands.executeCommand(COMMANDS.VALIDATE).then(() => commands.executeCommand(COMMANDS.WATCH));
 }
 
-export function deactivate() {}
+export function deactivate() {
+  if (runtimeContext) {
+    runtimeContext.disposables.forEach(disposable => disposable.dispose());
+    runtimeContext.sarifWatcher.clean();
+  }
+}

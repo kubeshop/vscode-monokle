@@ -3,6 +3,7 @@ import { join, normalize } from 'path';
 import { Uri } from 'vscode';
 import { Document } from 'yaml';
 import { getWorkspaceConfig, getWorkspaceResources } from './workspace';
+import { STORAGE_DIR_NAME, VALIDATION_FILE_SUFFIX, DEFAULT_CONFIG_FILE_NAME } from '../constants';
 import type { ExtensionContext } from 'vscode';
 import type { Folder } from './workspace';
 
@@ -68,8 +69,8 @@ export async function validateFolder(root: Folder, context: ExtensionContext) {
 }
 
 export async function getValidationResult(folderPath: string, fileName: string) {
-  const sharedStorageDir = normalize(join(folderPath, '.monokle'));
-  const filePath = normalize(join(sharedStorageDir, `${fileName}.validation.json`));
+  const sharedStorageDir = normalize(join(folderPath, STORAGE_DIR_NAME));
+  const filePath = normalize(join(sharedStorageDir, `${fileName}${VALIDATION_FILE_SUFFIX}`));
 
   try {
     const resultsAsString = await readFile(filePath, 'utf8');
@@ -80,12 +81,12 @@ export async function getValidationResult(folderPath: string, fileName: string) 
 }
 
 export async function saveValidationResults(results: any, folderPath: string, fileName: string) {
-  const sharedStorageDir = normalize(join(folderPath, '.monokle'));
+  const sharedStorageDir = normalize(join(folderPath, STORAGE_DIR_NAME));
 
   await mkdir(sharedStorageDir, { recursive: true });
 
   const resultsAsString = JSON.stringify(results);
-  const filePath = normalize(join(sharedStorageDir, `${fileName}.validation.json`));
+  const filePath = normalize(join(sharedStorageDir, `${fileName}${VALIDATION_FILE_SUFFIX}`));
 
   await writeFile(filePath, resultsAsString);
 
@@ -93,7 +94,7 @@ export async function saveValidationResults(results: any, folderPath: string, fi
 }
 
 export function getValidationResultPath(folderPath: string, fileName: string) {
-  return normalize(join(folderPath, '.monokle', `${fileName}.validation.json`));
+  return normalize(join(folderPath, STORAGE_DIR_NAME, `${fileName}${VALIDATION_FILE_SUFFIX}`));
 }
 
 export async function createTemporaryConfigFile(config: any, srcFolder: Folder, destPath: string) {
@@ -106,7 +107,7 @@ export async function createTemporaryConfigFile(config: any, srcFolder: Folder, 
   ].join('\n');
 
   const fileName = `${srcFolder.id}.config.yaml`;
-  const sharedStorageDir = normalize(join(destPath, '.monokle', fileName));
+  const sharedStorageDir = normalize(join(destPath, STORAGE_DIR_NAME, fileName));
   const filePath = normalize(join(sharedStorageDir, fileName));
 
   await mkdir(sharedStorageDir, { recursive: true });
@@ -127,7 +128,7 @@ export async function createDefaultConfigFile(destFolder: string) {
     ' https://github.com/kubeshop/monokle-core/blob/main/packages/validation/docs/configuration.md#monokle-validation-configuration.',
   ].join('\n');
 
-  const fileName = 'monokle.validation.yaml';
+  const fileName = DEFAULT_CONFIG_FILE_NAME;
   const filePath = normalize(join(destFolder, fileName));
 
   await writeFile(filePath, configDoc.toString());

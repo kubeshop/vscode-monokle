@@ -2,7 +2,6 @@ import { Uri, commands, window } from 'vscode';
 import { canRun } from '../utils/commands';
 import { getWorkspaceConfig, getWorkspaceFolders } from '../utils/workspace';
 import { createDefaultConfigFile } from '../utils/validation';
-import type { ExtensionContext } from 'vscode';
 import type { Folder } from '../utils/workspace';
 
 type FolderItem = {
@@ -10,7 +9,7 @@ type FolderItem = {
   id: string;
 };
 
-export function getBootstrapConfigurationCommand(_context: ExtensionContext) {
+export function getBootstrapConfigurationCommand() {
   return async () => {
     if (!canRun()) {
       return null;

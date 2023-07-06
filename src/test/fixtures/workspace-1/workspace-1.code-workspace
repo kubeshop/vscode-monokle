@@ -1,7 +1,7 @@
 {
   "folders": [
     {
-      "path": "../folder-with-single-resource"
+      "path": "../folder-with-resources"
     },
     {
       "path": "../folder-without-resources"

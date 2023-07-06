@@ -1,9 +1,9 @@
 import { getWorkspaceFolders, initializeWorkspaceWatchers } from '../utils/workspace';
-import { SarifWatcher } from '../utils/sarif';
 import { canRun } from '../utils/commands';
-import type { ExtensionContext, FileSystemWatcher } from 'vscode';
+import type { FileSystemWatcher } from 'vscode';
+import type { RuntimeContext } from '../utils/runtime-context';
 
-export function getWatchCommand(context: ExtensionContext, sarifWatcher: SarifWatcher) {
+export function getWatchCommand(context: RuntimeContext) {
   const watchers: FileSystemWatcher[] = [];
 
   return async () => {
@@ -14,6 +14,9 @@ export function getWatchCommand(context: ExtensionContext, sarifWatcher: SarifWa
       return;
     }
 
-    watchers.push(...initializeWorkspaceWatchers(getWorkspaceFolders(), context, sarifWatcher));
+    const newWatchers = initializeWorkspaceWatchers(getWorkspaceFolders(), context.extensionContext, context.sarifWatcher);
+
+    context.registerDisposables(newWatchers);
+    watchers.push(...newWatchers);
   };
 }

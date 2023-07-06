@@ -33,7 +33,7 @@ async function main() {
 
     const workspaces = [
       {
-        path: './folder-with-single-resource',
+        path: './folder-with-resources',
         resources: 1,
         config: 'default',
       },
