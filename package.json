@@ -27,6 +27,11 @@
         "title": "Validate"
       },
       {
+        "command": "monokle-vsc.showPanel",
+        "category": "Monokle",
+        "title": "Show panel"
+      },
+      {
         "command": "monokle-vsc.watch",
         "category": "Monokle",
         "title": "Watch"

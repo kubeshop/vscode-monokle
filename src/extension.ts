@@ -3,6 +3,7 @@ import * as vscode from 'vscode';
 import { getValidateCommand } from './commands/validate';
 import { getWatchCommand } from './commands/watch';
 import { SarifWatcher } from './utils/sarif';
+import { getShowPanelCommand } from './commands/show-panel';
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
@@ -39,10 +40,11 @@ export function activate(context: vscode.ExtensionContext) {
 
   const commandValidate = vscode.commands.registerCommand('monokle-vsc.validate', getValidateCommand(context, sarifWatcher));
   const commandWatch = vscode.commands.registerCommand('monokle-vsc.watch', getWatchCommand(context, sarifWatcher));
+  const commandShowPanel = vscode.commands.registerCommand('monokle-vsc.showPanel', getShowPanelCommand());
   // @TODO Show configuration coomand - save config to a file and open it in editor
   // File should have a format # Config for /path/to/folder\n# Based on /path/to/monokle.yaml|default\nconfig
   // @TODO show panel command - proxy to sarif command
-  context.subscriptions.push(commandValidate, commandWatch);
+  context.subscriptions.push(commandValidate, commandWatch, commandShowPanel);
 
   const isEnabled = vscode.workspace.getConfiguration('monokle').get('enabled');
   if (!isEnabled) {
