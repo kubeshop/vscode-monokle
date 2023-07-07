@@ -118,16 +118,15 @@ export function initializeWorkspaceWatchers(workspaceFolders: Folder[], context:
 }
 
 async function findYamlFiles(folderPath: string): Promise<File[]> {
-  const files = await readdir(folderPath);
+  const files = await workspace.findFiles(new RelativePattern(folderPath, '**/*.{yaml,yml}'));
 
   return files
-    .filter(file => extname(file) === '.yaml' || extname(file) === '.yml')
     .map(file => {
-      const fullPath = normalize(join(folderPath, file));
+      const fullPath = file.fsPath;
 
       return {
         id: generateId(fullPath),
-        name: file,
+        name: basename(file.fsPath),
         path: fullPath
       };
     });
