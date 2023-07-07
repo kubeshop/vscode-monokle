@@ -7,11 +7,14 @@ import { getShowConfigurationCommand } from './commands/show-configuration';
 import { getBootstrapConfigurationCommand } from './commands/bootstrap-configuration';
 import { RuntimeContext } from './utils/runtime-context';
 import { SarifWatcher } from './utils/sarif-watcher';
+import logger from './utils/logger';
 import type { ExtensionContext } from 'vscode';
 
 let runtimeContext: RuntimeContext;
 
 export function activate(context: ExtensionContext) {
+  logger.log('Activating extension...');
+
   const statusBarItem = window.createStatusBarItem(StatusBarAlignment.Left, 25);
   statusBarItem.text = STATUS_BAR_TEXTS.DEFAULT;
   statusBarItem.tooltip = 'Show panel';
@@ -45,6 +48,10 @@ export function activate(context: ExtensionContext) {
     if (event.affectsConfiguration(SETTINGS.CONFIGURATION_PATH_PATH)) {
       commands.executeCommand(COMMANDS.VALIDATE);
     }
+
+    if (event.affectsConfiguration(SETTINGS.VERBOSE_PATH)) {
+      logger.debug = workspace.getConfiguration(SETTINGS.NAMESPACE).get<boolean>(SETTINGS.VERBOSE);
+    }
   });
 
   const workspaceWatcher = workspace.onDidChangeWorkspaceFolders(async () => {
@@ -71,6 +78,8 @@ export function activate(context: ExtensionContext) {
 }
 
 export function deactivate() {
+  logger.log('Deactivating extension...');
+
   if (runtimeContext) {
     runtimeContext.disposables.forEach(disposable => disposable.dispose());
     runtimeContext.sarifWatcher.clean();

@@ -8,8 +8,10 @@ export const SETTINGS = {
   NAMESPACE: 'monokle',
   ENABLED: 'enabled',
   CONFIGURATION_PATH: 'configurationPath',
+  VERBOSE: 'verbose',
   ENABLED_PATH: 'monokle.enabled',
   CONFIGURATION_PATH_PATH: 'monokle.configurationPath',
+  VERBOSE_PATH: 'monokle.verbose'
 };
 
 export const COMMANDS = {

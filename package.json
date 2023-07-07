@@ -45,18 +45,23 @@
     "configuration": {
       "title": "Monokle",
       "properties": {
-        "monokle.enabled": {
-          "type": "boolean",
-          "default": true,
-          "description": "Whenever extension is enabled."
-        },
         "monokle.configurationPath": {
           "type": [
             "string",
             "null"
           ],
           "default": null,
-          "description": "Path to monokle.validation.yaml configuration file. If not set it will be searched in the workspace root."
+          "description": "Path to configuration file. If not set it will be searched in the workspace root."
+        },
+        "monokle.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whenever extension is enabled."
+        },
+        "monokle.verbose": {
+          "type": "boolean",
+          "default": false,
+          "description": "Log runtime info to Developer Console."
         }
       }
     }

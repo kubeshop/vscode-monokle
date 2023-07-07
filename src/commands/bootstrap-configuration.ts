@@ -2,6 +2,7 @@ import { Uri, commands, window } from 'vscode';
 import { canRun } from '../utils/commands';
 import { getWorkspaceConfig, getWorkspaceFolders } from '../utils/workspace';
 import { createDefaultConfigFile } from '../utils/validation';
+import logger from '../utils/logger';
 import type { Folder } from '../utils/workspace';
 
 type FolderItem = {
@@ -22,7 +23,7 @@ export function getBootstrapConfigurationCommand() {
     }
 
     const generateConfig = async (folder: Folder) => {
-      console.log('Generating config for folder', folder);
+      logger.log('Generating config for folder', folder);
 
       const currentConfig = await getWorkspaceConfig(folder);
       if (currentConfig.type === 'file') {

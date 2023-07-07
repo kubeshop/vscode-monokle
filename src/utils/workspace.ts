@@ -5,6 +5,7 @@ import { Resource, extractK8sResources } from './extract';
 import { getDefaultConfig, getValidationResultPath, readConfig, validateFolder } from './validation';
 import { generateId } from './helpers';
 import { SETTINGS, DEFAULT_CONFIG_FILE_NAME } from '../constants';
+import logger from '../utils/logger';
 import type { WorkspaceFolder } from 'vscode';
 import type { RuntimeContext } from './runtime-context';
 
@@ -91,25 +92,28 @@ export function initializeWorkspaceWatchers(workspaceFolders: Folder[], context:
     const resultFile = getValidationResultPath(context.extensionContext.extensionPath, folder.id);
 
     const revalidateFolder = async () => {
-      console.log('revalidateFolder', folder);
+      logger.log('revalidateFolder', folder);
+
       context.isValidating = true;
+
       await validateFolder(folder, context.extensionContext);
       await context.sarifWatcher.add(Uri.file(resultFile));
+
       context.isValidating = false;
     };
 
     watcher.onDidChange((uri) => {
-      console.log(`File ${uri.fsPath} has been changed`);
+      logger.log(`File ${uri.fsPath} has been changed`);
       revalidateFolder();
     });
 
     watcher.onDidCreate((uri) => {
-      console.log(`File ${uri.fsPath} has been created`);
+      logger.log(`File ${uri.fsPath} has been created`);
       revalidateFolder();
     });
 
     watcher.onDidDelete((uri) => {
-      console.log(`File ${uri.fsPath} has been deleted`);
+      logger.log(`File ${uri.fsPath} has been deleted`);
       revalidateFolder();
     });
 

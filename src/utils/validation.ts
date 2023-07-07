@@ -5,6 +5,7 @@ import { Uri } from 'vscode';
 import { Document } from 'yaml';
 import { getWorkspaceConfig, getWorkspaceResources } from './workspace';
 import { STORAGE_DIR_NAME, VALIDATION_FILE_SUFFIX, DEFAULT_CONFIG_FILE_NAME } from '../constants';
+import logger from '../utils/logger';
 import type { ExtensionContext } from 'vscode';
 import type { Folder } from './workspace';
 
@@ -46,22 +47,26 @@ export async function getValidator(validatorId: string, config?: any) {
 
 export async function validateFolder(root: Folder, context: ExtensionContext) {
   const resources = await getWorkspaceResources(root);
-  console.log(root.name, 'resources', resources);
+
+  logger.log(root.name, 'resources', resources);
 
   if(!resources.length) {
     return null;
   }
 
   const workspaceConfig = await getWorkspaceConfig(root);
-  console.log(root.name, 'workspaceConfig', workspaceConfig);
+
+  logger.log(root.name, 'workspaceConfig', workspaceConfig);
 
   const validator = await getValidator(root.id, workspaceConfig.config);
-  console.log(root.name, 'validator', validator);
+
+  logger.log(root.name, 'validator', validator);
 
   const result = await validator.validate({
     resources: resources,
   });
-  console.log(root.name, 'result', result);
+
+  logger.log(root.name, 'result', result);
 
   result.runs.forEach(run => {
     run.results.forEach((result: any) => {
@@ -74,7 +79,8 @@ export async function validateFolder(root: Folder, context: ExtensionContext) {
   });
 
   const resultsFilePath = await saveValidationResults(result, context.extensionPath, root.id);
-  console.log(root.name, 'resultsFilePath', resultsFilePath);
+
+  logger.log(root.name, 'resultsFilePath', resultsFilePath);
 
   return Uri.file(resultsFilePath);
 }
