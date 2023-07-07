@@ -1,5 +1,6 @@
 import { mkdir, readFile, writeFile } from 'fs/promises';
 import { join, normalize } from 'path';
+import { platform } from 'os';
 import { Uri } from 'vscode';
 import { Document } from 'yaml';
 import { getWorkspaceConfig, getWorkspaceResources } from './workspace';
@@ -61,6 +62,16 @@ export async function validateFolder(root: Folder, context: ExtensionContext) {
     resources: resources,
   });
   console.log(root.name, 'result', result);
+
+  result.runs.forEach(run => {
+    run.results.forEach((result: any) => {
+      const location = result.locations.find(location => location.physicalLocation?.artifactLocation?.uriBaseId === 'SRCROOT');
+
+      if (location && location.physicalLocation.artifactLocation.uri) {
+        location.physicalLocation.artifactLocation.uri = normalizePathForWindows(location.physicalLocation.artifactLocation.uri);
+      }
+    });
+  });
 
   const resultsFilePath = await saveValidationResults(result, context.extensionPath, root.id);
   console.log(root.name, 'resultsFilePath', resultsFilePath);
@@ -151,4 +162,15 @@ export async function getDefaultConfig(root: Folder) {
 async function getDefaultValidator() {
   const {createDefaultMonokleValidator} = await import('@monokle/validation');
   return createDefaultMonokleValidator();
+}
+
+// For some reason (according to specs? to be checked) SARIF extension doesn't like
+// valid Windows paths, which are "C:\path\to\file.yaml". It expects them to have
+// unix like separators, so "C:/path/to/file.yaml".
+function normalizePathForWindows(path: string) {
+  if (platform() === 'win32') {
+    return path.replace(/\\/g, '/');
+  }
+
+  return path;
 }
