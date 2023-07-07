@@ -19,3 +19,8 @@ export const COMMANDS = {
   BOOTSTRAP_CONFIGURATION: 'monokle.bootstrapConfiguration',
   WATCH: 'monokle.watch',
 };
+
+export const STATUS_BAR_TEXTS = {
+  DEFAULT: '🔍 Monokle',
+  VALIDATING: '🤔 Validating...',
+};

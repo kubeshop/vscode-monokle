@@ -14,7 +14,7 @@ export function getWatchCommand(context: RuntimeContext) {
       return;
     }
 
-    const newWatchers = initializeWorkspaceWatchers(getWorkspaceFolders(), context.extensionContext, context.sarifWatcher);
+    const newWatchers = initializeWorkspaceWatchers(getWorkspaceFolders(), context);
 
     context.registerDisposables(newWatchers);
     watchers.push(...newWatchers);

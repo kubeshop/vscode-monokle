@@ -9,11 +9,15 @@ export function getValidateCommand(context: RuntimeContext) {
       return;
     }
 
+    context.isValidating = true;
+
     const roots = getWorkspaceFolders();
 
     const resultFiles = (await Promise.all(roots.map(async (root) => {
       return validateFolder(root, context.extensionContext);
     }))).filter(Boolean);
+
+    context.isValidating = false;
 
     return context.sarifWatcher.replace(resultFiles);
   };

@@ -4,9 +4,9 @@ import { basename, extname, join, normalize } from 'path';
 import { Resource, extractK8sResources } from './extract';
 import { getDefaultConfig, getValidationResultPath, readConfig, validateFolder } from './validation';
 import { generateId } from './helpers';
-import { SarifWatcher } from './sarif-watcher';
 import { SETTINGS, DEFAULT_CONFIG_FILE_NAME } from '../constants';
-import type { WorkspaceFolder, ExtensionContext } from 'vscode';
+import type { WorkspaceFolder } from 'vscode';
+import type { RuntimeContext } from './runtime-context';
 
 export type Folder = WorkspaceFolder & {id: string};
 
@@ -73,7 +73,7 @@ export async function getWorkspaceConfig(workspaceFolder: Folder): Promise<Works
   };
 }
 
-export function initializeWorkspaceWatchers(workspaceFolders: Folder[], context: ExtensionContext, sarifWatcher: SarifWatcher) {
+export function initializeWorkspaceWatchers(workspaceFolders: Folder[], context: RuntimeContext) {
   // On change we don't want to run whole validate command again (unless this is very first run @TODO).
   // Because:
   // The sarif output file is already there, initiated with sarif..openLogs
@@ -88,12 +88,14 @@ export function initializeWorkspaceWatchers(workspaceFolders: Folder[], context:
   return workspaceFolders.map((folder) => {
     const pattern = new RelativePattern(folder.uri.fsPath, '**/*.{yaml,yml}');
     const watcher = workspace.createFileSystemWatcher(pattern);
-    const resultFile = getValidationResultPath(context.extensionPath, folder.id);
+    const resultFile = getValidationResultPath(context.extensionContext.extensionPath, folder.id);
 
     const revalidateFolder = async () => {
       console.log('revalidateFolder', folder);
-      await validateFolder(folder, context);
-      await sarifWatcher.add(Uri.file(resultFile));
+      context.isValidating = true;
+      await validateFolder(folder, context.extensionContext);
+      await context.sarifWatcher.add(Uri.file(resultFile));
+      context.isValidating = false;
     };
 
     watcher.onDidChange((uri) => {

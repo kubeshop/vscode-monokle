@@ -1,5 +1,5 @@
-import { commands, workspace } from 'vscode';
-import { COMMANDS, SETTINGS } from './constants';
+import { commands, workspace, window, StatusBarAlignment } from 'vscode';
+import { COMMANDS, SETTINGS, STATUS_BAR_TEXTS } from './constants';
 import { getValidateCommand } from './commands/validate';
 import { getWatchCommand } from './commands/watch';
 import { getShowPanelCommand } from './commands/show-panel';
@@ -12,9 +12,16 @@ import type { ExtensionContext } from 'vscode';
 let runtimeContext: RuntimeContext;
 
 export function activate(context: ExtensionContext) {
+  const statusBarItem = window.createStatusBarItem(StatusBarAlignment.Left, 25);
+  statusBarItem.text = STATUS_BAR_TEXTS.DEFAULT;
+  statusBarItem.tooltip = 'Show panel';
+  statusBarItem.command = COMMANDS.SHOW_PANEL;
+  statusBarItem.show();
+
   runtimeContext = new RuntimeContext(
     context,
-    new SarifWatcher()
+    new SarifWatcher(),
+    statusBarItem
   );
 
   const commandValidate = commands.registerCommand(COMMANDS.VALIDATE, getValidateCommand(runtimeContext));
@@ -32,6 +39,7 @@ export function activate(context: ExtensionContext) {
         await runtimeContext.sarifWatcher.clean();
       }
 
+      // @TODO: run runtimeContext.getDisposables[].dispose instead and change how run command is run (no funky cnaRun logic)
       await commands.executeCommand(COMMANDS.WATCH);
     }
 
