@@ -7,12 +7,12 @@ export function getWatchCommand(context: RuntimeContext) {
   const watchers: FileSystemWatcher[] = [];
 
   return async () => {
-    watchers.forEach(watcher => watcher.dispose());
-    watchers.splice(0, watchers.length);
-
     if (!canRun()) {
       return;
     }
+
+    watchers.forEach(watcher => watcher.dispose());
+    watchers.splice(0, watchers.length);
 
     const newWatchers = initializeWorkspaceWatchers(getWorkspaceFolders(), context);
 

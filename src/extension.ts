@@ -35,12 +35,11 @@ export function activate(context: ExtensionContext) {
       const enabled = workspace.getConfiguration(SETTINGS.NAMESPACE).get(SETTINGS.ENABLED);
       if (enabled) {
         await commands.executeCommand(COMMANDS.VALIDATE);
+        await commands.executeCommand(COMMANDS.WATCH);
       } else {
+        runtimeContext.disposables.forEach(disposable => disposable.dispose());
         await runtimeContext.sarifWatcher.clean();
       }
-
-      // @TODO: run runtimeContext.getDisposables[].dispose instead and change how run command is run (no funky cnaRun logic)
-      await commands.executeCommand(COMMANDS.WATCH);
     }
 
     if (event.affectsConfiguration(SETTINGS.CONFIGURATION_PATH_PATH)) {
