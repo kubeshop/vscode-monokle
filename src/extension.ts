@@ -17,7 +17,7 @@ export function activate(context: ExtensionContext) {
 
   const statusBarItem = window.createStatusBarItem(StatusBarAlignment.Left, 25);
   statusBarItem.text = STATUS_BAR_TEXTS.DEFAULT;
-  statusBarItem.tooltip = 'Show panel';
+  statusBarItem.tooltip = 'Show validation panel';
   statusBarItem.command = COMMANDS.SHOW_PANEL;
   statusBarItem.show();
 

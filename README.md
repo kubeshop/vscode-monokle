@@ -1,71 +1,52 @@
 # Monokle VSC Extension
 
-Monokle Visual Studio Code extensions let's you validate your Kubernetes resources directly in Visual Studio Code. It is a great complement to Monokle Cloud, Desktop and CLI.
+Monokle Visual Studio Code extensions let's you validate your Kubernetes resources directly in Visual Studio Code. It is a great complement to [Monokle Cloud](https://monokle.io), [Desktop](https://monokle.io/open-source) or [CLI](https://github.com/kubeshop/monokle-cli).
+
+Monokle aims to help you write better Kubernetes deployments no matter your preferred way of working. You can now install our extension to fix your configuration directly while you are coding from the comfort of your Visual Studio Code.
+
+As usual, misconfigurations are highlighted directly within your source code with a recommended remediation to fix them without being a Kubernetes expert. All misconfigurations are also listed as a summary in VSCode's problem pane, or within the SARIF viewer for additional information and filters.
+
+By default, a sensible policy is used or you can simply add a Monokle validation configuration file to your workspace to customize the rules.
+
+This is **Technical Preview** release. We are open to any feedback and eager to improve the product together with our users and community. Feel free to drop us any questions, feature proposals and issues.
 
 ## Features
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+Monokle extension will automatically validate all Kuberentes resources in current project / workspace on Visual Studio Code start and show the panel with the list of all warning and errors. Validation errors will also appear in VSC **Problems** tab for currently opened resource files.
 
-For example if there is an image subfolder under your extension project workspace:
+All resource files are also validated when modified (after being saved) and list in validation panel refreshes automatically.
 
-\!\[feature X\]\(images/feature-x.png\)
+Monokle extension exposes following commands:
 
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
-
-## Requirements
-
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+* `Monokle: Validate` - runs validation of Kubernetes resources on demand and shows validation panel.
+* `Monokle: Show validation panel` - opens validation panel (this can be also done be clicking on Monokle status bar icon).
+* `Monokle: Show configuration` - opens validation configuration file which is used as validation configuration for given project.
+* `Monokle: Bootstrap configuration` - creates `monokle.validation.yaml` configuration file. It is a quick way to adjust validation config.
 
 ## Extension Settings
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
-
-For example:
-
 This extension contributes the following settings:
 
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
+* `monokle.enable`: Enable/disable this extension.
+* `monokle.configurationPath`: Set path to validation configuration file.
+* `monokle.verbose`: Log runtime info to VSC Developer Console.
 
-## Known Issues
+## Dependencies
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
+A core component of Monokle extension and dependency is [`@monokle/validation` library](https://github.com/kubeshop/monokle-core/tree/main/packages/validation).
+
+Monokle extension also uses [SARIF Viewer](https://marketplace.visualstudio.com/items?itemName=MS-SarifVSCode.sarif-viewer) extension as dependency. It should be installed automatically when installing Monokle extension.
+
+## Questions and contributing
+
+Feel free to drop any question related this extension in [GitHub Monokle discussions](https://github.com/kubeshop/monokle/discussions). If you found a bug or would like to request a new feature, report it as [GitHub issue](https://github.com/kubeshop/vscode-monokle/issues).
+
+We are happy to help and assist you in case of any doubts or questions.
+
+For contributing code see [CONTRIBUTING.md](https://github.com/kubeshop/vscode-monokle/CONTRIBUTING.md) file.
 
 ## Release Notes
 
-Users appreciate release notes as you update your extension.
+### 0.1.0
 
-### 1.0.0
-
-Initial release of ...
-
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
-
----
-
-## Following extension guidelines
-
-Ensure that you've read through the extensions guidelines and follow the best practices for creating your extension.
-
-* [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
-
-## Working with Markdown
-
-You can author your README using Visual Studio Code. Here are some useful editor keyboard shortcuts:
-
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux).
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux).
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets.
-
-## For more information
-
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
-
-**Enjoy!**
+Technical preview release of Monokle extension.
