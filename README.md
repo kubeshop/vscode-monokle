@@ -59,7 +59,7 @@ Feel free to drop any question related this extension in [GitHub Monokle discuss
 
 We are happy to help and assist you in case of any doubts or questions.
 
-For contributing code see [CONTRIBUTING.md](https://github.com/kubeshop/vscode-monokle/CONTRIBUTING.md) file.
+For contributing code see [CONTRIBUTING.md](https://github.com/kubeshop/vscode-monokle/blob/main/CONTRIBUTING.md) file.
 
 ## Release Notes
 
