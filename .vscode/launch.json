@@ -28,6 +28,7 @@
 			],
 			"preLaunchTask": "${defaultBuildTask}"
 		},
+		// Test tasks below are a bit outdated and may need some adjustments to work.
 		{
 			"name": "Test Extension",
 			"type": "extensionHost",

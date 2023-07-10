@@ -8,8 +8,8 @@
   "preview": true,
   "icon": "assets/icon.png",
   "repository": {
-    "type": "git",
-    "url": "git@github.com:kubeshop/vscode-monokle.git"
+    "type": "https",
+    "url": "https://github.com/kubeshop/vscode-monokle.git"
   },
   "bugs": {
     "url": "https://github.com/kubeshop/vscode-monokle/issues"
