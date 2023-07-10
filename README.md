@@ -34,7 +34,7 @@ All resource files are also validated when modified (after being saved) and list
 
 Monokle extension exposes following commands:
 
-* `Monokle: Validate` - runs validation of Kubernetes resources on demand and shows validation panel.
+* `Monokle: Validate` - runs validation of Kubernetes resources on demand.
 * `Monokle: Show validation panel` - opens validation panel (this can be also done be clicking on Monokle status bar icon).
 * `Monokle: Show configuration` - opens validation configuration file which is used as validation configuration for given project.
 * `Monokle: Bootstrap configuration` - creates `monokle.validation.yaml` configuration file. It is a quick way to adjust validation config.

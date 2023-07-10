@@ -34,10 +34,21 @@ xvfb-run -a npm run test
 
 Releasing requires [`@vscode/vsce`](https://www.npmjs.com/package/@vscode/vsce) package installed.
 
-After that, you can run:
+After that, run:
 
 ```bash
-vsce login kubeshop
-vsce package
-vsce publish [options] [version]
+vsce login kubeshop # You need PAT to login successfully.
+```
+
+And then either use `publish` directly:
+
+```bash
+vsce publish [version] # patch, minor, major, A.B.C
+```
+
+Or `package` + `publish` (this allows to test packaged extension before publishing)
+
+```bash
+vsce package [version] # patch, minor, major, A.B.C
+vsce publish -i monokle-[version].vsix
 ```
