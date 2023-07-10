@@ -1,10 +1,20 @@
 # Monokle VSC Extension
 
-![Monokle extension latest version](https://img.shields.io/github/package-json/v/kubeshop/vscode-monokle/main)
-![Monokle extension build status](https://img.shields.io/github/actions/workflow/status/kubeshop/vscode-monokle/test.yaml)
-![Monokle extension license](https://img.shields.io/github/license/kubeshop/vscode-monokle)
+<p align="center">
+  <a href="https://github.com/kubeshop/vscode-monokle" title="Monokle extension latest version">
+    <img src="https://img.shields.io/github/package-json/v/kubeshop/vscode-monokle/main" />
+  </a>
+  <a href="https://github.com/kubeshop/vscode-monokle/actions/workflows/test.yaml" title="Monokle extension build status">
+    <img src="https://img.shields.io/github/actions/workflow/status/kubeshop/vscode-monokle/test.yaml">
+  </a>
+  <a href="https://github.com/kubeshop/vscode-monokle/blob/main/LICENSE" title="Monokle extension license">
+    <img src="https://img.shields.io/github/license/kubeshop/vscode-monokle">
+  </a>
+</p>
 
-![Monokle logo](assets/icon.png)
+<p align="center">
+  <img src="assets/icon.png" alt="Monokle Logo" width="128" height="128"/>
+</p>
 
 Monokle Visual Studio Code extensions let's you validate your Kubernetes resources directly in Visual Studio Code. It is a great complement to [Monokle Cloud](https://monokle.io), [Desktop](https://monokle.io/open-source) or [CLI](https://github.com/kubeshop/monokle-cli).
 
