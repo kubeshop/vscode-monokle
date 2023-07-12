@@ -13,6 +13,8 @@ import type { ExtensionContext } from 'vscode';
 let runtimeContext: RuntimeContext;
 
 export function activate(context: ExtensionContext) {
+  logger.debug = workspace.getConfiguration(SETTINGS.NAMESPACE).get<boolean>(SETTINGS.VERBOSE);
+
   logger.log('Activating extension...');
 
   const statusBarItem = window.createStatusBarItem(StatusBarAlignment.Left, 25);
