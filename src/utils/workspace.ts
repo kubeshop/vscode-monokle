@@ -1,8 +1,7 @@
 import { RelativePattern, Uri, workspace } from 'vscode';
-import { readFile, readdir } from 'fs/promises';
-import { basename, extname, join, normalize } from 'path';
+import { basename, join, normalize } from 'path';
 import { Resource, extractK8sResources } from './extract';
-import { getDefaultConfig, getValidationResultPath, readConfig, validateFolder } from './validation';
+import { clearResourceCache, getDefaultConfig, getValidationResultPath, readConfig, validateFolder } from './validation';
 import { generateId } from './helpers';
 import { SETTINGS, DEFAULT_CONFIG_FILE_NAME } from '../constants';
 import logger from '../utils/logger';
@@ -102,19 +101,30 @@ export function initializeWorkspaceWatchers(workspaceFolders: Folder[], context:
       context.isValidating = false;
     };
 
-    watcher.onDidChange((uri) => {
+    const resetResourceCache = async (filePath: string) => {
+      const resourceId = await getResourceIdFromPath(folder, filePath);
+
+      if (!resourceId) {
+        return;
+      }
+
+      return clearResourceCache(folder, resourceId);
+    };
+
+    watcher.onDidChange(async (uri) => {
       logger.log(`File ${uri.fsPath} has been changed`);
-      revalidateFolder();
+      await resetResourceCache(uri.fsPath);
+      await revalidateFolder();
     });
 
-    watcher.onDidCreate((uri) => {
+    watcher.onDidCreate(async (uri) => {
       logger.log(`File ${uri.fsPath} has been created`);
-      revalidateFolder();
+      await revalidateFolder();
     });
 
-    watcher.onDidDelete((uri) => {
+    watcher.onDidDelete(async (uri) => {
       logger.log(`File ${uri.fsPath} has been deleted`);
-      revalidateFolder();
+      await revalidateFolder();
     });
 
     return watcher;
@@ -138,7 +148,8 @@ async function findYamlFiles(folderPath: string): Promise<File[]> {
 
 async function convertFilesToK8sResources(files: File[]): Promise<Resource[]> {
   const filesWithContent = await Promise.all(files.map(async file => {
-    const content = await readFile(file.path, 'utf-8');
+    const contentRaw = await workspace.fs.readFile(Uri.file(file.path));
+    const content = Buffer.from(contentRaw.buffer).toString('utf8');
 
     return {
       id: file.id,
@@ -153,4 +164,12 @@ async function convertFilesToK8sResources(files: File[]): Promise<Resource[]> {
 async function getWorkspaceLocalConfig(workspaceFolder: Folder) {
   const configPath = normalize(join(workspaceFolder.uri.fsPath, DEFAULT_CONFIG_FILE_NAME));
   return readConfig(configPath);
+}
+
+async function getResourceIdFromPath(folder: Folder, path: string) {
+  const files = await findYamlFiles(folder.uri.fsPath);
+  const file = files.find(file => normalize(file.path) === normalize(path));
+  const resources = file ? await convertFilesToK8sResources([file]) : [];
+
+  return resources.pop()?.id ?? null;
 }

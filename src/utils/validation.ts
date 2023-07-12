@@ -9,6 +9,12 @@ import logger from '../utils/logger';
 import type { ExtensionContext } from 'vscode';
 import type { Folder } from './workspace';
 
+export type ConfigurableValidator = {
+  parser: any;
+  loader: any;
+  validator: any;
+};
+
 // Use default map with full list of plugins so it's easier
 // for users to work with newly generated validation configuration file.
 const DEFAULT_PLUGIN_MAP = {
@@ -24,11 +30,12 @@ const DEFAULT_PLUGIN_MAP = {
 // Having multiple roots, each with different config will make it inefficient to reconfigure
 // validator multiple times for a single validation run. That's why we will need separate
 // validator for each root (which will be reconfigured only when root related config changes).
-const VALIDATORS = new Map<string, {config: string, validator: any}>();
+const VALIDATORS = new Map<string, {config: string, validator: ConfigurableValidator}>();
 
 export async function getValidator(validatorId: string, config?: any) {
   const validatorItem = VALIDATORS.get(validatorId);
-  const validator = validatorItem?.validator ?? await getDefaultValidator();
+  const validatorObj = validatorItem?.validator ?? await getConfigurableValidator();
+  const validator = validatorObj.validator;
   const oldConfig = validatorItem?.config ?? null;
   const newConfig = JSON.stringify(config);
 
@@ -39,7 +46,7 @@ export async function getValidator(validatorId: string, config?: any) {
 
   VALIDATORS.set(validatorId, {
     config: newConfig,
-    validator: validator,
+    validator: validatorObj,
   });
 
   return validator;
@@ -48,11 +55,13 @@ export async function getValidator(validatorId: string, config?: any) {
 export async function validateFolder(root: Folder, context: ExtensionContext) {
   const resources = await getWorkspaceResources(root);
 
-  logger.log(root.name, 'resources', resources);
+  logger.log(root.name, 'resources');
 
   if(!resources.length) {
     return null;
   }
+
+  resources.forEach(resource => logger.log(resource.id, resource.name, resource.content));
 
   const workspaceConfig = await getWorkspaceConfig(root);
 
@@ -153,6 +162,17 @@ export async function createDefaultConfigFile(destFolder: string) {
   return Uri.file(filePath);
 }
 
+export async function clearResourceCache(root: Folder, resourceId: string) {
+  const validatorItem = VALIDATORS.get(root.id);
+  const parser = validatorItem?.validator?.parser;
+
+  logger.log('clearResourceCache', !!parser, root.name, resourceId);
+
+  if (parser) {
+      parser.clear([resourceId]);
+  }
+}
+
 export async function readConfig(path: string) {
   const {readConfig} = await import('@monokle/validation');
   return readConfig(path);
@@ -160,7 +180,7 @@ export async function readConfig(path: string) {
 
 export async function getDefaultConfig(root: Folder) {
   const validatorItem = VALIDATORS.get(root.id);
-  const validator = validatorItem?.validator ?? await getDefaultValidator();
+  const validator = validatorItem?.validator.validator ?? await getDefaultValidator();
 
   return validator.config;
 }
@@ -168,6 +188,18 @@ export async function getDefaultConfig(root: Folder) {
 async function getDefaultValidator() {
   const {createDefaultMonokleValidator} = await import('@monokle/validation');
   return createDefaultMonokleValidator();
+}
+
+async function getConfigurableValidator() {
+  const {ResourceParser, SchemaLoader, MonokleValidator, createDefaultPluginLoader} = await import('@monokle/validation');
+  const parser = new ResourceParser();
+  const schemaLoader = new SchemaLoader();
+
+  return {
+    parser,
+    loader: schemaLoader,
+    validator: new MonokleValidator(createDefaultPluginLoader(parser, schemaLoader)),
+  };
 }
 
 // For some reason (according to specs? to be checked) SARIF extension doesn't like
