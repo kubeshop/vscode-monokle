@@ -7,6 +7,7 @@ import { getShowConfigurationCommand } from './commands/show-configuration';
 import { getBootstrapConfigurationCommand } from './commands/bootstrap-configuration';
 import { RuntimeContext } from './utils/runtime-context';
 import { SarifWatcher } from './utils/sarif-watcher';
+import { PolicyPuller } from './utils/policy-puller';
 import logger from './utils/logger';
 import type { ExtensionContext } from 'vscode';
 
@@ -28,6 +29,8 @@ export function activate(context: ExtensionContext) {
     new SarifWatcher(),
     statusBarItem
   );
+
+  const policyPuller = new PolicyPuller('test:url');
 
   const commandValidate = commands.registerCommand(COMMANDS.VALIDATE, getValidateCommand(runtimeContext));
   const commandShowPanel = commands.registerCommand(COMMANDS.SHOW_PANEL, getShowPanelCommand());
@@ -59,6 +62,7 @@ export function activate(context: ExtensionContext) {
   const workspaceWatcher = workspace.onDidChangeWorkspaceFolders(async () => {
     await commands.executeCommand(COMMANDS.VALIDATE);
     await commands.executeCommand(COMMANDS.WATCH);
+    // @TODO refresh policy puller
   });
 
   context.subscriptions.push(
@@ -76,6 +80,7 @@ export function activate(context: ExtensionContext) {
     return;
   }
 
+  // @TODO fetch policies and then validate
   commands.executeCommand(COMMANDS.VALIDATE).then(() => commands.executeCommand(COMMANDS.WATCH));
 }
 

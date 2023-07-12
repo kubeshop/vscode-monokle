@@ -40,6 +40,12 @@ export async function getWorkspaceResources(workspaceFolder: Folder) {
 export async function getWorkspaceConfig(workspaceFolder: Folder): Promise<WorkspaceFolderConfig> {
   const settingsConfigurationPath = workspace.getConfiguration(SETTINGS.NAMESPACE).get<string>(SETTINGS.CONFIGURATION_PATH);
 
+  // if (remotePolicy) {
+  //   // refetch remote policy
+  //   // use remote policy
+  // }
+  // TODO handle case where url configured but repo does not belong to any user/project
+
   if (settingsConfigurationPath) {
     const configPath = normalize(settingsConfigurationPath);
     // @TODO show error if config empty

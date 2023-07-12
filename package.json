@@ -74,6 +74,14 @@
           "default": null,
           "description": "Path to configuration file. If not set it will be searched in the workspace root."
         },
+        "monokle.cloudUrl": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null,
+          "description": "Monokle Cloud URL to fetch policies from. If not set local config will be used. If you are using SaaS, set it to https://app.monokle.com."
+        },
         "monokle.enabled": {
           "type": "boolean",
           "default": true,
@@ -118,6 +126,7 @@
   },
   "dependencies": {
     "@monokle/validation": "^0.23.9",
+    "simple-git": "^3.19.1",
     "uuid": "^9.0.0"
   },
   "c8": {
