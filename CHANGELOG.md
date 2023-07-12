@@ -1,5 +1,11 @@
 # Change Log
 
+## 0.1.2
+
+### Fixes
+
+* Updated validation library to [`v0.23.9`](https://github.com/kubeshop/monokle-core/releases/tag/%40monokle%2Fvalidation%400.23.9) version.
+
 ## 0.1.1
 
 ### Fixes
