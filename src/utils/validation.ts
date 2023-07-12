@@ -178,11 +178,8 @@ export async function readConfig(path: string) {
   return readConfig(path);
 }
 
-export async function getDefaultConfig(root: Folder) {
-  const validatorItem = VALIDATORS.get(root.id);
-  const validator = validatorItem?.validator.validator ?? await getDefaultValidator();
-
-  return validator.config;
+export async function getDefaultConfig() {
+  return (await getDefaultValidator()).config;
 }
 
 async function getDefaultValidator() {

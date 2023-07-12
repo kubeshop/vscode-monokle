@@ -68,7 +68,7 @@ export async function getWorkspaceConfig(workspaceFolder: Folder): Promise<Works
 
   return {
     type: 'default',
-    config: await getDefaultConfig(workspaceFolder),
+    config: await getDefaultConfig(),
     owner: workspaceFolder,
   };
 }
