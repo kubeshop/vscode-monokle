@@ -22,7 +22,7 @@ Monokle aims to help you write better Kubernetes deployments no matter your pref
 
 As usual, misconfigurations are highlighted directly within your source code with a recommended remediation to fix them without being a Kubernetes expert. All misconfigurations are also listed as a summary in VSCode's problem pane, or within the SARIF viewer for additional information and filters.
 
-By default, a sensible policy is used or you can simply add a Monokle validation configuration file to your workspace to customize the rules.
+By default, a [sensible policy](#default-validation-configuration) is used, or you can simply add a Monokle [validation configuration file](https://github.com/kubeshop/monokle-core/blob/main/packages/validation/docs/configuration.md) to your workspace to customize the rules.
 
 This is **Technical Preview** release. We are open to any feedback and eager to improve the product together with our users and community. Feel free to drop us any questions, feature proposals and issues.
 
@@ -38,6 +38,17 @@ Monokle extension exposes following commands:
 * `Monokle: Show validation panel` - opens validation panel (this can be also done be clicking on Monokle status bar icon).
 * `Monokle: Show configuration` - opens validation configuration file which is used as validation configuration for given project.
 * `Monokle: Bootstrap configuration` - creates `monokle.validation.yaml` configuration file. It is a quick way to adjust validation config.
+
+## Default Validation Policy
+
+The default configuration used for resource validation is written to a `monokle.validation.yaml` file
+in your project folder. It enables the following validation plugins:
+- **Security Policy** validation, based on Open-Policy-Agent rules from Aqua Security
+- **Kubernetes Schema** validation for checking schema and Kubernetes version compliance
+- **Resource Links** validation to ensure that all references between resources are valid
+- **YAML syntax** validation 
+
+Read about these plugins and their individual validation rules in the [Core Plugins documentation](https://github.com/kubeshop/monokle-core/blob/main/packages/validation/docs/core-plugins.md)
 
 ## Extension Settings
 
