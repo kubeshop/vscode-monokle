@@ -74,7 +74,7 @@
           "default": null,
           "description": "Path to configuration file. If not set it will be searched in the workspace root."
         },
-        "monokle.cloudUrl": {
+        "monokle.remotePolicyUrl": {
           "type": [
             "string",
             "null"
@@ -112,6 +112,7 @@
     "@types/glob": "^8.1.0",
     "@types/mocha": "^10.0.1",
     "@types/node": "20.2.5",
+    "@types/node-fetch": "2.6.4",
     "@types/vscode": "^1.79.0",
     "@typescript-eslint/eslint-plugin": "^5.59.8",
     "@typescript-eslint/parser": "^5.59.8",
@@ -126,6 +127,8 @@
   },
   "dependencies": {
     "@monokle/validation": "^0.23.9",
+    "node-fetch": "2.6.12",
+    "normalize-url": "4.5.1",
     "simple-git": "^3.19.1",
     "uuid": "^9.0.0"
   },

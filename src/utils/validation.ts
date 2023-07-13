@@ -4,8 +4,9 @@ import { platform } from 'os';
 import { Uri } from 'vscode';
 import { Document } from 'yaml';
 import { getWorkspaceConfig, getWorkspaceResources } from './workspace';
-import { STORAGE_DIR_NAME, VALIDATION_FILE_SUFFIX, DEFAULT_CONFIG_FILE_NAME } from '../constants';
+import { STORAGE_DIR_NAME, VALIDATION_FILE_SUFFIX, DEFAULT_CONFIG_FILE_NAME, TMP_POLICY_FILE_SUFFIX } from '../constants';
 import logger from '../utils/logger';
+import globals from './globals';
 import type { ExtensionContext } from 'vscode';
 import type { Folder } from './workspace';
 
@@ -13,6 +14,10 @@ export type ConfigurableValidator = {
   parser: any;
   loader: any;
   validator: any;
+};
+
+export type ConfigFileOptions = {
+  commentBefore?: string;
 };
 
 // Use default map with full list of plugins so it's easier
@@ -123,39 +128,42 @@ export function getValidationResultPath(folderPath: string, fileName: string) {
   return normalize(join(folderPath, STORAGE_DIR_NAME, `${fileName}${VALIDATION_FILE_SUFFIX}`));
 }
 
-export async function createTemporaryConfigFile(config: any, srcFolder: Folder, destPath: string) {
-  const configDoc = new Document();
-  configDoc.contents = config;
-  configDoc.commentBefore = [
-    ` The '${srcFolder.name}' folder uses default validation configuration. This file is readonly.`,
+export async function createTemporaryConfigFile(config: any, ownerRoot: Folder) {
+  const commentBefore = [
+    ` The '${ownerRoot.name}' folder uses default validation configuration. This file is readonly.`,
     ` You can adjust configuration by generating local configuration file with 'Monokle: Bootstrap configuration' command`,
     ` or by pointing to existing Monokle configuration file in 'monokle.configurationPath' setting.`
   ].join('\n');
 
-  const fileName = `${srcFolder.id}.config.yaml`;
-  const sharedStorageDir = normalize(join(destPath, STORAGE_DIR_NAME, fileName));
-  const filePath = normalize(join(sharedStorageDir, fileName));
-
-  await mkdir(sharedStorageDir, { recursive: true });
-
-  await writeFile(filePath, configDoc.toString());
-
-  return Uri.file(filePath);
+  return saveConfig(config, globals.storagePath, `${ownerRoot.id}${TMP_POLICY_FILE_SUFFIX}`, {commentBefore});
 }
 
-export async function createDefaultConfigFile(destFolder: string) {
-  const configDoc = new Document();
-  configDoc.contents = {
+export async function createDefaultConfigFile(ownerRootDir: string) {
+  const config = {
     plugins: DEFAULT_PLUGIN_MAP,
-  } as any;
-  configDoc.commentBefore = [
+  };
+
+  const commentBefore = [
     ' This is default validation configuration. You can adjust it freely to suit your needs.',
     ' You can read more about Monokle validation configuration here:',
     ' https://github.com/kubeshop/monokle-core/blob/main/packages/validation/docs/configuration.md#monokle-validation-configuration.',
   ].join('\n');
 
-  const fileName = DEFAULT_CONFIG_FILE_NAME;
-  const filePath = normalize(join(destFolder, fileName));
+  return saveConfig(config, ownerRootDir, DEFAULT_CONFIG_FILE_NAME, {commentBefore});
+}
+
+export async function saveConfig(config: any, path: string, fileName: string, options?: ConfigFileOptions) {
+  const configDoc = new Document();
+  configDoc.contents = config;
+
+  if (options?.commentBefore) {
+    configDoc.commentBefore = options.commentBefore;
+  }
+
+  const dir = normalize(path);
+  const filePath = normalize(join(dir, fileName));
+
+  await mkdir(dir, { recursive: true });
 
   await writeFile(filePath, configDoc.toString());
 

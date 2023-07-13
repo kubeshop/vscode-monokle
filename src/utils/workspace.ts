@@ -3,8 +3,9 @@ import { basename, join, normalize } from 'path';
 import { Resource, extractK8sResources } from './extract';
 import { clearResourceCache, getDefaultConfig, getValidationResultPath, readConfig, validateFolder } from './validation';
 import { generateId } from './helpers';
-import { SETTINGS, DEFAULT_CONFIG_FILE_NAME } from '../constants';
+import { SETTINGS, DEFAULT_CONFIG_FILE_NAME, REMOTE_POLICY_FILE_SUFFIX } from '../constants';
 import logger from '../utils/logger';
+import globals from '../utils/globals';
 import type { WorkspaceFolder } from 'vscode';
 import type { RuntimeContext } from './runtime-context';
 
@@ -17,9 +18,10 @@ export type File = {
 };
 
 export type WorkspaceFolderConfig = {
-  type: 'default' | 'file' | 'config';
+  type: 'default' | 'file' | 'config' | 'remote';
   config: any;
   owner: Folder,
+  isValid: boolean;
   path?: string;
   fileName?: string;
 };
@@ -38,35 +40,40 @@ export async function getWorkspaceResources(workspaceFolder: Folder) {
 }
 
 export async function getWorkspaceConfig(workspaceFolder: Folder): Promise<WorkspaceFolderConfig> {
+  const remotePolicyUrl = workspace.getConfiguration(SETTINGS.NAMESPACE).get<string>(SETTINGS.REMOTE_POLICY_URL);
+  if (remotePolicyUrl) {
+    const configData = await getWorkspaceRemoteConfig(workspaceFolder);
+    return {
+      type: 'remote',
+      config: configData,
+      owner: workspaceFolder,
+      isValid: configData !== undefined,
+      path: normalize(join(globals.storagePath, `${workspaceFolder.id}${REMOTE_POLICY_FILE_SUFFIX}`)),
+      fileName: `${workspaceFolder.id}${REMOTE_POLICY_FILE_SUFFIX}`,
+    };
+  }
+
   const settingsConfigurationPath = workspace.getConfiguration(SETTINGS.NAMESPACE).get<string>(SETTINGS.CONFIGURATION_PATH);
-
-  // if (remotePolicy) {
-  //   // refetch remote policy
-  //   // use remote policy
-  // }
-  // TODO handle case where url configured but repo does not belong to any user/project
-
   if (settingsConfigurationPath) {
     const configPath = normalize(settingsConfigurationPath);
-    // @TODO show error if config empty
-
-    const config =  {
+    const configAsJson = await readConfig(configPath);
+    return {
       type: 'config',
-      config: await readConfig(configPath),
+      config: configAsJson,
       owner: workspaceFolder,
+      isValid: configAsJson !== undefined,
       path: configPath,
-      fileName: basename(configPath),
+      fileName: basename(configPath)
     };
-
-    return config as WorkspaceFolderConfig;
   }
 
   const localConfig = await getWorkspaceLocalConfig(workspaceFolder);
-  if (localConfig && Object.entries(localConfig).length > 0) {
+  if (localConfig) {
     return {
       type: 'file',
       config: localConfig,
       owner: workspaceFolder,
+      isValid: localConfig !== undefined,
       path: normalize(join(workspaceFolder.uri.fsPath, DEFAULT_CONFIG_FILE_NAME)),
       fileName: DEFAULT_CONFIG_FILE_NAME,
     };
@@ -76,6 +83,7 @@ export async function getWorkspaceConfig(workspaceFolder: Folder): Promise<Works
     type: 'default',
     config: await getDefaultConfig(),
     owner: workspaceFolder,
+    isValid: true,
   };
 }
 
@@ -169,6 +177,11 @@ async function convertFilesToK8sResources(files: File[]): Promise<Resource[]> {
 
 async function getWorkspaceLocalConfig(workspaceFolder: Folder) {
   const configPath = normalize(join(workspaceFolder.uri.fsPath, DEFAULT_CONFIG_FILE_NAME));
+  return readConfig(configPath);
+}
+
+async function getWorkspaceRemoteConfig(workspaceFolder: Folder) {
+  const configPath = normalize(join(globals.storagePath, `${workspaceFolder.id}${REMOTE_POLICY_FILE_SUFFIX}`));
   return readConfig(configPath);
 }
 

@@ -2,17 +2,20 @@
 import { STATUS_BAR_TEXTS } from '../constants';
 import type { Disposable, ExtensionContext, StatusBarItem } from 'vscode';
 import type { SarifWatcher } from './sarif-watcher';
+import type { PolicyPuller } from './policy-puller';
 
 export class RuntimeContext {
   private _extensionContext: ExtensionContext;
   private _sarifWatcher: SarifWatcher;
+  private _policyPuller: PolicyPuller;
   private _statusBarItem: StatusBarItem;
   private _disposableRegistry: Disposable[] = [];
   private _isValidating = false;
 
-  constructor(extensionContext: ExtensionContext, sarifWatcher: SarifWatcher, statusBarItem: StatusBarItem) {
+  constructor(extensionContext: ExtensionContext, sarifWatcher: SarifWatcher, policyPuller: PolicyPuller, statusBarItem: StatusBarItem) {
     this._extensionContext = extensionContext;
     this._sarifWatcher = sarifWatcher;
+    this._policyPuller = policyPuller;
     this._statusBarItem = statusBarItem;
   }
 
@@ -22,6 +25,10 @@ export class RuntimeContext {
 
   get sarifWatcher() {
     return this._sarifWatcher;
+  }
+
+  get policyPuller() {
+    return this._policyPuller;
   }
 
   get statusBarItem() {

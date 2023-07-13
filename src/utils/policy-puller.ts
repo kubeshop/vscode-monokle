@@ -1,6 +1,10 @@
 import { getWorkspaceFolders } from './workspace';
-import { getRepoId } from './git';
+import { getRepoRemoteData } from './git';
+import { getPolicy, getUser } from './api';
+import { saveConfig } from './validation';
+import { REMOTE_POLICY_FILE_SUFFIX } from '../constants';
 import logger from './logger';
+import globals from './globals';
 import type { Folder } from './workspace';
 
 export class PolicyPuller {
@@ -26,31 +30,87 @@ export class PolicyPuller {
       return;
     }
 
-    this._fetchPolicyFiles(getWorkspaceFolders());
-    // fetch policy files
+    this.pull();
     // initialize puller interval
   }
 
-  getPolicyForFolder(_folder: Folder) {
+  async getPolicyForFolder(_folder: Folder) {
+    // if policy exists - just return it
+
+    // if not try to fetch checking below along the way
     // return policy for folder
+    // isGit (couldn't fetch remote policy if false)
+    // belongsToProject (couldn't fetch remote policy if false)
+    // policy
   }
 
-  pull() {
+  async pull() {
     if (this._isPulling) {
       return this._pullPromise;
     }
 
     this._isPulling = true;
-    this._pullPromise = new Promise((_resolve, _reject) => {});
+    this._pullPromise = this.fetchPolicyFiles(getWorkspaceFolders());
 
     return this._pullPromise;
   }
 
-  private async _fetchPolicyFiles(roots: Folder[]) {
-    for (const folder of roots) {
-      const repoId = await getRepoId(folder.uri.fsPath);
-      logger.log('repoId', folder.name, repoId);
-      // query graphQl API
+  private async fetchPolicyFiles(roots: Folder[]) {
+    const userData = await getUser();
+
+    logger.log('userData', userData);
+
+    if (!userData) {
+      return;
     }
+
+    for (const folder of roots) {
+      const repoData = await getRepoRemoteData(folder.uri.fsPath);
+      if (!repoData) {
+        continue;
+      }
+
+      const repoMainProject = userData.data.me.projects.find(project => {
+        return project.project.repositories.find(repo => repo.owner === repoData.owner && repo.name === repoData.name && repo.prChecks);
+      });
+
+      const repoFirstProject = userData.data.me.projects.find(project => {
+        return project.project.repositories.find(repo => repo.owner === repoData.owner && repo.name === repoData.name);
+      });
+
+      const repoProject = repoMainProject ?? repoFirstProject;
+
+      logger.log('repoId', folder.name, repoData, repoMainProject, repoFirstProject);
+
+      if (!repoProject) {
+        continue;
+      }
+
+      const repoPolicy = await getPolicy(repoProject.project.slug);
+
+      logger.log('repoPolicy', repoPolicy);
+
+      if (!repoPolicy) {
+        continue;
+      }
+
+      const commentBefore = [
+        ' This is remote validation configuration downloaded from Kubeshop Policy Server.',
+        ' To adjust it, log into your Kubeshop Policy Server and edit change XXX project policy.',
+      ].join('\n');
+
+      saveConfig(
+        repoPolicy.data.getProject.policy.json,
+        globals.storagePath,
+        `${folder.id}${REMOTE_POLICY_FILE_SUFFIX}`,
+        {commentBefore});
+    }
+
+    this._isPulling = false;
+    this._pullPromise = undefined;
   }
+
+  private async initializePolicyRefetcher() {}
+
+  private async clearExistingPolicyFiles() {}
 }

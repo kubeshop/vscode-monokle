@@ -1,5 +1,6 @@
+import { join, normalize } from 'path';
 import { commands, workspace, window, StatusBarAlignment } from 'vscode';
-import { COMMANDS, SETTINGS, STATUS_BAR_TEXTS } from './constants';
+import { COMMANDS, SETTINGS, STATUS_BAR_TEXTS, STORAGE_DIR_NAME } from './constants';
 import { getValidateCommand } from './commands/validate';
 import { getWatchCommand } from './commands/watch';
 import { getShowPanelCommand } from './commands/show-panel';
@@ -9,14 +10,16 @@ import { RuntimeContext } from './utils/runtime-context';
 import { SarifWatcher } from './utils/sarif-watcher';
 import { PolicyPuller } from './utils/policy-puller';
 import logger from './utils/logger';
+import globals from './utils/globals';
 import type { ExtensionContext } from 'vscode';
 
 let runtimeContext: RuntimeContext;
 
 export function activate(context: ExtensionContext) {
-  logger.debug = workspace.getConfiguration(SETTINGS.NAMESPACE).get<boolean>(SETTINGS.VERBOSE);
+  globals.storagePath = normalize(join(context.extensionPath, STORAGE_DIR_NAME));
+  logger.debug = globals.verbose;
 
-  logger.log('Activating extension...');
+  logger.log('Activating extension...', globals.asObject());
 
   const statusBarItem = window.createStatusBarItem(StatusBarAlignment.Left, 25);
   statusBarItem.text = STATUS_BAR_TEXTS.DEFAULT;
@@ -27,20 +30,19 @@ export function activate(context: ExtensionContext) {
   runtimeContext = new RuntimeContext(
     context,
     new SarifWatcher(),
+    new PolicyPuller(globals.remotePolicyUrl),
     statusBarItem
   );
 
-  const policyPuller = new PolicyPuller('test:url');
-
   const commandValidate = commands.registerCommand(COMMANDS.VALIDATE, getValidateCommand(runtimeContext));
   const commandShowPanel = commands.registerCommand(COMMANDS.SHOW_PANEL, getShowPanelCommand());
-  const commandShowConfiguration = commands.registerCommand(COMMANDS.SHOW_CONFIGURATION, getShowConfigurationCommand(runtimeContext));
+  const commandShowConfiguration = commands.registerCommand(COMMANDS.SHOW_CONFIGURATION, getShowConfigurationCommand());
   const commandBootstrapConfiguration = commands.registerCommand(COMMANDS.BOOTSTRAP_CONFIGURATION, getBootstrapConfigurationCommand());
   const commandWatch = commands.registerCommand(COMMANDS.WATCH, getWatchCommand(runtimeContext));
 
   const configurationWatcher = workspace.onDidChangeConfiguration(async (event) => {
     if (event.affectsConfiguration(SETTINGS.ENABLED_PATH)) {
-      const enabled = workspace.getConfiguration(SETTINGS.NAMESPACE).get(SETTINGS.ENABLED);
+      const enabled = globals.enabled;
       if (enabled) {
         await commands.executeCommand(COMMANDS.VALIDATE);
         await commands.executeCommand(COMMANDS.WATCH);
@@ -55,14 +57,18 @@ export function activate(context: ExtensionContext) {
     }
 
     if (event.affectsConfiguration(SETTINGS.VERBOSE_PATH)) {
-      logger.debug = workspace.getConfiguration(SETTINGS.NAMESPACE).get<boolean>(SETTINGS.VERBOSE);
+      logger.debug = globals.verbose;
+    }
+
+    if (event.affectsConfiguration(SETTINGS.REMOTE_POLICY_URL_PATH)) {
+      // @TODO refresh policies and validate resources
     }
   });
 
   const workspaceWatcher = workspace.onDidChangeWorkspaceFolders(async () => {
+    // @TODO refresh policy puller
     await commands.executeCommand(COMMANDS.VALIDATE);
     await commands.executeCommand(COMMANDS.WATCH);
-    // @TODO refresh policy puller
   });
 
   context.subscriptions.push(
@@ -75,8 +81,7 @@ export function activate(context: ExtensionContext) {
     workspaceWatcher
   );
 
-  const isEnabled = workspace.getConfiguration(SETTINGS.NAMESPACE).get(SETTINGS.ENABLED);
-  if (!isEnabled) {
+  if (!globals.enabled) {
     return;
   }
 

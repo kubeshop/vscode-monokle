@@ -1,12 +1,22 @@
 import { simpleGit } from 'simple-git';
 import type { RemoteWithRefs } from 'simple-git';
 
-export type RepoId = {
+export type RepoRemoteData = {
+  remote: string;
   owner: string;
   name: string;
 };
 
-export async function getRepoId(folderPath: string): Promise<RepoId | undefined> {
+export async function isGitRepo(folderPath: string) {
+  try {
+    await (simpleGit(folderPath)).status();
+    return true;
+  } catch (err: any) {
+    return false;
+  }
+}
+
+export async function getRepoRemoteData(folderPath: string): Promise<RepoRemoteData | undefined> {
   const remote = await getMainRemote(folderPath);
   if (!remote) {
     return undefined;
@@ -20,6 +30,7 @@ export async function getRepoId(folderPath: string): Promise<RepoId | undefined>
   }
 
   return {
+    remote: remote.name,
     owner: match[2],
     name: match[3],
   };
