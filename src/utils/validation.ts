@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from 'fs/promises';
+import { mkdir, readFile, unlink, writeFile } from 'fs/promises';
 import { join, normalize } from 'path';
 import { platform } from 'os';
 import { Uri } from 'vscode';
@@ -168,6 +168,19 @@ export async function saveConfig(config: any, path: string, fileName: string, op
   await writeFile(filePath, configDoc.toString());
 
   return Uri.file(filePath);
+}
+
+export async function removeConfig(path: string, fileName: string) {
+  try {
+    const dir = normalize(path);
+    const filePath = normalize(join(dir, fileName));
+
+    await unlink(filePath);
+
+    return true;
+  } catch (err) {
+    return false;
+  }
 }
 
 export async function clearResourceCache(root: Folder, resourceId: string) {

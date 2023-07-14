@@ -1,18 +1,20 @@
 import { getWorkspaceFolders } from './workspace';
 import { getRepoRemoteData } from './git';
 import { getPolicy, getUser } from './api';
-import { saveConfig } from './validation';
+import { removeConfig, saveConfig } from './validation';
 import { REMOTE_POLICY_FILE_SUFFIX } from '../constants';
 import logger from './logger';
 import globals from './globals';
 import type { Folder } from './workspace';
+
+const REFETCH_POLICY_INTERVAL_MS = 1000 * 30;
 
 export class PolicyPuller {
 
   private _url = '';
   private _isPulling = false;
   private _pullPromise: Promise<void> | undefined;
-  private _policyRefetcher: () => {} | undefined;
+  private _policyFetcherId: NodeJS.Timer | undefined;
 
   constructor(url: string) {
     this.url = url;
@@ -24,27 +26,25 @@ export class PolicyPuller {
 
   set url(value: string) {
     this._url = value;
+  }
 
+  async refresh() {
     if (!this._url) {
-      // clear existing policy files
-      return;
+      return this.clear();
     }
 
-    this.pull();
-    // initialize puller interval
+    await this.pull();
+    return this.initializePolicyFetcher();
   }
 
-  async getPolicyForFolder(_folder: Folder) {
-    // if policy exists - just return it
-
-    // if not try to fetch checking below along the way
-    // return policy for folder
-    // isGit (couldn't fetch remote policy if false)
-    // belongsToProject (couldn't fetch remote policy if false)
-    // policy
+  async dispose() {
+    if (this._policyFetcherId) {
+      clearInterval(this._policyFetcherId);
+      this._policyFetcherId = undefined;
+    }
   }
 
-  async pull() {
+  private async pull() {
     if (this._isPulling) {
       return this._pullPromise;
     }
@@ -103,14 +103,45 @@ export class PolicyPuller {
         repoPolicy.data.getProject.policy.json,
         globals.storagePath,
         `${folder.id}${REMOTE_POLICY_FILE_SUFFIX}`,
-        {commentBefore});
+        {commentBefore}
+      );
     }
 
     this._isPulling = false;
     this._pullPromise = undefined;
   }
 
-  private async initializePolicyRefetcher() {}
+  private async initializePolicyFetcher() {
+    if (this._isPulling) {
+      await this._pullPromise;
+    }
 
-  private async clearExistingPolicyFiles() {}
+    if (this._policyFetcherId) {
+      clearInterval(this._policyFetcherId);
+      this._policyFetcherId = undefined;
+    }
+
+    this._policyFetcherId = setInterval(async () => {
+      this.pull();
+    }, REFETCH_POLICY_INTERVAL_MS);
+  }
+
+  private async clear() {
+    if (this._isPulling) {
+      await this._pullPromise;
+    }
+
+    if (this._policyFetcherId) {
+      clearInterval(this._policyFetcherId);
+      this._policyFetcherId = undefined;
+    }
+
+    const roots = getWorkspaceFolders();
+    for (const folder of roots) {
+      await removeConfig(
+        globals.storagePath,
+        `${folder.id}${REMOTE_POLICY_FILE_SUFFIX}`,
+      );
+    }
+  }
 }

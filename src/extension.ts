@@ -39,6 +39,7 @@ export function activate(context: ExtensionContext) {
   const commandShowConfiguration = commands.registerCommand(COMMANDS.SHOW_CONFIGURATION, getShowConfigurationCommand());
   const commandBootstrapConfiguration = commands.registerCommand(COMMANDS.BOOTSTRAP_CONFIGURATION, getBootstrapConfigurationCommand());
   const commandWatch = commands.registerCommand(COMMANDS.WATCH, getWatchCommand(runtimeContext));
+  // @TODO add command to refetch remote policy
 
   const configurationWatcher = workspace.onDidChangeConfiguration(async (event) => {
     if (event.affectsConfiguration(SETTINGS.ENABLED_PATH)) {
@@ -48,6 +49,7 @@ export function activate(context: ExtensionContext) {
         await commands.executeCommand(COMMANDS.WATCH);
       } else {
         runtimeContext.disposables.forEach(disposable => disposable.dispose());
+        await runtimeContext.policyPuller.dispose();
         await runtimeContext.sarifWatcher.clean();
       }
     }
@@ -61,12 +63,14 @@ export function activate(context: ExtensionContext) {
     }
 
     if (event.affectsConfiguration(SETTINGS.REMOTE_POLICY_URL_PATH)) {
-      // @TODO refresh policies and validate resources
+      runtimeContext.policyPuller.url = globals.remotePolicyUrl;
+      await runtimeContext.policyPuller.refresh();
+      await commands.executeCommand(COMMANDS.VALIDATE);
     }
   });
 
   const workspaceWatcher = workspace.onDidChangeWorkspaceFolders(async () => {
-    // @TODO refresh policy puller
+    await runtimeContext.policyPuller.refresh();
     await commands.executeCommand(COMMANDS.VALIDATE);
     await commands.executeCommand(COMMANDS.WATCH);
   });
@@ -85,8 +89,9 @@ export function activate(context: ExtensionContext) {
     return;
   }
 
-  // @TODO fetch policies and then validate
-  commands.executeCommand(COMMANDS.VALIDATE).then(() => commands.executeCommand(COMMANDS.WATCH));
+  runtimeContext.policyPuller.refresh()
+    .then(() => commands.executeCommand(COMMANDS.VALIDATE))
+    .then(() => commands.executeCommand(COMMANDS.WATCH));
 }
 
 export function deactivate() {
