@@ -61,6 +61,11 @@
         "command": "monokle.bootstrapConfiguration",
         "category": "Monokle",
         "title": "Bootstrap configuration"
+      },
+      {
+        "command": "monokle.downloadPolicy",
+        "category": "Monokle",
+        "title": "Download policy"
       }
     ],
     "configuration": {

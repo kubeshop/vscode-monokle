@@ -6,6 +6,7 @@ import { getWatchCommand } from './commands/watch';
 import { getShowPanelCommand } from './commands/show-panel';
 import { getShowConfigurationCommand } from './commands/show-configuration';
 import { getBootstrapConfigurationCommand } from './commands/bootstrap-configuration';
+import { getDownloadPolicyCommand } from './commands/download-policy';
 import { RuntimeContext } from './utils/runtime-context';
 import { SarifWatcher } from './utils/sarif-watcher';
 import { PolicyPuller } from './utils/policy-puller';
@@ -38,8 +39,8 @@ export function activate(context: ExtensionContext) {
   const commandShowPanel = commands.registerCommand(COMMANDS.SHOW_PANEL, getShowPanelCommand());
   const commandShowConfiguration = commands.registerCommand(COMMANDS.SHOW_CONFIGURATION, getShowConfigurationCommand());
   const commandBootstrapConfiguration = commands.registerCommand(COMMANDS.BOOTSTRAP_CONFIGURATION, getBootstrapConfigurationCommand());
+  const commandDownloadPolicy = commands.registerCommand(COMMANDS.DOWNLOAD_POLICY, getDownloadPolicyCommand(runtimeContext));
   const commandWatch = commands.registerCommand(COMMANDS.WATCH, getWatchCommand(runtimeContext));
-  // @TODO add command to refetch remote policy
 
   const configurationWatcher = workspace.onDidChangeConfiguration(async (event) => {
     if (event.affectsConfiguration(SETTINGS.ENABLED_PATH)) {
@@ -80,6 +81,7 @@ export function activate(context: ExtensionContext) {
     commandShowPanel,
     commandShowConfiguration,
     commandBootstrapConfiguration,
+    commandDownloadPolicy,
     configurationWatcher,
     workspaceWatcher
   );
