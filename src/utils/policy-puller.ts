@@ -30,7 +30,7 @@ export class PolicyPuller {
 
   async refresh() {
     if (!this._url) {
-      return this.clear();
+      return this.dispose();
     }
 
     await this.pull();
@@ -38,9 +38,21 @@ export class PolicyPuller {
   }
 
   async dispose() {
+    if (this._isPulling) {
+      await this._pullPromise;
+    }
+
     if (this._policyFetcherId) {
       clearInterval(this._policyFetcherId);
       this._policyFetcherId = undefined;
+    }
+
+    const roots = getWorkspaceFolders();
+    for (const folder of roots) {
+      await removeConfig(
+        globals.storagePath,
+        `${folder.id}${REMOTE_POLICY_FILE_SUFFIX}`,
+      );
     }
   }
 
@@ -124,24 +136,5 @@ export class PolicyPuller {
     this._policyFetcherId = setInterval(async () => {
       this.pull();
     }, REFETCH_POLICY_INTERVAL_MS);
-  }
-
-  private async clear() {
-    if (this._isPulling) {
-      await this._pullPromise;
-    }
-
-    if (this._policyFetcherId) {
-      clearInterval(this._policyFetcherId);
-      this._policyFetcherId = undefined;
-    }
-
-    const roots = getWorkspaceFolders();
-    for (const folder of roots) {
-      await removeConfig(
-        globals.storagePath,
-        `${folder.id}${REMOTE_POLICY_FILE_SUFFIX}`,
-      );
-    }
   }
 }

@@ -35,10 +35,6 @@ export class RuntimeContext {
     return this._statusBarItem;
   }
 
-  get disposables() {
-    return [...this._disposableRegistry];
-  }
-
   get isValidating() {
     return this._isValidating;
   }
@@ -50,5 +46,21 @@ export class RuntimeContext {
 
   registerDisposables(disposables: Disposable[]) {
     this._disposableRegistry.push(...disposables);
+  }
+
+  async dispose() {
+    const disposables = [...this._disposableRegistry];
+
+    this._disposableRegistry = [];
+
+    disposables.forEach(disposable => disposable.dispose());
+
+    if (this.policyPuller) {
+      await this.policyPuller.dispose();
+    }
+
+    if (this.sarifWatcher) {
+      await this.sarifWatcher.dispose();
+    }
   }
 }

@@ -45,12 +45,11 @@ export function activate(context: ExtensionContext) {
     if (event.affectsConfiguration(SETTINGS.ENABLED_PATH)) {
       const enabled = globals.enabled;
       if (enabled) {
+        await runtimeContext.policyPuller.refresh();
         await commands.executeCommand(COMMANDS.VALIDATE);
         await commands.executeCommand(COMMANDS.WATCH);
       } else {
-        runtimeContext.disposables.forEach(disposable => disposable.dispose());
-        await runtimeContext.policyPuller.dispose();
-        await runtimeContext.sarifWatcher.clean();
+        await runtimeContext.dispose();
       }
     }
 
@@ -98,7 +97,6 @@ export function deactivate() {
   logger.log('Deactivating extension...');
 
   if (runtimeContext) {
-    runtimeContext.disposables.forEach(disposable => disposable.dispose());
-    runtimeContext.sarifWatcher.clean();
+    runtimeContext.dispose();
   }
 }

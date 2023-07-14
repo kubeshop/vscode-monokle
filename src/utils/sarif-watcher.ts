@@ -30,7 +30,7 @@ export class SarifWatcher {
     }
   }
 
-  async clean() {
+  async dispose() {
     const sarifApi = await this.getSarifApi();
     this._uris = [];
     return sarifApi.closeAllLogs();
