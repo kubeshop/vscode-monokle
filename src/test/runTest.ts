@@ -3,7 +3,17 @@ import * as path from 'path';
 import * as fs from 'fs/promises';
 import { downloadAndUnzipVSCode, resolveCliArgsFromVSCodeExecutablePath, runTests } from '@vscode/test-electron';
 
-async function main() {
+type TestWorkspace = {
+  path: string;
+  resources: number;
+  config: string;
+  isWorkspace?: boolean;
+  folders?: number;
+};
+
+async function runSuite(testFile: string, workspaces: TestWorkspace[]) {
+  let currentWorkspace: TestWorkspace | undefined;
+
   try {
     // The folder containing the Extension Manifest package.json
     // Passed to `--extensionDevelopmentPath`
@@ -11,7 +21,7 @@ async function main() {
 
     // The path to test runner
     // Passed to --extensionTestsPath
-    const extensionTestsPath = path.resolve(__dirname, './suite/index');
+    const extensionTestsPath = path.resolve(__dirname, testFile);
 
     // Test fixtures
     const testTmpDir = path.resolve(__dirname, './tmp');
@@ -31,27 +41,9 @@ async function main() {
       }
     );
 
-    const workspaces = [
-      {
-        path: './folder-with-resources',
-        resources: 1,
-        config: 'default',
-      },
-      {
-        path: './folder-without-resources',
-        resources: 0,
-        config: 'file',
-      },
-      {
-        path: './workspace-1/workspace-1.code-workspace',
-        resources: 2,
-        isWorkspace: true,
-        folders: 2,
-        config: 'config'
-      },
-    ];
-
     for (const workspace of workspaces) {
+      currentWorkspace = workspace;
+
       await fs.rm(testTmpDir, { recursive: true, force: true });
       await fs.mkdir(testTmpDir, { recursive: true });
       await fs.cp(fixturesSourceDir, fixturesDestDir, { recursive: true });
@@ -79,12 +71,42 @@ async function main() {
         }
       });
     }
+
+    currentWorkspace = undefined;
   } catch (err) {
-    console.error('Failed to run tests', err);
+    console.error(`Failed to run tests from ${testFile}`, currentWorkspace, err);
     process.exit(1);
   } finally {
     await fs.rm(path.resolve(__dirname, './tmp'), { recursive: true, force: true });
   }
+}
+
+async function main() {
+  const workspaces = [
+    {
+      path: './folder-with-resources',
+      resources: 1,
+      config: 'default',
+    },
+    {
+      path: './folder-without-resources',
+      resources: 0,
+      config: 'file',
+    },
+    {
+      path: './workspace-1/workspace-1.code-workspace',
+      resources: 2,
+      isWorkspace: true,
+      folders: 2,
+      config: 'config'
+    },
+  ];
+
+  // Run basic tests on single workspace.
+  await runSuite('./suite-basic/index', [workspaces[0]]);
+
+  // Run integration-like tests on multiple, different workspaces.
+  await runSuite('./suite-integration/index', workspaces);
 }
 
 main();

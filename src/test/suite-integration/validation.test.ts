@@ -7,21 +7,20 @@ import { parse, stringify } from 'yaml';
 import { Folder, getWorkspaceConfig, getWorkspaceFolders } from '../../utils/workspace';
 import { getValidationResult } from '../../utils/validation';
 import { generateId } from '../../utils/helpers';
-import { STORAGE_DIR_NAME, COMMANDS } from '../../constants';
+import { COMMANDS } from '../../constants';
+import { doSetup, doSuiteTeardown } from '../helpers/suite';
 
-suite(`Monokle Extension Test Suite: ${process.env.ROOT_PATH}`, () => {
+suite(`Integration - Validation: ${process.env.ROOT_PATH}`, () => {
   const extensionDir = process.env.EXTENSION_DIR;
-  const sharedStorageDir = path.resolve(extensionDir, STORAGE_DIR_NAME);
   const fixturesSourceDir = process.env.FIXTURES_SOURCE_DIR;
-
   const initialResources = parseInt(process.env.WORKSPACE_RESOURCES ?? '0', 10);
 
   setup(async () => {
-    await fs.rm(sharedStorageDir, { recursive: true, force: true });
+    await doSetup();
   });
 
   suiteTeardown(async () => {
-    await fs.rm(sharedStorageDir, { recursive: true, force: true });
+    await doSuiteTeardown();
   });
 
   // This test should be run first since it checks for a result file
@@ -144,26 +143,6 @@ suite(`Monokle Extension Test Suite: ${process.env.ROOT_PATH}`, () => {
     const config = await getWorkspaceConfig(folders[0]);
 
     assert.equal(config.type, process.env.WORKSPACE_CONFIG_TYPE);
-  });
-
-  test('Exposes validate command', async function() {
-    const commands = await vscode.commands.getCommands(false);
-    assert.ok(commands.includes(COMMANDS.VALIDATE));
-  });
-
-  test('Exposes showPanel command', async () => {
-    const commands = await vscode.commands.getCommands(false);
-    assert.ok(commands.includes(COMMANDS.SHOW_PANEL));
-  });
-
-  test('Exposes showConfiguration command', async () => {
-    const commands = await vscode.commands.getCommands(false);
-    assert.ok(commands.includes(COMMANDS.SHOW_CONFIGURATION));
-  });
-
-  test('Exposes bootstrap configuration command', async () => {
-    const commands = await vscode.commands.getCommands(false);
-    assert.ok(commands.includes(COMMANDS.BOOTSTRAP_CONFIGURATION));
   });
 });
 
