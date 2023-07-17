@@ -14,9 +14,14 @@ suite(`Integration - Validation: ${process.env.ROOT_PATH}`, () => {
   const extensionDir = process.env.EXTENSION_DIR;
   const fixturesSourceDir = process.env.FIXTURES_SOURCE_DIR;
   const initialResources = parseInt(process.env.WORKSPACE_RESOURCES ?? '0', 10);
+  const isDisabled = process.env.WORKSPACE_DISABLED === 'true';
 
-  suiteSetup(async () => {
+  suiteSetup(async function () {
     await doSuiteSetup();
+
+    if (isDisabled) {
+      this.skip();
+    }
   });
 
   setup(async () => {

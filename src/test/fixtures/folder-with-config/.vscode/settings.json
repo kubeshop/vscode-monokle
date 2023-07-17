@@ -1,3 +1,4 @@
 {
     "monokle.enabled": false,
+    "monokle.remotePolicyUrl": "https://api.monokle.io"
 }

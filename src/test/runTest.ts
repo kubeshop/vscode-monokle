@@ -9,6 +9,7 @@ type TestWorkspace = {
   config: string;
   isWorkspace?: boolean;
   folders?: number;
+  disabled?: boolean;
 };
 
 async function runSuite(testFile: string, workspaces: TestWorkspace[]) {
@@ -68,6 +69,8 @@ async function runSuite(testFile: string, workspaces: TestWorkspace[]) {
           ROOT_PATH: testWorkspace,
           // eslint-disable-next-line @typescript-eslint/naming-convention
           WORKSPACE_CONFIG_TYPE: workspace.config,
+          // eslint-disable-next-line @typescript-eslint/naming-convention
+          WORKSPACE_DISABLED: Boolean(workspace.disabled === true).toString(),
         }
       });
     }
@@ -99,6 +102,13 @@ async function main() {
       isWorkspace: true,
       folders: 2,
       config: 'config'
+    },
+    // This folder has validation disabled in setting by default.
+    {
+      path: './folder-with-config',
+      resources: 1,
+      config: 'remote',
+      disabled: true,
     },
   ];
 
