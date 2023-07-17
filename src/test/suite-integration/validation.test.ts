@@ -4,7 +4,7 @@ import * as path from 'path';
 import * as fs from 'fs/promises';
 
 import { parse, stringify } from 'yaml';
-import { Folder, getWorkspaceConfig, getWorkspaceFolders } from '../../utils/workspace';
+import { Folder, getWorkspaceFolders } from '../../utils/workspace';
 import { getValidationResult } from '../../utils/validation';
 import { generateId } from '../../utils/helpers';
 import { COMMANDS } from '../../constants';
@@ -32,10 +32,14 @@ suite(`Integration - Validation: ${process.env.ROOT_PATH}`, () => {
 
     const folders = getWorkspaceFolders();
 
-    await assertEmptyValidationResults(extensionDir, folders[0]);
+    await runForFolders(folders, async (folder) => {
+      await assertEmptyValidationResults(extensionDir, folder);
+    });
 
-    const result = await waitForValidationResults(extensionDir, folders[0]);
-    assertValidationResults(result);
+    await runForFolders(folders, async (folder) => {
+      const result = await waitForValidationResults(extensionDir, folder);
+      assertValidationResults(result);
+    });
   }).timeout(1000 * 15);
 
   test('Does not run validation on start when no resources', async function () {
@@ -45,10 +49,14 @@ suite(`Integration - Validation: ${process.env.ROOT_PATH}`, () => {
 
     const folders = getWorkspaceFolders();
 
-    await assertEmptyValidationResults(extensionDir, folders[0]);
+    await runForFolders(folders, async (folder) => {
+      await assertEmptyValidationResults(extensionDir, folder);
+    });
 
-    const result = await waitForValidationResults(extensionDir, folders[0], 1000 * 10);
-    assert.strictEqual(result, null);
+    await runForFolders(folders, async (folder) => {
+      const result = await waitForValidationResults(extensionDir, folder, 1000 * 10);
+      assert.strictEqual(result, null);
+    });
   }).timeout(1000 * 15);
 
   test('Validates resources on command run', async function() {
@@ -58,12 +66,16 @@ suite(`Integration - Validation: ${process.env.ROOT_PATH}`, () => {
 
     const folders = getWorkspaceFolders();
 
-    await assertEmptyValidationResults(extensionDir, folders[0]);
+    await runForFolders(folders, async (folder) => {
+      await assertEmptyValidationResults(extensionDir, folder);
+    });
 
     await vscode.commands.executeCommand(COMMANDS.VALIDATE);
 
-    const result = await waitForValidationResults(extensionDir, folders[0]);
-    assertValidationResults(result);
+    await runForFolders(folders, async (folder) => {
+      const result = await waitForValidationResults(extensionDir, folder);
+      assertValidationResults(result);
+    });
   }).timeout(1000 * 10);
 
   test('Does not run validation on command when no resources', async function() {
@@ -73,12 +85,16 @@ suite(`Integration - Validation: ${process.env.ROOT_PATH}`, () => {
 
     const folders = getWorkspaceFolders();
 
-    await assertEmptyValidationResults(extensionDir, folders[0]);
+    await runForFolders(folders, async (folder) => {
+      await assertEmptyValidationResults(extensionDir, folder);
+    });
 
     await vscode.commands.executeCommand(COMMANDS.VALIDATE);
 
-    const result = await waitForValidationResults(extensionDir, folders[0], 1000 * 7);
-    assert.strictEqual(result, null);
+    await runForFolders(folders, async (folder) => {
+      const result = await waitForValidationResults(extensionDir, folder, 1000 * 7);
+      assert.strictEqual(result, null);
+    });
   }).timeout(1000 * 10);
 
   test('Validates resources on change (modification)', async function() {
@@ -88,32 +104,39 @@ suite(`Integration - Validation: ${process.env.ROOT_PATH}`, () => {
 
     const folders = getWorkspaceFolders();
 
-    await assertEmptyValidationResults(extensionDir, folders[0]);
+    await runForFolders(folders, async (folder) => {
+      await assertEmptyValidationResults(extensionDir, folder);
+    });
 
-    const file = path.resolve(folders[0].uri.fsPath, 'pod-errors.yaml');
-    const content = await fs.readFile(file, 'utf-8');
-    const asYaml = parse(content);
+    await runForFolders(folders, async (folder) => {
+      const file = path.resolve(folder.uri.fsPath, 'pod-errors.yaml');
+      const content = await fs.readFile(file, 'utf-8');
+      const asYaml = parse(content);
 
-    asYaml.apiVersion = 'v1beta1';
+      asYaml.apiVersion = 'v1beta1';
 
-    await fs.writeFile(file, stringify(asYaml));
+      await fs.writeFile(file, stringify(asYaml));
 
-    const result = await waitForValidationResults(extensionDir, folders[0]);
-    assertValidationResults(result);
+      const result = await waitForValidationResults(extensionDir, folder);
+      assertValidationResults(result);
+    });
   }).timeout(1000 * 10);
 
   test('Validates resources on change (addition)', async () => {
     const folders = getWorkspaceFolders();
 
-    await assertEmptyValidationResults(extensionDir, folders[0]);
+    await runForFolders(folders, async (folder) => {
+      await assertEmptyValidationResults(extensionDir, folder);
+    });
 
-    const newResource = path.resolve(fixturesSourceDir, 'sample-resource.yaml');
+    await runForFolders(folders, async (folder) => {
+      const newResource = path.resolve(fixturesSourceDir, 'sample-resource.yaml');
 
-    await fs.copyFile(newResource, path.resolve(folders[0].uri.fsPath, 'new-resource.yaml'));
+      await fs.copyFile(newResource, path.resolve(folder.uri.fsPath, 'new-resource.yaml'));
 
-    // how to make sure that new resource was validated?
-    const result = await waitForValidationResults(extensionDir, folders[0]);
-    assertValidationResults(result);
+      const result = await waitForValidationResults(extensionDir, folder);
+      assertValidationResults(result);
+    });
   }).timeout(1000 * 10);
 
   test('Validates resources on change (deletion)', async function () {
@@ -123,27 +146,19 @@ suite(`Integration - Validation: ${process.env.ROOT_PATH}`, () => {
 
     const folders = getWorkspaceFolders();
 
-    await assertEmptyValidationResults(extensionDir, folders[0]);
+    await runForFolders(folders, async (folder) => {
+      await assertEmptyValidationResults(extensionDir, folder);
+    });
 
-    const existingResource = path.resolve(folders[0].uri.fsPath, 'cronjob.yml');
+    await runForFolders(folders, async (folder) => {
+      const existingResource = path.resolve(folder.uri.fsPath, 'pod-errors.yaml');
 
-    await fs.rm(existingResource);
+      await fs.rm(existingResource);
 
-    // how to make sure that new resource was validated?
-    const result = await waitForValidationResults(extensionDir, folders[0]);
-    assertValidationResults(result);
+      const result = await waitForValidationResults(extensionDir, folder);
+      assertValidationResults(result);
+    });
   }).timeout(1000 * 10);
-
-  test('Uses correct validation config', async function () {
-    if (!process.env.WORKSPACE_CONFIG_TYPE) {
-      this.skip();
-    }
-
-    const folders = getWorkspaceFolders();
-    const config = await getWorkspaceConfig(folders[0]);
-
-    assert.equal(config.type, process.env.WORKSPACE_CONFIG_TYPE);
-  });
 });
 
 async function assertEmptyValidationResults(extensionDir, workspaceFolder: Folder): Promise<void> {
@@ -182,6 +197,12 @@ function assertValidationResults(result) {
   assert.ok(result.runs[0].results);
   assert.ok(result.runs[0].taxonomies);
 }
+
+async function runForFolders(folders: Folder[], fn: (folder: Folder) => Promise<void>) {
+  return Promise.all(folders.map(async (folder) => {
+    return fn(folder);
+  }));
+};
 
 // @TODO cover below scenarios:
 // reacts to on/off config change

@@ -1,6 +1,6 @@
-import * as cp from 'child_process';
-import * as path from 'path';
-import * as fs from 'fs/promises';
+import { spawnSync } from 'child_process';
+import { resolve } from 'path';
+import { rm, mkdir, cp } from 'fs/promises';
 import { downloadAndUnzipVSCode, resolveCliArgsFromVSCodeExecutablePath, runTests } from '@vscode/test-electron';
 
 type TestWorkspace = {
@@ -17,22 +17,22 @@ async function runSuite(testFile: string, workspaces: TestWorkspace[]) {
   try {
     // The folder containing the Extension Manifest package.json
     // Passed to `--extensionDevelopmentPath`
-    const extensionDevelopmentPath = path.resolve(__dirname, '../../');
+    const extensionDevelopmentPath = resolve(__dirname, '../../');
 
     // The path to test runner
     // Passed to --extensionTestsPath
-    const extensionTestsPath = path.resolve(__dirname, testFile);
+    const extensionTestsPath = resolve(__dirname, testFile);
 
     // Test fixtures
-    const testTmpDir = path.resolve(__dirname, './tmp');
-    const fixturesDestDir = path.resolve(testTmpDir, './fixtures');
-    const fixturesSourceDir = path.resolve(extensionDevelopmentPath, './src/test/fixtures');
+    const testTmpDir = resolve(__dirname, './tmp');
+    const fixturesDestDir = resolve(testTmpDir, './fixtures');
+    const fixturesSourceDir = resolve(extensionDevelopmentPath, './src/test/fixtures');
 
     const vscodeExecutablePath = await downloadAndUnzipVSCode('stable');
     const [cliPath, ...args] = resolveCliArgsFromVSCodeExecutablePath(vscodeExecutablePath);
 
     // Use cp.spawn / cp.exec for custom setup
-    cp.spawnSync(
+    spawnSync(
       cliPath,
       [...args, '--install-extension', 'ms-sarifvscode.sarif-viewer@3.3.8'],
       {
@@ -44,11 +44,11 @@ async function runSuite(testFile: string, workspaces: TestWorkspace[]) {
     for (const workspace of workspaces) {
       currentWorkspace = workspace;
 
-      await fs.rm(testTmpDir, { recursive: true, force: true });
-      await fs.mkdir(testTmpDir, { recursive: true });
-      await fs.cp(fixturesSourceDir, fixturesDestDir, { recursive: true });
+      await rm(testTmpDir, { recursive: true, force: true });
+      await mkdir(testTmpDir, { recursive: true });
+      await cp(fixturesSourceDir, fixturesDestDir, { recursive: true });
 
-      const testWorkspace = path.resolve(fixturesDestDir, workspace.path);
+      const testWorkspace = resolve(fixturesDestDir, workspace.path);
 
       console.log('Running tests for workspace:', testWorkspace);
 
@@ -77,7 +77,7 @@ async function runSuite(testFile: string, workspaces: TestWorkspace[]) {
     console.error(`Failed to run tests from ${testFile}`, currentWorkspace, err);
     process.exit(1);
   } finally {
-    await fs.rm(path.resolve(__dirname, './tmp'), { recursive: true, force: true });
+    await rm(resolve(__dirname, './tmp'), { recursive: true, force: true });
   }
 }
 
@@ -85,7 +85,7 @@ async function main() {
   const workspaces = [
     {
       path: './folder-with-resources',
-      resources: 1,
+      resources: 2,
       config: 'default',
     },
     {
@@ -95,7 +95,7 @@ async function main() {
     },
     {
       path: './workspace-1/workspace-1.code-workspace',
-      resources: 2,
+      resources: 3,
       isWorkspace: true,
       folders: 2,
       config: 'config'
