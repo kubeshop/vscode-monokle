@@ -1,9 +1,13 @@
 import { ok } from 'assert';
 import { commands } from 'vscode';
-import { doSetup, doSuiteTeardown } from '../helpers/suite';
+import { doSetup, doSuiteSetup, doSuiteTeardown } from '../helpers/suite';
 import { COMMANDS } from '../../constants';
 
 suite(`Basic - Commands: ${process.env.ROOT_PATH}`, () => {
+  suiteSetup(async () => {
+    await doSuiteSetup();
+  });
+
   setup(async () => {
     await doSetup();
   });

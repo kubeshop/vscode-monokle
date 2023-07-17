@@ -1,8 +1,12 @@
 import { equal } from 'assert';
 import { getWorkspaceConfig, getWorkspaceFolders } from '../../utils/workspace';
-import { doSetup, doSuiteTeardown } from '../helpers/suite';
+import { doSetup, doSuiteSetup, doSuiteTeardown } from '../helpers/suite';
 
 suite(`Integration - Config: ${process.env.ROOT_PATH}`, () => {
+  suiteSetup(async () => {
+    await doSuiteSetup();
+  });
+
   setup(async () => {
     await doSetup();
   });

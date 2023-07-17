@@ -8,12 +8,16 @@ import { Folder, getWorkspaceFolders } from '../../utils/workspace';
 import { getValidationResult } from '../../utils/validation';
 import { generateId } from '../../utils/helpers';
 import { COMMANDS } from '../../constants';
-import { doSetup, doSuiteTeardown } from '../helpers/suite';
+import { doSetup, doSuiteSetup, doSuiteTeardown } from '../helpers/suite';
 
 suite(`Integration - Validation: ${process.env.ROOT_PATH}`, () => {
   const extensionDir = process.env.EXTENSION_DIR;
   const fixturesSourceDir = process.env.FIXTURES_SOURCE_DIR;
   const initialResources = parseInt(process.env.WORKSPACE_RESOURCES ?? '0', 10);
+
+  suiteSetup(async () => {
+    await doSuiteSetup();
+  });
 
   setup(async () => {
     await doSetup();
