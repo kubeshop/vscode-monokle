@@ -110,8 +110,8 @@
     "watch": "rimraf out && tsc -watch -p ./",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
-    "test": "concurrently -s last -k \"npm run test:server\" \"node ./out/test/run-test.js\"",
-    "test:cc": "concurrently -s last -k \"npm run test:server\" \"c8 node ./out/test/run-test.js\"",
+    "test": "concurrently -s command-1 -k \"npm run test:server\" \"node ./out/test/run-test.js\"",
+    "test:cc": "concurrently -s command-1 -k \"npm run test:server\" \"c8 node ./out/test/run-test.js\"",
     "test:server": "node ./out/test/run-server.js"
   },
   "devDependencies": {
