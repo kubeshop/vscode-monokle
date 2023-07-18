@@ -1,4 +1,4 @@
 {
     "monokle.enabled": false,
-    "monokle.remotePolicyUrl": "https://api.monokle.io"
+    "monokle.remotePolicyUrl": "http://localhost:5000"
 }

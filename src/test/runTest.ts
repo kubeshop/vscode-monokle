@@ -115,6 +115,9 @@ async function main() {
   // Run basic tests on single workspace.
   await runSuite('./suite-basic/index', [workspaces[0]]);
 
+  // Run policies tests on single repo.
+  await runSuite('./suite-policies/index', [workspaces[3]]);
+
   // Run integration-like tests on multiple, different workspaces.
   await runSuite('./suite-integration/index', workspaces);
 }
