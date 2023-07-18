@@ -107,7 +107,3 @@ export function startMockServer(host = '0.0.0.0', port = 5000): Promise<Server> 
     });
   });
 }
-
-if (process.env.MOCK_SERVER) {
-  startMockServer();
-}
