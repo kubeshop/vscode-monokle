@@ -112,7 +112,8 @@
     "lint": "eslint src --ext ts",
     "test": "concurrently -s command-1 -k \"npm run test:server\" \"node ./out/test/run-test.js\"",
     "test:cc": "concurrently -s command-1 -k \"npm run test:server\" \"c8 node ./out/test/run-test.js\"",
-    "test:server": "node ./out/test/run-server.js"
+    "test:server": "node ./out/test/run-server.js",
+    "test:ensure-coverage": "npx c8 check-coverage --lines 80 --functions 80 --branches 70 --statements 80"
   },
   "devDependencies": {
     "@graphql-tools/mock": "^9.0.0",

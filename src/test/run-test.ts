@@ -1,5 +1,5 @@
 import { spawnSync } from 'child_process';
-import { normalize, resolve } from 'path';
+import { resolve } from 'path';
 import { rm, mkdir, cp } from 'fs/promises';
 import { downloadAndUnzipVSCode, resolveCliArgsFromVSCodeExecutablePath, runTests } from '@vscode/test-electron';
 
