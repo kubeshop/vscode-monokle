@@ -5,6 +5,8 @@ import { Resource, extractK8sResources } from './extract';
 import { clearResourceCache, getDefaultConfig, getValidationResultPath, readConfig, validateFolder } from './validation';
 import { generateId } from './helpers';
 import { SETTINGS, DEFAULT_CONFIG_FILE_NAME, REMOTE_POLICY_FILE_SUFFIX } from '../constants';
+import { isGitRepo } from './git';
+import { raiseWarning } from './errors';
 import logger from '../utils/logger';
 import globals from '../utils/globals';
 import type { WorkspaceFolder } from 'vscode';
@@ -43,18 +45,23 @@ export async function getWorkspaceResources(workspaceFolder: Folder) {
 export async function getWorkspaceConfig(workspaceFolder: Folder): Promise<WorkspaceFolderConfig> {
   const remotePolicyUrl = workspace.getConfiguration(SETTINGS.NAMESPACE).get<string>(SETTINGS.REMOTE_POLICY_URL);
   if (remotePolicyUrl) {
-    const configData = await getWorkspaceRemoteConfig(workspaceFolder);
-    return {
-      type: 'remote',
-      config: configData,
-      owner: workspaceFolder,
-      isValid: configData !== undefined,
-      path: normalize(join(globals.storagePath, `${workspaceFolder.id}${REMOTE_POLICY_FILE_SUFFIX}`)),
-      fileName: `${workspaceFolder.id}${REMOTE_POLICY_FILE_SUFFIX}`,
-    };
+    // If given folder is not a git repo, we want to fallback to other options.
+    const gitRepo = await isGitRepo(workspaceFolder.uri.fsPath);
+    if (!gitRepo) {
+      raiseWarning(`The '${workspaceFolder.name}' folder is not a git repository. Instead of remote, local configuration will be used for validation.`);
+    } else {
+      const configData = await getWorkspaceRemoteConfig(workspaceFolder);
+      return {
+        type: 'remote',
+        config: configData,
+        owner: workspaceFolder,
+        isValid: configData !== undefined,
+        path: normalize(join(globals.storagePath, `${workspaceFolder.id}${REMOTE_POLICY_FILE_SUFFIX}`)),
+        fileName: `${workspaceFolder.id}${REMOTE_POLICY_FILE_SUFFIX}`,
+      };
+    }
   }
 
-  const currentDir = __dirname;
   const settingsConfigurationPath = workspace.getConfiguration(SETTINGS.NAMESPACE).get<string>(SETTINGS.CONFIGURATION_PATH);
   if (settingsConfigurationPath) {
     const configPath = normalize(settingsConfigurationPath);

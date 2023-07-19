@@ -1,11 +1,12 @@
 import { getWorkspaceFolders } from './workspace';
-import { getRepoRemoteData } from './git';
+import { getRepoRemoteData, isGitRepo } from './git';
 import { getPolicy, getUser } from './api';
 import { removeConfig, saveConfig } from './validation';
 import { REMOTE_POLICY_FILE_SUFFIX } from '../constants';
 import logger from './logger';
 import globals from './globals';
 import type { Folder } from './workspace';
+import { raiseError } from './errors';
 
 const REFETCH_POLICY_INTERVAL_MS = 1000 * 30;
 
@@ -73,12 +74,24 @@ export class PolicyPuller {
     logger.log('userData', userData);
 
     if (!userData) {
+      raiseError(
+        'Cannot fetch user data, make sure you are authenticated and have internet access.'
+      );
       return;
     }
 
     for (const folder of roots) {
+      const gitRepo = await isGitRepo(folder.uri.fsPath);
+      if (!gitRepo) {
+        // Skip if folder is not a git repo. Warning will be shown by 'workspace.getWorkspaceConfig()' call.
+        continue;
+      }
+
       const repoData = await getRepoRemoteData(folder.uri.fsPath);
       if (!repoData) {
+        raiseError(
+          `The '${folder.name}' repository does not have any remotes. Remote policy cannot be fetched for such folder. Resources will not be validated.`
+        );
         continue;
       }
 
@@ -95,6 +108,9 @@ export class PolicyPuller {
       logger.log('repoId', folder.name, repoData, repoMainProject, repoFirstProject);
 
       if (!repoProject) {
+        raiseError(
+          `The '${folder.name}' repository does not belong to any project in Monokle Cloud. Remote policy cannot be fetched for such folder. Resources will not be validated.`
+        );
         continue;
       }
 
@@ -103,6 +119,9 @@ export class PolicyPuller {
       logger.log('repoPolicy', repoPolicy);
 
       if (!repoPolicy) {
+        raiseError(
+          `The '${folder.name}' repository owner project does not have policy defined. Resources will not be validated.`
+        );
         continue;
       }
 

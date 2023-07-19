@@ -2,7 +2,9 @@ import { workspace } from 'vscode';
 import normalizeUrl from 'normalize-url';
 import fetch from 'node-fetch';
 import { SETTINGS } from '../constants';
+import { raiseError } from './errors';
 import logger from './logger';
+
 
 type UserProjectRepo = {
   id: string;
@@ -94,7 +96,8 @@ async function queryApi(query: string, token: string, variables = {}) {
   const apiUrl = workspace.getConfiguration(SETTINGS.NAMESPACE).get<boolean>(SETTINGS.REMOTE_POLICY_URL);
 
   if (!apiUrl) {
-    // log error as this should not happen, we only should use this helper when remote policy is enabled
+    // Log error as this should not happen, we only should use this helper when remote policy is enabled.
+    logger.error('Trying to use \'queryApi\' despite remote policy not being configured.');
     return undefined;
   }
 
@@ -117,7 +120,9 @@ async function queryApi(query: string, token: string, variables = {}) {
   logger.log('response', response.status, response.statusText);
 
   if (!response.ok) {
-    logger.error(`Error fetching data from ${apiEndpointUrl}: ${response.statusText}`);
+    raiseError(
+      `Connection error. Cannot fetch data from ${apiEndpointUrl}. Error '${response.statusText}' (${response.status}).`
+    );
     return undefined;
 }
 

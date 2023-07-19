@@ -71,7 +71,6 @@ export async function validateFolder(root: Folder): Promise<Uri | null> {
   const workspaceConfig = await getWorkspaceConfig(root);
 
   if (workspaceConfig.isValid === false) {
-    // Notification promise resolves only after interaction with it (like closing) so we don't want to wait for it.
     raiseInvalidConfigError(workspaceConfig, root);
     return null;
   }
