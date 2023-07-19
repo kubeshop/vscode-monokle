@@ -119,7 +119,7 @@ async function main() {
   await runSuite('./suite-policies/index', [workspaces[3]]);
 
   // Run integration-like tests on multiple, different workspaces.
-  await runSuite('./suite-integration/index', [workspaces[2]]);
+  await runSuite('./suite-integration/index', workspaces);
 }
 
 main();

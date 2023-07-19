@@ -23,10 +23,8 @@ suite(`Integration - Validation: ${process.env.ROOT_PATH}`, () => {
 
     if (process.env.WORKSPACE_CONFIG_TYPE === 'config') {
       // Make sure 'monokle.configurationPath' uses absolute path.
-      const repoDir = process.cwd();
-      const fixturesDir = path.join(repoDir, 'out', 'test', 'tmp', 'fixtures');
-      const configFile = path.resolve(fixturesDir, vscode.workspace.getConfiguration('monokle').get('configurationPath'));
-
+      const configFile = path.resolve(path.join(__dirname, '..', 'tmp', 'fixtures', vscode.workspace.getConfiguration('monokle').get('configurationPath')));
+      console.log('Setting config file to', configFile);
       await vscode.workspace.getConfiguration('monokle').update('configurationPath', configFile, vscode.ConfigurationTarget.Workspace);
     }
   });
