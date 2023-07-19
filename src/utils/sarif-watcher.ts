@@ -14,6 +14,16 @@ export class SarifWatcher {
     }
   }
 
+  async remove(uri: Uri) {
+    const index = this._uris.findIndex(u => u.path === uri.path);
+
+    if (index !== -1) {
+      const sarifApi = await this.getSarifApi();
+      this._uris.splice(index, 1);
+      return sarifApi.closeLogs([uri]);
+    }
+  }
+
   async replace(uris: Uri[]) {
     const removed = this._uris.filter(u => !uris.find(u2 => u2.path === u.path));
     const added = uris.filter(u => !this._uris.find(u2 => u2.path === u.path));

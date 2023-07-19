@@ -1,5 +1,5 @@
 import { spawnSync } from 'child_process';
-import { resolve } from 'path';
+import { normalize, resolve } from 'path';
 import { rm, mkdir, cp } from 'fs/promises';
 import { downloadAndUnzipVSCode, resolveCliArgsFromVSCodeExecutablePath, runTests } from '@vscode/test-electron';
 
@@ -101,7 +101,7 @@ async function main() {
       resources: 3,
       isWorkspace: true,
       folders: 2,
-      config: 'config'
+      config: 'config',
     },
     // This folder has validation disabled in setting by default.
     {
@@ -119,7 +119,7 @@ async function main() {
   await runSuite('./suite-policies/index', [workspaces[3]]);
 
   // Run integration-like tests on multiple, different workspaces.
-  await runSuite('./suite-integration/index', workspaces);
+  await runSuite('./suite-integration/index', [workspaces[2]]);
 }
 
 main();

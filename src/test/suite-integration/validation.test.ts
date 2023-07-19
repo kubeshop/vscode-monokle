@@ -6,12 +6,10 @@ import * as fs from 'fs/promises';
 import { parse, stringify } from 'yaml';
 import { Folder, getWorkspaceFolders } from '../../utils/workspace';
 import { getValidationResult } from '../../utils/validation';
-import { generateId } from '../../utils/helpers';
 import { COMMANDS } from '../../constants';
 import { doSetup, doSuiteSetup, doSuiteTeardown } from '../helpers/suite';
 
 suite(`Integration - Validation: ${process.env.ROOT_PATH}`, () => {
-  const extensionDir = process.env.EXTENSION_DIR;
   const fixturesSourceDir = process.env.FIXTURES_SOURCE_DIR;
   const initialResources = parseInt(process.env.WORKSPACE_RESOURCES ?? '0', 10);
   const isDisabled = process.env.WORKSPACE_DISABLED === 'true';
@@ -21,6 +19,15 @@ suite(`Integration - Validation: ${process.env.ROOT_PATH}`, () => {
 
     if (isDisabled) {
       this.skip();
+    }
+
+    if (process.env.WORKSPACE_CONFIG_TYPE === 'config') {
+      // Make sure 'monokle.configurationPath' uses absolute path.
+      const repoDir = process.cwd();
+      const fixturesDir = path.join(repoDir, 'out', 'test', 'tmp', 'fixtures');
+      const configFile = path.resolve(fixturesDir, vscode.workspace.getConfiguration('monokle').get('configurationPath'));
+
+      await vscode.workspace.getConfiguration('monokle').update('configurationPath', configFile, vscode.ConfigurationTarget.Workspace);
     }
   });
 
@@ -42,11 +49,11 @@ suite(`Integration - Validation: ${process.env.ROOT_PATH}`, () => {
     const folders = getWorkspaceFolders();
 
     await runForFolders(folders, async (folder) => {
-      await assertEmptyValidationResults(extensionDir, folder);
+      await assertEmptyValidationResults(folder);
     });
 
     await runForFolders(folders, async (folder) => {
-      const result = await waitForValidationResults(extensionDir, folder);
+      const result = await waitForValidationResults(folder);
       assertValidationResults(result);
     });
   }).timeout(1000 * 15);
@@ -59,11 +66,11 @@ suite(`Integration - Validation: ${process.env.ROOT_PATH}`, () => {
     const folders = getWorkspaceFolders();
 
     await runForFolders(folders, async (folder) => {
-      await assertEmptyValidationResults(extensionDir, folder);
+      await assertEmptyValidationResults(folder);
     });
 
     await runForFolders(folders, async (folder) => {
-      const result = await waitForValidationResults(extensionDir, folder, 1000 * 10);
+      const result = await waitForValidationResults(folder, 1000 * 10);
       assert.strictEqual(result, null);
     });
   }).timeout(1000 * 15);
@@ -76,13 +83,13 @@ suite(`Integration - Validation: ${process.env.ROOT_PATH}`, () => {
     const folders = getWorkspaceFolders();
 
     await runForFolders(folders, async (folder) => {
-      await assertEmptyValidationResults(extensionDir, folder);
+      await assertEmptyValidationResults(folder);
     });
 
     await vscode.commands.executeCommand(COMMANDS.VALIDATE);
 
     await runForFolders(folders, async (folder) => {
-      const result = await waitForValidationResults(extensionDir, folder);
+      const result = await waitForValidationResults(folder);
       assertValidationResults(result);
     });
   }).timeout(1000 * 10);
@@ -95,13 +102,13 @@ suite(`Integration - Validation: ${process.env.ROOT_PATH}`, () => {
     const folders = getWorkspaceFolders();
 
     await runForFolders(folders, async (folder) => {
-      await assertEmptyValidationResults(extensionDir, folder);
+      await assertEmptyValidationResults(folder);
     });
 
     await vscode.commands.executeCommand(COMMANDS.VALIDATE);
 
     await runForFolders(folders, async (folder) => {
-      const result = await waitForValidationResults(extensionDir, folder, 1000 * 7);
+      const result = await waitForValidationResults(folder, 1000 * 7);
       assert.strictEqual(result, null);
     });
   }).timeout(1000 * 10);
@@ -114,7 +121,7 @@ suite(`Integration - Validation: ${process.env.ROOT_PATH}`, () => {
     const folders = getWorkspaceFolders();
 
     await runForFolders(folders, async (folder) => {
-      await assertEmptyValidationResults(extensionDir, folder);
+      await assertEmptyValidationResults(folder);
     });
 
     await runForFolders(folders, async (folder) => {
@@ -126,7 +133,7 @@ suite(`Integration - Validation: ${process.env.ROOT_PATH}`, () => {
 
       await fs.writeFile(file, stringify(asYaml));
 
-      const result = await waitForValidationResults(extensionDir, folder);
+      const result = await waitForValidationResults(folder);
       assertValidationResults(result);
     });
   }).timeout(1000 * 10);
@@ -135,7 +142,7 @@ suite(`Integration - Validation: ${process.env.ROOT_PATH}`, () => {
     const folders = getWorkspaceFolders();
 
     await runForFolders(folders, async (folder) => {
-      await assertEmptyValidationResults(extensionDir, folder);
+      await assertEmptyValidationResults(folder);
     });
 
     await runForFolders(folders, async (folder) => {
@@ -143,7 +150,7 @@ suite(`Integration - Validation: ${process.env.ROOT_PATH}`, () => {
 
       await fs.copyFile(newResource, path.resolve(folder.uri.fsPath, 'new-resource.yaml'));
 
-      const result = await waitForValidationResults(extensionDir, folder);
+      const result = await waitForValidationResults(folder);
       assertValidationResults(result);
     });
   }).timeout(1000 * 10);
@@ -156,7 +163,7 @@ suite(`Integration - Validation: ${process.env.ROOT_PATH}`, () => {
     const folders = getWorkspaceFolders();
 
     await runForFolders(folders, async (folder) => {
-      await assertEmptyValidationResults(extensionDir, folder);
+      await assertEmptyValidationResults(folder);
     });
 
     await runForFolders(folders, async (folder) => {
@@ -164,24 +171,24 @@ suite(`Integration - Validation: ${process.env.ROOT_PATH}`, () => {
 
       await fs.rm(existingResource);
 
-      const result = await waitForValidationResults(extensionDir, folder);
+      const result = await waitForValidationResults(folder);
       assertValidationResults(result);
     });
   }).timeout(1000 * 10);
 });
 
-async function assertEmptyValidationResults(extensionDir, workspaceFolder: Folder): Promise<void> {
-  const result = await getValidationResult(extensionDir, generateId(workspaceFolder.uri.fsPath));
+async function assertEmptyValidationResults(workspaceFolder: Folder): Promise<void> {
+  const result = await getValidationResult(workspaceFolder.id);
 
   assert.ok(result === null);
 }
 
-async function waitForValidationResults(extensionDir, workspaceFolder: Folder, timeoutMs?: number): Promise<any> {
+async function waitForValidationResults(workspaceFolder: Folder, timeoutMs?: number): Promise<any> {
   return new Promise((res) => {
     let timeoutId = null;
 
     const intervalId = setInterval(async () => {
-      const result = await getValidationResult(extensionDir, generateId(workspaceFolder.uri.fsPath));
+      const result = await getValidationResult(workspaceFolder.id);
 
       if (result) {
         clearInterval(intervalId);

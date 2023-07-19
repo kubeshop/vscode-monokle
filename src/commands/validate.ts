@@ -14,7 +14,7 @@ export function getValidateCommand(context: RuntimeContext) {
     const roots = getWorkspaceFolders();
 
     const resultFiles = (await Promise.all(roots.map(async (root) => {
-      return validateFolder(root, context.extensionContext);
+      return validateFolder(root);
     }))).filter(Boolean);
 
     context.isValidating = false;

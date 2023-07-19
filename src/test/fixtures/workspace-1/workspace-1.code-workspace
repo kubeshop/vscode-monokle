@@ -8,6 +8,6 @@
     }
   ],
   "settings": {
-    "monokle.configurationPath": "../sample-monokle.validation.yaml",
+    "monokle.configurationPath": "sample-monokle.validation.yaml",
   }
 }

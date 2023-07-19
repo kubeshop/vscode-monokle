@@ -1,5 +1,6 @@
 import { RelativePattern, Uri, workspace } from 'vscode';
-import { basename, join, normalize } from 'path';
+import { basename, join, normalize, resolve } from 'path';
+import { stat } from 'fs/promises';
 import { Resource, extractK8sResources } from './extract';
 import { clearResourceCache, getDefaultConfig, getValidationResultPath, readConfig, validateFolder } from './validation';
 import { generateId } from './helpers';
@@ -53,6 +54,7 @@ export async function getWorkspaceConfig(workspaceFolder: Folder): Promise<Works
     };
   }
 
+  const currentDir = __dirname;
   const settingsConfigurationPath = workspace.getConfiguration(SETTINGS.NAMESPACE).get<string>(SETTINGS.CONFIGURATION_PATH);
   if (settingsConfigurationPath) {
     const configPath = normalize(settingsConfigurationPath);
@@ -67,8 +69,9 @@ export async function getWorkspaceConfig(workspaceFolder: Folder): Promise<Works
     };
   }
 
-  const localConfig = await getWorkspaceLocalConfig(workspaceFolder);
-  if (localConfig) {
+  const hasLocal = await hasLocalConfig(workspaceFolder);
+  if (hasLocal) {
+    const localConfig = await getWorkspaceLocalConfig(workspaceFolder);
     return {
       type: 'file',
       config: localConfig,
@@ -102,15 +105,19 @@ export function initializeWorkspaceWatchers(workspaceFolders: Folder[], context:
   return workspaceFolders.map((folder) => {
     const pattern = new RelativePattern(folder.uri.fsPath, '**/*.{yaml,yml}');
     const watcher = workspace.createFileSystemWatcher(pattern);
-    const resultFile = getValidationResultPath(context.extensionContext.extensionPath, folder.id);
+    const resultFile = getValidationResultPath(folder.id);
 
     const revalidateFolder = async () => {
       logger.log('revalidateFolder', folder);
 
       context.isValidating = true;
 
-      await validateFolder(folder, context.extensionContext);
-      await context.sarifWatcher.add(Uri.file(resultFile));
+      const uri = await validateFolder(folder);
+      if (uri) {
+        await context.sarifWatcher.add(Uri.file(resultFile));
+      } else {
+        await context.sarifWatcher.remove(Uri.file(resultFile));
+      }
 
       context.isValidating = false;
     };
@@ -173,6 +180,16 @@ async function convertFilesToK8sResources(files: File[]): Promise<Resource[]> {
   }));
 
   return extractK8sResources(filesWithContent);
+}
+
+async function hasLocalConfig(workspaceFolder: Folder) {
+  const configPath = normalize(join(workspaceFolder.uri.fsPath, DEFAULT_CONFIG_FILE_NAME));
+  try {
+    await stat(configPath);
+    return true;
+  } catch (e) {
+    return false;
+  }
 }
 
 async function getWorkspaceLocalConfig(workspaceFolder: Folder) {

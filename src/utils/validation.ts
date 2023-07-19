@@ -1,13 +1,13 @@
 import { mkdir, readFile, unlink, writeFile } from 'fs/promises';
 import { join, normalize } from 'path';
 import { platform } from 'os';
-import { Uri } from 'vscode';
+import { Uri, workspace } from 'vscode';
 import { Document } from 'yaml';
 import { getWorkspaceConfig, getWorkspaceResources } from './workspace';
-import { STORAGE_DIR_NAME, VALIDATION_FILE_SUFFIX, DEFAULT_CONFIG_FILE_NAME, TMP_POLICY_FILE_SUFFIX } from '../constants';
+import { VALIDATION_FILE_SUFFIX, DEFAULT_CONFIG_FILE_NAME, TMP_POLICY_FILE_SUFFIX } from '../constants';
+import { raiseInvalidConfigError } from './errors';
 import logger from '../utils/logger';
 import globals from './globals';
-import type { ExtensionContext } from 'vscode';
 import type { Folder } from './workspace';
 
 export type ConfigurableValidator = {
@@ -57,7 +57,7 @@ export async function getValidator(validatorId: string, config?: any) {
   return validator;
 }
 
-export async function validateFolder(root: Folder, context: ExtensionContext) {
+export async function validateFolder(root: Folder): Promise<Uri | null> {
   const resources = await getWorkspaceResources(root);
 
   logger.log(root.name, 'resources');
@@ -69,6 +69,12 @@ export async function validateFolder(root: Folder, context: ExtensionContext) {
   resources.forEach(resource => logger.log(resource.id, resource.name, resource.content));
 
   const workspaceConfig = await getWorkspaceConfig(root);
+
+  if (workspaceConfig.isValid === false) {
+    // Notification promise resolves only after interaction with it (like closing) so we don't want to wait for it.
+    raiseInvalidConfigError(workspaceConfig, root);
+    return null;
+  }
 
   logger.log(root.name, 'workspaceConfig', workspaceConfig);
 
@@ -92,16 +98,15 @@ export async function validateFolder(root: Folder, context: ExtensionContext) {
     });
   });
 
-  const resultsFilePath = await saveValidationResults(result, context.extensionPath, root.id);
+  const resultsFilePath = await saveValidationResults(result, root.id);
 
   logger.log(root.name, 'resultsFilePath', resultsFilePath);
 
   return Uri.file(resultsFilePath);
 }
 
-export async function getValidationResult(folderPath: string, fileName: string) {
-  const sharedStorageDir = normalize(join(folderPath, STORAGE_DIR_NAME));
-  const filePath = normalize(join(sharedStorageDir, `${fileName}${VALIDATION_FILE_SUFFIX}`));
+export async function getValidationResult(fileName: string) {
+  const filePath = getValidationResultPath(fileName);
 
   try {
     const resultsAsString = await readFile(filePath, 'utf8');
@@ -111,21 +116,19 @@ export async function getValidationResult(folderPath: string, fileName: string) 
   }
 }
 
-export async function saveValidationResults(results: any, folderPath: string, fileName: string) {
-  const sharedStorageDir = normalize(join(folderPath, STORAGE_DIR_NAME));
-
-  await mkdir(sharedStorageDir, { recursive: true });
+export async function saveValidationResults(results: any, fileName: string) {
+  await mkdir(globals.storagePath, { recursive: true });
 
   const resultsAsString = JSON.stringify(results);
-  const filePath = normalize(join(sharedStorageDir, `${fileName}${VALIDATION_FILE_SUFFIX}`));
+  const filePath = getValidationResultPath(fileName);
 
   await writeFile(filePath, resultsAsString);
 
   return filePath;
 }
 
-export function getValidationResultPath(folderPath: string, fileName: string) {
-  return normalize(join(folderPath, STORAGE_DIR_NAME, `${fileName}${VALIDATION_FILE_SUFFIX}`));
+export function getValidationResultPath(fileName: string) {
+  return normalize(join(globals.storagePath, `${fileName}${VALIDATION_FILE_SUFFIX}`));
 }
 
 export async function createTemporaryConfigFile(config: any, ownerRoot: Folder) {
