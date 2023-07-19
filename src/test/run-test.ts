@@ -3,6 +3,13 @@ import { resolve } from 'path';
 import { rm, mkdir, cp } from 'fs/promises';
 import { downloadAndUnzipVSCode, resolveCliArgsFromVSCodeExecutablePath, runTests } from '@vscode/test-electron';
 
+// @TODO missing scenarios:
+// revalidates resources when validation config file changed
+// does not run when turned off
+// shows notifications for invalid config
+// does not run validation when config is invalid
+// revalidates resources correctly when workspace root added/deleted
+
 type TestWorkspace = {
   path: string;
   resources: number;

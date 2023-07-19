@@ -1,13 +1,12 @@
-import * as assert from 'assert';
-import * as vscode from 'vscode';
-import * as path from 'path';
-import * as fs from 'fs/promises';
-
+import { strictEqual } from 'assert';
+import { workspace, commands, ConfigurationTarget } from 'vscode';
+import { resolve, join} from 'path';
+import { readFile, writeFile, copyFile, rm } from 'fs/promises';
 import { parse, stringify } from 'yaml';
-import { Folder, getWorkspaceFolders } from '../../utils/workspace';
-import { getValidationResult } from '../../utils/validation';
+import { getWorkspaceFolders } from '../../utils/workspace';
 import { COMMANDS } from '../../constants';
-import { doSetup, doSuiteSetup, doSuiteTeardown } from '../helpers/suite';
+import { doSetup, doSuiteSetup, doSuiteTeardown, runForFolders } from '../helpers/suite';
+import { assertEmptyValidationResults, assertValidationResults, waitForValidationResults } from '../helpers/asserts';
 
 suite(`Integration - Validation: ${process.env.ROOT_PATH}`, () => {
   const fixturesSourceDir = process.env.FIXTURES_SOURCE_DIR;
@@ -23,9 +22,9 @@ suite(`Integration - Validation: ${process.env.ROOT_PATH}`, () => {
 
     if (process.env.WORKSPACE_CONFIG_TYPE === 'config') {
       // Make sure 'monokle.configurationPath' uses absolute path.
-      const configFile = path.resolve(path.join(__dirname, '..', 'tmp', 'fixtures', vscode.workspace.getConfiguration('monokle').get('configurationPath')));
+      const configFile = resolve(join(__dirname, '..', 'tmp', 'fixtures', workspace.getConfiguration('monokle').get('configurationPath')));
       console.log('Setting config file to', configFile);
-      await vscode.workspace.getConfiguration('monokle').update('configurationPath', configFile, vscode.ConfigurationTarget.Workspace);
+      await workspace.getConfiguration('monokle').update('configurationPath', configFile, ConfigurationTarget.Workspace);
     }
   });
 
@@ -69,7 +68,7 @@ suite(`Integration - Validation: ${process.env.ROOT_PATH}`, () => {
 
     await runForFolders(folders, async (folder) => {
       const result = await waitForValidationResults(folder, 1000 * 10);
-      assert.strictEqual(result, null);
+      strictEqual(result, null);
     });
   }).timeout(1000 * 15);
 
@@ -84,7 +83,7 @@ suite(`Integration - Validation: ${process.env.ROOT_PATH}`, () => {
       await assertEmptyValidationResults(folder);
     });
 
-    await vscode.commands.executeCommand(COMMANDS.VALIDATE);
+    await commands.executeCommand(COMMANDS.VALIDATE);
 
     await runForFolders(folders, async (folder) => {
       const result = await waitForValidationResults(folder);
@@ -103,11 +102,11 @@ suite(`Integration - Validation: ${process.env.ROOT_PATH}`, () => {
       await assertEmptyValidationResults(folder);
     });
 
-    await vscode.commands.executeCommand(COMMANDS.VALIDATE);
+    await commands.executeCommand(COMMANDS.VALIDATE);
 
     await runForFolders(folders, async (folder) => {
       const result = await waitForValidationResults(folder, 1000 * 7);
-      assert.strictEqual(result, null);
+      strictEqual(result, null);
     });
   }).timeout(1000 * 10);
 
@@ -123,13 +122,13 @@ suite(`Integration - Validation: ${process.env.ROOT_PATH}`, () => {
     });
 
     await runForFolders(folders, async (folder) => {
-      const file = path.resolve(folder.uri.fsPath, 'pod-errors.yaml');
-      const content = await fs.readFile(file, 'utf-8');
+      const file = resolve(folder.uri.fsPath, 'pod-errors.yaml');
+      const content = await readFile(file, 'utf-8');
       const asYaml = parse(content);
 
       asYaml.apiVersion = 'v1beta1';
 
-      await fs.writeFile(file, stringify(asYaml));
+      await writeFile(file, stringify(asYaml));
 
       const result = await waitForValidationResults(folder);
       assertValidationResults(result);
@@ -144,9 +143,9 @@ suite(`Integration - Validation: ${process.env.ROOT_PATH}`, () => {
     });
 
     await runForFolders(folders, async (folder) => {
-      const newResource = path.resolve(fixturesSourceDir, 'sample-resource.yaml');
+      const newResource = resolve(fixturesSourceDir, 'sample-resource.yaml');
 
-      await fs.copyFile(newResource, path.resolve(folder.uri.fsPath, 'new-resource.yaml'));
+      await copyFile(newResource, resolve(folder.uri.fsPath, 'new-resource.yaml'));
 
       const result = await waitForValidationResults(folder);
       assertValidationResults(result);
@@ -165,64 +164,12 @@ suite(`Integration - Validation: ${process.env.ROOT_PATH}`, () => {
     });
 
     await runForFolders(folders, async (folder) => {
-      const existingResource = path.resolve(folder.uri.fsPath, 'pod-errors.yaml');
+      const existingResource = resolve(folder.uri.fsPath, 'pod-errors.yaml');
 
-      await fs.rm(existingResource);
+      await rm(existingResource);
 
       const result = await waitForValidationResults(folder);
       assertValidationResults(result);
     });
   }).timeout(1000 * 10);
 });
-
-async function assertEmptyValidationResults(workspaceFolder: Folder): Promise<void> {
-  const result = await getValidationResult(workspaceFolder.id);
-
-  assert.ok(result === null);
-}
-
-async function waitForValidationResults(workspaceFolder: Folder, timeoutMs?: number): Promise<any> {
-  return new Promise((res) => {
-    let timeoutId = null;
-
-    const intervalId = setInterval(async () => {
-      const result = await getValidationResult(workspaceFolder.id);
-
-      if (result) {
-        clearInterval(intervalId);
-        timeoutId && clearTimeout(timeoutId);
-        res(result);
-      }
-    }, 250);
-
-    if (timeoutMs) {
-      timeoutId = setTimeout(() => {
-        clearInterval(intervalId);
-        res(null);
-      }, timeoutMs);
-    }
-  });
-}
-
-function assertValidationResults(result) {
-  assert.ok(result);
-  assert.ok(result?.runs);
-  assert.ok(result.runs[0].tool);
-  assert.ok(result.runs[0].results);
-  assert.ok(result.runs[0].taxonomies);
-}
-
-async function runForFolders(folders: Folder[], fn: (folder: Folder) => Promise<void>) {
-  return Promise.all(folders.map(async (folder) => {
-    return fn(folder);
-  }));
-};
-
-// @TODO cover below scenarios:
-// reacts to on/off config change
-// revalidates resources when local validation config file changed
-// does not run when turned off
-//
-// @TODO Run above for multiple folders (single, workspace, with and without config, with global config)
-//
-// setting can be put in .vscode/settings.json file for folder or workspace file for workspace
