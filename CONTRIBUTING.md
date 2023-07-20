@@ -30,6 +30,14 @@ If you are in a GUI-less environment (like CI runner or WSL), you can use:
 xvfb-run -a npm run test
 ```
 
+For manual testing you can test in development mode by running `Watch and Run Extension` task. You can also pack and install the extension by running:
+
+```bash
+vsce package
+```
+
+And then using _Install from VSIX_ option in VSC.
+
 ## Releasing
 
 Releasing requires [`@vscode/vsce`](https://www.npmjs.com/package/@vscode/vsce) package installed.
