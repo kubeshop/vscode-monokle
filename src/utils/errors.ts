@@ -9,7 +9,7 @@ import type { WorkspaceFolderConfig, Folder } from './workspace';
 export type ErrorAction = {
   title: string,
   callback: () => void | Promise<void>
-}
+};
 
 export async function raiseInvalidConfigError(config: WorkspaceFolderConfig, owner: Folder) {
   let errorMsg: string;
