@@ -39,4 +39,5 @@ jobs:
       run: npm run pretest && npm run test:cc
 
     - name: Check Coverage
+      if: runner.os == 'Linux'
       run: npm run test:ensure-coverage
