@@ -1,12 +1,14 @@
+import normalizeUrl from 'normalize-url';
+import { env, Uri } from 'vscode';
 import { getWorkspaceFolders } from './workspace';
 import { getRepoRemoteData, isGitRepo } from './git';
 import { getPolicy, getUser } from './api';
 import { removeConfig, saveConfig } from './validation';
 import { REMOTE_POLICY_FILE_SUFFIX } from '../constants';
+import { raiseCannotGetPolicyError, raiseError } from './errors';
 import logger from './logger';
 import globals from './globals';
 import type { Folder } from './workspace';
-import { raiseError } from './errors';
 
 const REFETCH_POLICY_INTERVAL_MS = 1000 * 30;
 
@@ -73,7 +75,7 @@ export class PolicyPuller {
 
     logger.log('userData', userData);
 
-    if (!userData) {
+    if (!userData?.data?.me) {
       raiseError(
         'Cannot fetch user data, make sure you are authenticated and have internet access.'
       );
@@ -89,9 +91,7 @@ export class PolicyPuller {
 
       const repoData = await getRepoRemoteData(folder.uri.fsPath);
       if (!repoData) {
-        raiseError(
-          `The '${folder.name}' repository does not have any remotes. Remote policy cannot be fetched for such folder. Resources will not be validated.`
-        );
+        raiseCannotGetPolicyError(`The '${folder.name}' repository does not have any remotes.`);
         continue;
       }
 
@@ -108,8 +108,15 @@ export class PolicyPuller {
       logger.log('repoId', folder.name, repoData, repoMainProject, repoFirstProject);
 
       if (!repoProject) {
-        raiseError(
-          `The '${folder.name}' repository does not belong to any project in Monokle Cloud. Remote policy cannot be fetched for such folder. Resources will not be validated.`
+        const projectUrl = getMonokleCloudUrl(globals.remotePolicyUrl, `/dashboard/projects`);
+        raiseCannotGetPolicyError(
+          `The '${folder.name}' repository does not belong to any project in Monokle Cloud.`,
+          [{
+            title: 'Configure project',
+            callback: () => {
+              env.openExternal(Uri.parse(projectUrl));
+            }
+          }]
         );
         continue;
       }
@@ -118,16 +125,23 @@ export class PolicyPuller {
 
       logger.log('repoPolicy', repoPolicy);
 
-      if (!repoPolicy) {
-        raiseError(
-          `The '${folder.name}' repository owner project does not have policy defined. Resources will not be validated.`
+      const policyUrl = getMonokleCloudUrl(globals.remotePolicyUrl, `/dashboard/projects/${repoProject.project.slug}/policy`);
+      if (!repoPolicy?.data?.getProject?.policy) {
+        raiseCannotGetPolicyError(
+          `The '${folder.name}' repository project does not have policy defined.`,
+          [{
+            title: 'Configure policy',
+            callback: () => {
+              env.openExternal(Uri.parse(policyUrl));
+            }
+          }]
         );
         continue;
       }
 
       const commentBefore = [
-        ' This is remote validation configuration downloaded from Kubeshop Policy Server.',
-        ' To adjust it, log into your Kubeshop Policy Server and edit change XXX project policy.',
+        ` This is remote policy downloaded from ${globals.remotePolicyUrl}.`,
+        ` You can adjust it on ${policyUrl}.`,
       ].join('\n');
 
       saveConfig(
@@ -156,4 +170,16 @@ export class PolicyPuller {
       this.pull();
     }, REFETCH_POLICY_INTERVAL_MS);
   }
+}
+
+function getMonokleCloudUrl(urlBase: string, urlPath: string) {
+  if (urlBase.includes('.monokle.com')) {
+    return normalizeUrl(`https://app.monokle.com/${urlPath}`);
+  } else if (urlBase.includes('.monokle.io')) {
+    return normalizeUrl(`https://saas.monokle.io/${urlPath}`);
+  }
+
+  // For any custom base urls we just append the path.
+  // @TODO this might need adjustment in the future for self-hosted solutions.
+  return normalizeUrl(`${urlBase}/${urlPath}`);
 }

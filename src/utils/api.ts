@@ -5,6 +5,7 @@ import { SETTINGS } from '../constants';
 import { raiseError } from './errors';
 import logger from './logger';
 
+const API_TOKEN = process.env.MONOKLE_VSC_API_TOKEN;
 
 type UserProjectRepo = {
   id: string;
@@ -82,14 +83,12 @@ const getPolicyQuery = `
   }
 `;
 
-const TEST_TOKEN = '...';
-
 export async function getUser(): Promise<UserData | undefined> {
-  return queryApi(getUserQuery, TEST_TOKEN);
+  return queryApi(getUserQuery, API_TOKEN);
 }
 
 export async function getPolicy(slug: string): Promise<PolicyData | undefined> {
-  return queryApi(getPolicyQuery, TEST_TOKEN, { slug });
+  return queryApi(getPolicyQuery, API_TOKEN, { slug });
 }
 
 async function queryApi(query: string, token: string, variables = {}) {
@@ -105,26 +104,33 @@ async function queryApi(query: string, token: string, variables = {}) {
 
   logger.log('apiEndpointUrl', apiEndpointUrl);
 
-  const response = await fetch(apiEndpointUrl, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    },
-    body: JSON.stringify({
-      query,
-      variables,
-    })
-  });
+  try {
+    const response = await fetch(apiEndpointUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        query,
+        variables,
+      })
+    });
 
-  logger.log('response', response.status, response.statusText);
+    logger.log('response', response.status, response.statusText);
 
-  if (!response.ok) {
+    if (!response.ok) {
+      raiseError(
+        `Connection error. Cannot fetch data from ${apiEndpointUrl}. Error '${response.statusText}' (${response.status}).`
+      );
+      return undefined;
+    }
+
+    return response.json();
+  } catch (err) {
     raiseError(
-      `Connection error. Cannot fetch data from ${apiEndpointUrl}. Error '${response.statusText}' (${response.status}).`
+      `Connection error. Cannot fetch data from ${apiEndpointUrl}. Error '${err.message}.`
     );
     return undefined;
-}
-
-  return response.json();
+  }
 }

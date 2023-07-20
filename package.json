@@ -85,7 +85,7 @@
             "null"
           ],
           "default": null,
-          "description": "Monokle Cloud URL to fetch policies from. If not set local config will be used. If you are using SaaS, set it to https://app.monokle.com."
+          "description": "Monokle Cloud URL to fetch policies from. If not set local config will be used. If you are using Monokle Cloud, set it to https://api.monokle.com."
         },
         "monokle.enabled": {
           "type": "boolean",
