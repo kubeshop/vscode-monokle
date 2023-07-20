@@ -1,5 +1,5 @@
 import { join, normalize } from 'path';
-import { commands, workspace, window, StatusBarAlignment } from 'vscode';
+import { commands, workspace, window, StatusBarAlignment, MarkdownString } from 'vscode';
 import { COMMANDS, SETTINGS, STATUS_BAR_TEXTS, STORAGE_DIR_NAME } from './constants';
 import { getValidateCommand } from './commands/validate';
 import { getWatchCommand } from './commands/watch';
@@ -10,6 +10,7 @@ import { getDownloadPolicyCommand } from './commands/download-policy';
 import { RuntimeContext } from './utils/runtime-context';
 import { SarifWatcher } from './utils/sarif-watcher';
 import { PolicyPuller } from './utils/policy-puller';
+import { getTooltipContentDefault } from './utils/tooltip';
 import logger from './utils/logger';
 import globals from './utils/globals';
 import type { ExtensionContext } from 'vscode';
@@ -24,7 +25,7 @@ export function activate(context: ExtensionContext) {
 
   const statusBarItem = window.createStatusBarItem(StatusBarAlignment.Left, 25);
   statusBarItem.text = STATUS_BAR_TEXTS.DEFAULT;
-  statusBarItem.tooltip = 'Show validation panel';
+  statusBarItem.tooltip = getTooltipContentDefault();
   statusBarItem.command = COMMANDS.SHOW_PANEL;
   statusBarItem.show();
 

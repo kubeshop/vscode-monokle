@@ -1,5 +1,6 @@
 
 import { STATUS_BAR_TEXTS } from '../constants';
+import { getTooltipContent } from './tooltip';
 import type { Disposable, ExtensionContext, StatusBarItem } from 'vscode';
 import type { SarifWatcher } from './sarif-watcher';
 import type { PolicyPuller } from './policy-puller';
@@ -42,6 +43,10 @@ export class RuntimeContext {
   set isValidating(value: boolean) {
     this._isValidating = value;
     this._statusBarItem.text = value ? STATUS_BAR_TEXTS.VALIDATING : STATUS_BAR_TEXTS.DEFAULT;
+
+    if (!value) {
+      this.updateTooltipContent();
+    }
   }
 
   registerDisposables(disposables: Disposable[]) {
@@ -62,5 +67,9 @@ export class RuntimeContext {
     if (this.sarifWatcher) {
       await this.sarifWatcher.dispose();
     }
+  }
+
+  private async updateTooltipContent() {
+    this._statusBarItem.tooltip = await getTooltipContent();
   }
 }
