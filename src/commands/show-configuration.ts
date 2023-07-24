@@ -10,7 +10,7 @@ type FolderItem = {
   id: string;
 };
 
-export function getShowConfigurationCommand(context: RuntimeContext) {
+export function getShowConfigurationCommand() {
   return async () => {
     if (!canRun()) {
       return null;
@@ -22,13 +22,11 @@ export function getShowConfigurationCommand(context: RuntimeContext) {
       return null;
     }
 
-    const configs = await Promise.all(folders.map(async (folder) => await getWorkspaceConfig(folder)));
-
     const showConfig = async (folder: Folder) => {
-      const config = configs.find(config => config.owner.id === folder.id);
-      const configUri = config.type === 'file' || config.type === 'config' ?
+      const config = await getWorkspaceConfig(folder);
+      const configUri = config.type !== 'default' ?
         Uri.file(config.path) :
-        await createTemporaryConfigFile(config.config, config.owner, context.extensionContext.extensionPath);
+        await createTemporaryConfigFile(config.config, config.owner);
 
       return commands.executeCommand('vscode.open', configUri);
     };

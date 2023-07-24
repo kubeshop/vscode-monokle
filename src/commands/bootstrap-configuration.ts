@@ -36,6 +36,11 @@ export function getBootstrapConfigurationCommand() {
         return currentConfig.path;
       }
 
+      if (currentConfig.type === 'remote') {
+        window.showWarningMessage(`Remote '${currentConfig.fileName}' configuration file already exists, opening it.`);
+        return currentConfig.path;
+      }
+
       const configPath = (await createDefaultConfigFile(folder.uri.fsPath)).fsPath;
 
       return configPath;

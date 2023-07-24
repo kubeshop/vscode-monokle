@@ -1,10 +1,14 @@
 import { RelativePattern, Uri, workspace } from 'vscode';
-import { basename, join, normalize } from 'path';
+import { basename, join, normalize, resolve } from 'path';
+import { stat } from 'fs/promises';
 import { Resource, extractK8sResources } from './extract';
 import { clearResourceCache, getDefaultConfig, getValidationResultPath, readConfig, validateFolder } from './validation';
 import { generateId } from './helpers';
-import { SETTINGS, DEFAULT_CONFIG_FILE_NAME } from '../constants';
+import { SETTINGS, DEFAULT_CONFIG_FILE_NAME, REMOTE_POLICY_FILE_SUFFIX } from '../constants';
+import { isGitRepo } from './git';
+import { raiseWarning } from './errors';
 import logger from '../utils/logger';
+import globals from '../utils/globals';
 import type { WorkspaceFolder } from 'vscode';
 import type { RuntimeContext } from './runtime-context';
 
@@ -17,9 +21,10 @@ export type File = {
 };
 
 export type WorkspaceFolderConfig = {
-  type: 'default' | 'file' | 'config';
+  type: 'default' | 'file' | 'config' | 'remote';
   config: any;
   owner: Folder,
+  isValid: boolean;
   path?: string;
   fileName?: string;
 };
@@ -38,29 +43,47 @@ export async function getWorkspaceResources(workspaceFolder: Folder) {
 }
 
 export async function getWorkspaceConfig(workspaceFolder: Folder): Promise<WorkspaceFolderConfig> {
-  const settingsConfigurationPath = workspace.getConfiguration(SETTINGS.NAMESPACE).get<string>(SETTINGS.CONFIGURATION_PATH);
-
-  if (settingsConfigurationPath) {
-    const configPath = normalize(settingsConfigurationPath);
-    // @TODO show error if config empty
-
-    const config =  {
-      type: 'config',
-      config: await readConfig(configPath),
-      owner: workspaceFolder,
-      path: configPath,
-      fileName: basename(configPath),
-    };
-
-    return config as WorkspaceFolderConfig;
+  const remotePolicyUrl = workspace.getConfiguration(SETTINGS.NAMESPACE).get<string>(SETTINGS.REMOTE_POLICY_URL);
+  if (remotePolicyUrl) {
+    // If given folder is not a git repo, we want to fallback to other options.
+    const gitRepo = await isGitRepo(workspaceFolder.uri.fsPath);
+    if (!gitRepo) {
+      raiseWarning(`The '${workspaceFolder.name}' folder is not a git repository. Instead of remote, local configuration will be used for validation.`);
+    } else {
+      const configData = await getWorkspaceRemoteConfig(workspaceFolder);
+      return {
+        type: 'remote',
+        config: configData,
+        owner: workspaceFolder,
+        isValid: configData !== undefined,
+        path: normalize(join(globals.storagePath, `${workspaceFolder.id}${REMOTE_POLICY_FILE_SUFFIX}`)),
+        fileName: `${workspaceFolder.id}${REMOTE_POLICY_FILE_SUFFIX}`,
+      };
+    }
   }
 
-  const localConfig = await getWorkspaceLocalConfig(workspaceFolder);
-  if (localConfig && Object.entries(localConfig).length > 0) {
+  const settingsConfigurationPath = workspace.getConfiguration(SETTINGS.NAMESPACE).get<string>(SETTINGS.CONFIGURATION_PATH);
+  if (settingsConfigurationPath) {
+    const configPath = normalize(settingsConfigurationPath);
+    const configAsJson = await readConfig(configPath);
+    return {
+      type: 'config',
+      config: configAsJson,
+      owner: workspaceFolder,
+      isValid: configAsJson !== undefined,
+      path: configPath,
+      fileName: basename(configPath)
+    };
+  }
+
+  const hasLocal = await hasLocalConfig(workspaceFolder);
+  if (hasLocal) {
+    const localConfig = await getWorkspaceLocalConfig(workspaceFolder);
     return {
       type: 'file',
       config: localConfig,
       owner: workspaceFolder,
+      isValid: localConfig !== undefined,
       path: normalize(join(workspaceFolder.uri.fsPath, DEFAULT_CONFIG_FILE_NAME)),
       fileName: DEFAULT_CONFIG_FILE_NAME,
     };
@@ -70,6 +93,7 @@ export async function getWorkspaceConfig(workspaceFolder: Folder): Promise<Works
     type: 'default',
     config: await getDefaultConfig(),
     owner: workspaceFolder,
+    isValid: true,
   };
 }
 
@@ -88,15 +112,19 @@ export function initializeWorkspaceWatchers(workspaceFolders: Folder[], context:
   return workspaceFolders.map((folder) => {
     const pattern = new RelativePattern(folder.uri.fsPath, '**/*.{yaml,yml}');
     const watcher = workspace.createFileSystemWatcher(pattern);
-    const resultFile = getValidationResultPath(context.extensionContext.extensionPath, folder.id);
+    const resultFile = getValidationResultPath(folder.id);
 
     const revalidateFolder = async () => {
       logger.log('revalidateFolder', folder);
 
       context.isValidating = true;
 
-      await validateFolder(folder, context.extensionContext);
-      await context.sarifWatcher.add(Uri.file(resultFile));
+      const uri = await validateFolder(folder);
+      if (uri) {
+        await context.sarifWatcher.add(Uri.file(resultFile));
+      } else {
+        await context.sarifWatcher.remove(Uri.file(resultFile));
+      }
 
       context.isValidating = false;
     };
@@ -161,8 +189,23 @@ async function convertFilesToK8sResources(files: File[]): Promise<Resource[]> {
   return extractK8sResources(filesWithContent);
 }
 
+async function hasLocalConfig(workspaceFolder: Folder) {
+  const configPath = normalize(join(workspaceFolder.uri.fsPath, DEFAULT_CONFIG_FILE_NAME));
+  try {
+    await stat(configPath);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
 async function getWorkspaceLocalConfig(workspaceFolder: Folder) {
   const configPath = normalize(join(workspaceFolder.uri.fsPath, DEFAULT_CONFIG_FILE_NAME));
+  return readConfig(configPath);
+}
+
+async function getWorkspaceRemoteConfig(workspaceFolder: Folder) {
+  const configPath = normalize(join(globals.storagePath, `${workspaceFolder.id}${REMOTE_POLICY_FILE_SUFFIX}`));
   return readConfig(configPath);
 }
 

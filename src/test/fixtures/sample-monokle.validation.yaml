@@ -1,5 +1,5 @@
 plugins:
   yaml-syntax: false
-  open-policy-agent: false
+  open-policy-agent: true
   kubernetes-schema: false
   pod-security-standards: true

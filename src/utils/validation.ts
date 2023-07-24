@@ -1,18 +1,23 @@
-import { mkdir, readFile, writeFile } from 'fs/promises';
+import { mkdir, readFile, unlink, writeFile } from 'fs/promises';
 import { join, normalize } from 'path';
 import { platform } from 'os';
-import { Uri } from 'vscode';
+import { Uri, workspace } from 'vscode';
 import { Document } from 'yaml';
 import { getWorkspaceConfig, getWorkspaceResources } from './workspace';
-import { STORAGE_DIR_NAME, VALIDATION_FILE_SUFFIX, DEFAULT_CONFIG_FILE_NAME } from '../constants';
+import { VALIDATION_FILE_SUFFIX, DEFAULT_CONFIG_FILE_NAME, TMP_POLICY_FILE_SUFFIX } from '../constants';
+import { raiseInvalidConfigError } from './errors';
 import logger from '../utils/logger';
-import type { ExtensionContext } from 'vscode';
+import globals from './globals';
 import type { Folder } from './workspace';
 
 export type ConfigurableValidator = {
   parser: any;
   loader: any;
   validator: any;
+};
+
+export type ConfigFileOptions = {
+  commentBefore?: string;
 };
 
 // Use default map with full list of plugins so it's easier
@@ -52,7 +57,7 @@ export async function getValidator(validatorId: string, config?: any) {
   return validator;
 }
 
-export async function validateFolder(root: Folder, context: ExtensionContext) {
+export async function validateFolder(root: Folder): Promise<Uri | null> {
   const resources = await getWorkspaceResources(root);
 
   logger.log(root.name, 'resources');
@@ -64,6 +69,11 @@ export async function validateFolder(root: Folder, context: ExtensionContext) {
   resources.forEach(resource => logger.log(resource.id, resource.name, resource.content));
 
   const workspaceConfig = await getWorkspaceConfig(root);
+
+  if (workspaceConfig.isValid === false) {
+    raiseInvalidConfigError(workspaceConfig, root);
+    return null;
+  }
 
   logger.log(root.name, 'workspaceConfig', workspaceConfig);
 
@@ -87,16 +97,15 @@ export async function validateFolder(root: Folder, context: ExtensionContext) {
     });
   });
 
-  const resultsFilePath = await saveValidationResults(result, context.extensionPath, root.id);
+  const resultsFilePath = await saveValidationResults(result, root.id);
 
   logger.log(root.name, 'resultsFilePath', resultsFilePath);
 
   return Uri.file(resultsFilePath);
 }
 
-export async function getValidationResult(folderPath: string, fileName: string) {
-  const sharedStorageDir = normalize(join(folderPath, STORAGE_DIR_NAME));
-  const filePath = normalize(join(sharedStorageDir, `${fileName}${VALIDATION_FILE_SUFFIX}`));
+export async function getValidationResult(fileName: string) {
+  const filePath = getValidationResultPath(fileName);
 
   try {
     const resultsAsString = await readFile(filePath, 'utf8');
@@ -106,60 +115,74 @@ export async function getValidationResult(folderPath: string, fileName: string) 
   }
 }
 
-export async function saveValidationResults(results: any, folderPath: string, fileName: string) {
-  const sharedStorageDir = normalize(join(folderPath, STORAGE_DIR_NAME));
-
-  await mkdir(sharedStorageDir, { recursive: true });
+export async function saveValidationResults(results: any, fileName: string) {
+  await mkdir(globals.storagePath, { recursive: true });
 
   const resultsAsString = JSON.stringify(results);
-  const filePath = normalize(join(sharedStorageDir, `${fileName}${VALIDATION_FILE_SUFFIX}`));
+  const filePath = getValidationResultPath(fileName);
 
   await writeFile(filePath, resultsAsString);
 
   return filePath;
 }
 
-export function getValidationResultPath(folderPath: string, fileName: string) {
-  return normalize(join(folderPath, STORAGE_DIR_NAME, `${fileName}${VALIDATION_FILE_SUFFIX}`));
+export function getValidationResultPath(fileName: string) {
+  return normalize(join(globals.storagePath, `${fileName}${VALIDATION_FILE_SUFFIX}`));
 }
 
-export async function createTemporaryConfigFile(config: any, srcFolder: Folder, destPath: string) {
-  const configDoc = new Document();
-  configDoc.contents = config;
-  configDoc.commentBefore = [
-    ` The '${srcFolder.name}' folder uses default validation configuration. This file is readonly.`,
+export async function createTemporaryConfigFile(config: any, ownerRoot: Folder) {
+  const commentBefore = [
+    ` The '${ownerRoot.name}' folder uses default validation configuration. This file is readonly.`,
     ` You can adjust configuration by generating local configuration file with 'Monokle: Bootstrap configuration' command`,
     ` or by pointing to existing Monokle configuration file in 'monokle.configurationPath' setting.`
   ].join('\n');
 
-  const fileName = `${srcFolder.id}.config.yaml`;
-  const sharedStorageDir = normalize(join(destPath, STORAGE_DIR_NAME, fileName));
-  const filePath = normalize(join(sharedStorageDir, fileName));
-
-  await mkdir(sharedStorageDir, { recursive: true });
-
-  await writeFile(filePath, configDoc.toString());
-
-  return Uri.file(filePath);
+  return saveConfig(config, globals.storagePath, `${ownerRoot.id}${TMP_POLICY_FILE_SUFFIX}`, {commentBefore});
 }
 
-export async function createDefaultConfigFile(destFolder: string) {
-  const configDoc = new Document();
-  configDoc.contents = {
+export async function createDefaultConfigFile(ownerRootDir: string) {
+  const config = {
     plugins: DEFAULT_PLUGIN_MAP,
-  } as any;
-  configDoc.commentBefore = [
+  };
+
+  const commentBefore = [
     ' This is default validation configuration. You can adjust it freely to suit your needs.',
     ' You can read more about Monokle validation configuration here:',
     ' https://github.com/kubeshop/monokle-core/blob/main/packages/validation/docs/configuration.md#monokle-validation-configuration.',
   ].join('\n');
 
-  const fileName = DEFAULT_CONFIG_FILE_NAME;
-  const filePath = normalize(join(destFolder, fileName));
+  return saveConfig(config, ownerRootDir, DEFAULT_CONFIG_FILE_NAME, {commentBefore});
+}
+
+export async function saveConfig(config: any, path: string, fileName: string, options?: ConfigFileOptions) {
+  const configDoc = new Document();
+  configDoc.contents = config;
+
+  if (options?.commentBefore) {
+    configDoc.commentBefore = options.commentBefore;
+  }
+
+  const dir = normalize(path);
+  const filePath = normalize(join(dir, fileName));
+
+  await mkdir(dir, { recursive: true });
 
   await writeFile(filePath, configDoc.toString());
 
   return Uri.file(filePath);
+}
+
+export async function removeConfig(path: string, fileName: string) {
+  try {
+    const dir = normalize(path);
+    const filePath = normalize(join(dir, fileName));
+
+    await unlink(filePath);
+
+    return true;
+  } catch (err) {
+    return false;
+  }
 }
 
 export async function clearResourceCache(root: Folder, resourceId: string) {

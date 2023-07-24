@@ -1,3 +1,3 @@
-# Folder with single resource
+# Folder with resources
 
-Test folder with single resources.
+Test folder with resources.

@@ -1,0 +1,4 @@
+{
+    "monokle.enabled": false,
+    "monokle.remotePolicyUrl": "http://localhost:5000"
+}

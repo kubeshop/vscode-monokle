@@ -4,10 +4,10 @@
       "path": "../folder-with-resources"
     },
     {
-      "path": "../folder-without-resources"
+      "path": "../folder-with-config"
     }
   ],
   "settings": {
-    "monokle.configurationPath": "../sample-monokle.validation.yaml",
+    "monokle.configurationPath": "sample-monokle.validation.yaml",
   }
 }
