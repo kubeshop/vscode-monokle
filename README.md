@@ -1,6 +1,10 @@
 # Monokle VSC Extension
 
 <p align="center">
+  <img src="assets/icon.png" alt="Monokle Logo" width="128" height="128"/>
+</p>
+
+<p align="center">
   <a href="https://github.com/kubeshop/vscode-monokle" title="Monokle extension latest version">
     <img src="https://img.shields.io/github/package-json/v/kubeshop/vscode-monokle/main" />
   </a>
@@ -10,10 +14,6 @@
   <a href="https://github.com/kubeshop/vscode-monokle/blob/main/LICENSE" title="Monokle extension license">
     <img src="https://img.shields.io/github/license/kubeshop/vscode-monokle">
   </a>
-</p>
-
-<p align="center">
-  <img src="assets/icon.png" alt="Monokle Logo" width="128" height="128"/>
 </p>
 
 Monokle Visual Studio Code extensions let's you validate your Kubernetes resources directly in Visual Studio Code. It is a great complement to [Monokle Cloud](https://monokle.io), [Desktop](https://monokle.io/open-source) or [CLI](https://github.com/kubeshop/monokle-cli).
@@ -28,11 +28,41 @@ This is **Technical Preview** release. We are open to any feedback and eager to 
 
 ## Features
 
-Monokle extension will automatically validate all Kuberentes resources in current project / workspace on Visual Studio Code start and show the panel with the list of all warning and errors. Validation errors will also appear in VSC **Problems** tab for currently opened resource files.
+### Easily navigate through all errors and resources
 
-All resource files are also validated when modified (after being saved) and list in validation panel refreshes automatically.
+Monokle validation panel allows you to easily see all validation errors grouped by resource or rule id, see each rule details and navigate to exact line in each resource where violation was detected.
 
-Monokle extension exposes following commands:
+<p align="center">
+  <img src="assets/gifs/navigation.gif"/>
+</p>
+
+### See violations in `Problems` tab for opened resources
+
+When navigating through resource files, you can see all violations in VSC build-in `Problems` tab.
+
+<p align="center">
+  <img src="assets/gifs/problems.gif"/>
+</p>
+
+### Get instant feedback on fixes
+
+Validation runs in a background every time a file is modified and saved. This way you get instant feedback when applying fixes.
+
+<p align="center">
+  <img src="assets/gifs/realtime-validation.gif"/>
+</p>
+
+### Tailored to your needs
+
+With dedicated `Monokle: Bootstrap configuration` command, you can customize validation configuration in seconds and adjust to your specific needs.
+
+<p align="center">
+  <img src="assets/gifs/configuration.gif"/>
+</p>
+
+### Runs with commands
+
+Use command pallete to interact with extension, run validation, see current configuration and more.
 
 * `Monokle: Validate` - runs validation of Kubernetes resources on demand.
 * `Monokle: Show validation panel` - opens validation panel (this can be also done be clicking on Monokle status bar icon).
