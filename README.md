@@ -62,7 +62,7 @@ With dedicated `Monokle: Bootstrap configuration` command, you can customize val
 
 ### Runs with commands
 
-Use command pallete to interact with extension, run validation, see current configuration and more.
+Use command palette to interact with extension, run validation, see current configuration and more.
 
 * `Monokle: Validate` - runs validation of Kubernetes resources on demand.
 * `Monokle: Show validation panel` - opens validation panel (this can be also done be clicking on Monokle status bar icon).
@@ -72,14 +72,15 @@ Use command pallete to interact with extension, run validation, see current conf
 
 ## Default Validation Policy
 
-The default configuration used for resource validation is written to a `monokle.validation.yaml` file
-in your project folder. It enables the following validation plugins:
+The default configuration used for resource validation enables the following validation plugins:
 - **Security Policy** validation, based on Open-Policy-Agent rules from Aqua Security
 - **Kubernetes Schema** validation for checking schema and Kubernetes version compliance
 - **Resource Links** validation to ensure that all references between resources are valid
-- **YAML syntax** validation 
+- **YAML syntax** validation
 
-Read about these plugins and their individual validation rules in the [Core Plugins documentation](https://github.com/kubeshop/monokle-core/blob/main/packages/validation/docs/core-plugins.md)
+Read about these plugins and their individual validation rules in the [Core Plugins documentation](https://github.com/kubeshop/monokle-core/blob/main/packages/validation/docs/core-plugins.md).
+
+To customize default configuration you can run `Monokle: Bootstrap validation` command to generate local `monokle.validation.yaml` configuration file in your project folder.
 
 ## Extension Settings
 
