@@ -1,6 +1,6 @@
 import { simpleGit } from 'simple-git';
 import { ok, deepEqual } from 'assert';
-import { workspace, window, ConfigurationTarget, Uri } from 'vscode';
+import { workspace, window, ConfigurationTarget } from 'vscode';
 import { spy } from 'sinon';
 import { join } from 'path';
 import { rm } from 'fs/promises';

@@ -10,6 +10,8 @@ const schema = `
   }
 
   type UserModel {
+    id: Int!
+    email: String!
     projects: [ProjectMemberModel!]!
   }
 
