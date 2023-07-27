@@ -1,7 +1,8 @@
 import { canRun } from '../utils/commands';
 import { raiseError, raiseInfo } from '../utils/errors';
-import { emptyStoreAuth, getStoreAuth } from '../utils/store';
+import { emptyStoreAuth } from '../utils/store';
 import logger from '../utils/logger';
+import globals from '../utils/globals';
 import type { RuntimeContext } from '../utils/runtime-context';
 
 export function getLogoutCommand(context: RuntimeContext) {
@@ -10,8 +11,7 @@ export function getLogoutCommand(context: RuntimeContext) {
       return;
     }
 
-    const activeUser = await getStoreAuth();
-    if (!activeUser?.auth?.accessToken) {
+    if (!globals.user.isAuthenticated) {
         raiseInfo(`You are already logged out. You can login with ${'Monokle: Login'} command.`);
         return;
     }
@@ -19,7 +19,7 @@ export function getLogoutCommand(context: RuntimeContext) {
     try {
         await emptyStoreAuth();
         raiseInfo(`You have been successfully logged out.`);
-        context.user = undefined;
+        context.triggerUserChange();
     } catch (err) {
         logger.error(err);
         raiseError('Failed to logout from Monokle Cloud. Please try again.');

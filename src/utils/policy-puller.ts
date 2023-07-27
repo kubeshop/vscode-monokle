@@ -9,31 +9,17 @@ import { raiseCannotGetPolicyError, raiseError } from './errors';
 import logger from './logger';
 import globals from './globals';
 import type { Folder } from './workspace';
-import { getStoreAuth } from './store';
 
 const REFETCH_POLICY_INTERVAL_MS = 1000 * 30;
 
 export class PolicyPuller {
 
-  private _url = '';
   private _isPulling = false;
   private _pullPromise: Promise<void> | undefined;
   private _policyFetcherId: NodeJS.Timer | undefined;
 
-  constructor(url: string) {
-    this.url = url;
-  }
-
-  get url() {
-    return this._url;
-  }
-
-  set url(value: string) {
-    this._url = value;
-  }
-
   async refresh() {
-    if (!globals.isAuthenticated) {
+    if (!globals.user.isAuthenticated) {
       return this.dispose();
     }
 
@@ -72,11 +58,7 @@ export class PolicyPuller {
   }
 
   private async fetchPolicyFiles(roots: Folder[]) {
-    const storeAuth = await getStoreAuth();
-
-    logger.log('fetchPolicyFiles', storeAuth, roots);
-
-    const userData = await getUser(storeAuth.auth?.accessToken);
+    const userData = await getUser(globals.user.accessToken);
 
     logger.log('userData', userData);
 
@@ -126,7 +108,7 @@ export class PolicyPuller {
         continue;
       }
 
-      const repoPolicy = await getPolicy(repoProject.project.slug, storeAuth.auth?.accessToken);
+      const repoPolicy = await getPolicy(repoProject.project.slug, globals.user.accessToken);
 
       logger.log('repoPolicy', repoPolicy);
 

@@ -13,8 +13,7 @@ export class RuntimeContext {
   private _statusBarItem: StatusBarItem;
   private _disposableRegistry: Disposable[] = [];
   private _isValidating = false;
-  private _user: string | undefined;
-  private _sessionListeners = new Set<() => void>();
+  private _userChangedListeners = new Set<() => void>();
 
   constructor(extensionContext: ExtensionContext, sarifWatcher: SarifWatcher, policyPuller: PolicyPuller, statusBarItem: StatusBarItem) {
     this._extensionContext = extensionContext;
@@ -52,20 +51,13 @@ export class RuntimeContext {
     }
   }
 
-  get user() {
-    return this._user;
-  }
-
-  set user(user: string | undefined) {
-    this._user = user;
-
-    globals.isAuthenticated = !!user;
-
+  triggerUserChange() {
+    globals.refetchUser();
     this.runCallbacks();
   }
 
-  onSessionChanged(callback: () => void) {
-    this._sessionListeners.add(callback);
+  onUserChanged(callback: () => void) {
+    this._userChangedListeners.add(callback);
   }
 
   registerDisposables(disposables: Disposable[]) {
@@ -73,7 +65,7 @@ export class RuntimeContext {
   }
 
   async dispose() {
-    this._sessionListeners.clear();
+    this._userChangedListeners.clear();
 
     const disposables = [...this._disposableRegistry];
 
@@ -91,7 +83,7 @@ export class RuntimeContext {
   }
 
   private async runCallbacks() {
-    for (const callback of this._sessionListeners) {
+    for (const callback of this._userChangedListeners) {
       await callback();
     }
 
@@ -99,6 +91,6 @@ export class RuntimeContext {
   }
 
   private async updateTooltipContent() {
-    this._statusBarItem.tooltip = await getTooltipContent(this.user);
+    this._statusBarItem.tooltip = await getTooltipContent();
   }
 }

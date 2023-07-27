@@ -1,9 +1,10 @@
 import { workspace } from 'vscode';
 import { DEFAULT_REMOTE_POLICY_URL, SETTINGS } from '../constants';
+import { getStoreAuthSync } from './store';
 
 class Globals {
   private _storagePath: string = '';
-  private _isAuthenticated: boolean = false;
+  private _activeUser: any = {};
 
   get storagePath() {
     return this._storagePath;
@@ -11,14 +12,6 @@ class Globals {
 
   set storagePath(value) {
     this._storagePath = value;
-  }
-
-  get isAuthenticated() {
-    return this._isAuthenticated;
-  }
-
-  set isAuthenticated(value) {
-    this._isAuthenticated = value;
   }
 
   get configurationPath() {
@@ -41,19 +34,33 @@ class Globals {
     return workspace.getConfiguration(SETTINGS.NAMESPACE).get<boolean>(SETTINGS.VERBOSE);
   }
 
+  get user() {
+    return {
+      isAuthenticated: Boolean(this._activeUser.auth?.accessToken),
+      email: this._activeUser.auth?.email,
+      accessToken: this._activeUser.auth?.accessToken,
+    };
+  }
+
+  refetchUser() {
+    this._activeUser = getStoreAuthSync() ?? {};
+  }
+
   asObject() {
     return {
       storagePath: this.storagePath,
-      isAuthenticated: this.isAuthenticated,
       configurationPath: this.configurationPath,
       remotePolicyUrl: this.remotePolicyUrl,
       overwriteRemotePolicyUrl: this.overwriteRemotePolicyUrl,
       enabled: this.enabled,
       verbose: this.verbose,
+      user: this.user,
     };
   }
 }
 
 const globalsInstance = new Globals();
+
+globalsInstance.refetchUser();
 
 export default globalsInstance;

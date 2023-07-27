@@ -10,7 +10,7 @@ export function getDownloadPolicyCommand(context: RuntimeContext) {
       return null;
     }
 
-    if (!globals.isAuthenticated) {
+    if (!globals.user.isAuthenticated) {
       window.showWarningMessage(`You are not authenticated, cannot download remote policy. Run ${COMMANDS.LOGIN} to authenticate first.}`);
       return null;
     }

@@ -12,7 +12,6 @@ import { RuntimeContext } from './utils/runtime-context';
 import { SarifWatcher } from './utils/sarif-watcher';
 import { PolicyPuller } from './utils/policy-puller';
 import { getTooltipContentDefault } from './utils/tooltip';
-import { getStoreAuthSync } from './utils/store';
 import { getLogoutCommand } from './commands/logout';
 import logger from './utils/logger';
 import globals from './utils/globals';
@@ -35,14 +34,9 @@ export function activate(context: ExtensionContext) {
   runtimeContext = new RuntimeContext(
     context,
     new SarifWatcher(),
-    new PolicyPuller(globals.remotePolicyUrl),
+    new PolicyPuller(),
     statusBarItem
   );
-
-  const activeUserData = getStoreAuthSync();
-  if (activeUserData?.auth?.accessToken) {
-    runtimeContext.user = activeUserData.auth.email;
-  }
 
   const commandLogin = commands.registerCommand(COMMANDS.LOGIN, getLoginCommand(runtimeContext));
   const commandLogout = commands.registerCommand(COMMANDS.LOGOUT, getLogoutCommand(runtimeContext));
@@ -72,7 +66,6 @@ export function activate(context: ExtensionContext) {
     }
 
     if (event.affectsConfiguration(SETTINGS.OVERWRITE_REMOTE_POLICY_URL_PATH)) {
-      runtimeContext.policyPuller.url = globals.remotePolicyUrl;
       await runtimeContext.policyPuller.refresh();
       await commands.executeCommand(COMMANDS.VALIDATE);
     }
@@ -113,7 +106,7 @@ export function deactivate() {
 }
 
 function initialRun(runtimeContext: RuntimeContext) {
-  runtimeContext.onSessionChanged(() => {
+  runtimeContext.onUserChanged(() => {
     runtimeContext.policyPuller.refresh()
       .then(() => commands.executeCommand(COMMANDS.VALIDATE))
       .then(() => commands.executeCommand(COMMANDS.WATCH));

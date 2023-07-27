@@ -43,7 +43,7 @@ export async function getWorkspaceResources(workspaceFolder: Folder) {
 }
 
 export async function getWorkspaceConfig(workspaceFolder: Folder): Promise<WorkspaceFolderConfig> {
-  if (globals.isAuthenticated) {
+  if (globals.user.isAuthenticated) {
     // If given folder is not a git repo, we want to fallback to other options.
     const gitRepo = await isGitRepo(workspaceFolder.uri.fsPath);
     if (!gitRepo) {

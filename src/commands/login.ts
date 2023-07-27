@@ -2,7 +2,8 @@ import { window } from 'vscode';
 import { canRun } from '../utils/commands';
 import { raiseError, raiseInfo } from '../utils/errors';
 import { getUser } from '../utils/api';
-import { getStoreAuth, setStoreAuth } from '../utils/store';
+import { setStoreAuth } from '../utils/store';
+import globals from '../utils/globals';
 import logger from '../utils/logger';
 import type { RuntimeContext } from '../utils/runtime-context';
 
@@ -12,8 +13,7 @@ export function getLoginCommand(context: RuntimeContext) {
       return;
     }
 
-    const activeUser = await getStoreAuth();
-    if (activeUser?.auth?.accessToken) {
+    if (globals.user.isAuthenticated) {
         raiseInfo(`You are already logged in. Please logout first with ${'Monokle: Logout'}.`);
         return;
     }
@@ -35,7 +35,7 @@ export function getLoginCommand(context: RuntimeContext) {
         const userData = await getUser(token.trim());
         const authSaved = await setStoreAuth(userData?.data.me.email, token);
 
-        context.user = userData?.data.me.email;
+        context.triggerUserChange();
 
         logger.log('login:authSaved', userData, authSaved);
 

@@ -11,7 +11,7 @@ export function getTooltipContentDefault() {
   return 'Monokle extension initializing...';
 }
 
-export async function getTooltipContent(activeUser?: string) {
+export async function getTooltipContent() {
   if (!globals.enabled) {
     return 'Monokle extension disabled';
   }
@@ -42,11 +42,11 @@ export async function getTooltipContent(activeUser?: string) {
   }));
 
   let activeUserText = '';
-  if (activeUser) {
-    activeUserText = `<br><br>Logged in as ${activeUser}`;
+  if (globals.user.isAuthenticated) {
+    activeUserText = `<hr><br>Logged in as **${globals.user.email}**`;
   }
 
-  const content = new MarkdownString(`${folderList.join('<br>')}${activeUserText}<br><br>Show validation panel`);
+  const content = new MarkdownString(`${folderList.join('<br>')}${activeUserText}<hr><br>Show validation panel`);
   content.supportHtml = true;
 
   return content;
