@@ -12,11 +12,11 @@ import { RuntimeContext } from './utils/runtime-context';
 import { SarifWatcher } from './utils/sarif-watcher';
 import { PolicyPuller } from './utils/policy-puller';
 import { getTooltipContentDefault } from './utils/tooltip';
+import { getStoreAuthSync } from './utils/store';
+import { getLogoutCommand } from './commands/logout';
 import logger from './utils/logger';
 import globals from './utils/globals';
 import type { ExtensionContext } from 'vscode';
-import { getStoreAuthSync } from './utils/store';
-import { getLogoutCommand } from './commands/logout';
 
 let runtimeContext: RuntimeContext;
 

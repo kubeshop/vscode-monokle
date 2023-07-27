@@ -71,6 +71,10 @@ export async function validateFolder(root: Folder): Promise<Uri | null> {
   const workspaceConfig = await getWorkspaceConfig(root);
 
   if (workspaceConfig.isValid === false) {
+    if (workspaceConfig.type === 'remote') {
+      return null; // Error will be already shown by policy puller.
+    }
+
     raiseInvalidConfigError(workspaceConfig, root);
     return null;
   }

@@ -99,6 +99,6 @@ export class RuntimeContext {
   }
 
   private async updateTooltipContent() {
-    this._statusBarItem.tooltip = await getTooltipContent();
+    this._statusBarItem.tooltip = await getTooltipContent(this.user);
   }
 }

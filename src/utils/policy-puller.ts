@@ -115,7 +115,7 @@ export class PolicyPuller {
       if (!repoProject) {
         const projectUrl = getMonokleCloudUrl(globals.remotePolicyUrl, `/dashboard/projects`);
         raiseCannotGetPolicyError(
-          `The '${folder.name}' repository does not belong to any project in Monokle Cloud.`,
+          `The '${folder.name}' repository does not belong to any project in Monokle Cloud. Configure it and run ''Monokle: Validate' command.`,
           [{
             title: 'Configure project',
             callback: () => {
@@ -133,7 +133,7 @@ export class PolicyPuller {
       const policyUrl = getMonokleCloudUrl(globals.remotePolicyUrl, `/dashboard/projects/${repoProject.project.slug}/policy`);
       if (!repoPolicy?.data?.getProject?.policy) {
         raiseCannotGetPolicyError(
-          `The '${folder.name}' repository project does not have policy defined.`,
+          `The '${folder.name}' repository project does not have policy defined. Configure it and run ''Monokle: Validate' command.`,
           [{
             title: 'Configure policy',
             callback: () => {
