@@ -16,6 +16,16 @@ suite(`Basic - Commands: ${process.env.ROOT_PATH}`, () => {
     await doSuiteTeardown();
   });
 
+  test('Exposes login command', async function() {
+    const commandList = await commands.getCommands(false);
+    ok(commandList.includes(COMMANDS.LOGIN));
+  });
+
+  test('Exposes logout command', async function() {
+    const commandList = await commands.getCommands(false);
+    ok(commandList.includes(COMMANDS.LOGOUT));
+  });
+
   test('Exposes validate command', async function() {
     const commandList = await commands.getCommands(false);
     ok(commandList.includes(COMMANDS.VALIDATE));
