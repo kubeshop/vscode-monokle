@@ -1,10 +1,6 @@
 # Monokle VSC Extension
 
 <p align="center">
-  <img src="assets/icon.png" alt="Monokle Logo" width="128" height="128"/>
-</p>
-
-<p align="center">
   <a href="https://github.com/kubeshop/vscode-monokle" title="Monokle extension latest version">
     <img src="https://img.shields.io/github/package-json/v/kubeshop/vscode-monokle/main" />
   </a>
