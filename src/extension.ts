@@ -57,9 +57,7 @@ export function activate(context: ExtensionContext) {
     if (event.affectsConfiguration(SETTINGS.ENABLED_PATH)) {
       const enabled = globals.enabled;
       if (enabled) {
-        await runtimeContext.policyPuller.refresh();
-        await commands.executeCommand(COMMANDS.VALIDATE);
-        await commands.executeCommand(COMMANDS.WATCH);
+        await initialRun(runtimeContext);
       } else {
         await runtimeContext.dispose();
       }
@@ -86,12 +84,6 @@ export function activate(context: ExtensionContext) {
     await commands.executeCommand(COMMANDS.WATCH);
   });
 
-  runtimeContext.onSessionChanged(() => {
-    runtimeContext.policyPuller.refresh()
-      .then(() => commands.executeCommand(COMMANDS.VALIDATE))
-      .then(() => commands.executeCommand(COMMANDS.WATCH));
-  });
-
   context.subscriptions.push(
     commandLogin,
     commandLogout,
@@ -109,9 +101,7 @@ export function activate(context: ExtensionContext) {
     return;
   }
 
-  runtimeContext.policyPuller.refresh()
-    .then(() => commands.executeCommand(COMMANDS.VALIDATE))
-    .then(() => commands.executeCommand(COMMANDS.WATCH));
+  initialRun(runtimeContext);
 }
 
 export function deactivate() {
@@ -120,4 +110,16 @@ export function deactivate() {
   if (runtimeContext) {
     runtimeContext.dispose();
   }
+}
+
+function initialRun(runtimeContext: RuntimeContext) {
+  runtimeContext.onSessionChanged(() => {
+    runtimeContext.policyPuller.refresh()
+      .then(() => commands.executeCommand(COMMANDS.VALIDATE))
+      .then(() => commands.executeCommand(COMMANDS.WATCH));
+  });
+
+  runtimeContext.policyPuller.refresh()
+    .then(() => commands.executeCommand(COMMANDS.VALIDATE))
+    .then(() => commands.executeCommand(COMMANDS.WATCH));
 }
