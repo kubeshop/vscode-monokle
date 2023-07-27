@@ -4,6 +4,7 @@ import { getTooltipContent } from './tooltip';
 import type { Disposable, ExtensionContext, StatusBarItem } from 'vscode';
 import type { SarifWatcher } from './sarif-watcher';
 import type { PolicyPuller } from './policy-puller';
+import globals from './globals';
 
 export class RuntimeContext {
   private _extensionContext: ExtensionContext;
@@ -12,6 +13,8 @@ export class RuntimeContext {
   private _statusBarItem: StatusBarItem;
   private _disposableRegistry: Disposable[] = [];
   private _isValidating = false;
+  private _user: string | undefined;
+  private _sessionListeners = new Set<() => void>();
 
   constructor(extensionContext: ExtensionContext, sarifWatcher: SarifWatcher, policyPuller: PolicyPuller, statusBarItem: StatusBarItem) {
     this._extensionContext = extensionContext;
@@ -49,11 +52,29 @@ export class RuntimeContext {
     }
   }
 
+  get user() {
+    return this._user;
+  }
+
+  set user(user: string | undefined) {
+    this._user = user;
+
+    globals.isAuthenticated = !!user;
+
+    this.runCallbacks();
+  }
+
+  onSessionChanged(callback: () => void) {
+    this._sessionListeners.add(callback);
+  }
+
   registerDisposables(disposables: Disposable[]) {
     this._disposableRegistry.push(...disposables);
   }
 
   async dispose() {
+    this._sessionListeners.clear();
+
     const disposables = [...this._disposableRegistry];
 
     this._disposableRegistry = [];
@@ -67,6 +88,14 @@ export class RuntimeContext {
     if (this.sarifWatcher) {
       await this.sarifWatcher.dispose();
     }
+  }
+
+  private async runCallbacks() {
+    for (const callback of this._sessionListeners) {
+      await callback();
+    }
+
+    await this.updateTooltipContent();
   }
 
   private async updateTooltipContent() {

@@ -1,11 +1,8 @@
-import { workspace } from 'vscode';
 import normalizeUrl from 'normalize-url';
 import fetch from 'node-fetch';
-import { SETTINGS } from '../constants';
 import { raiseError } from './errors';
 import logger from './logger';
-
-const API_TOKEN = process.env.MONOKLE_VSC_API_TOKEN;
+import globals from './globals';
 
 type UserProjectRepo = {
   id: string;
@@ -27,6 +24,8 @@ type UserProject = {
 type UserData = {
   data: {
     me: {
+      id: number;
+      email: string;
       projects: [
         {
           project: UserProject
@@ -51,6 +50,8 @@ type PolicyData = {
 const getUserQuery = `
   query getUser {
     me {
+      id
+      email
       projects {
         project {
           id
@@ -83,23 +84,16 @@ const getPolicyQuery = `
   }
 `;
 
-export async function getUser(): Promise<UserData | undefined> {
-  return queryApi(getUserQuery, API_TOKEN);
+export async function getUser(accessToken: string): Promise<UserData | undefined> {
+  return queryApi(getUserQuery, accessToken);
 }
 
-export async function getPolicy(slug: string): Promise<PolicyData | undefined> {
-  return queryApi(getPolicyQuery, API_TOKEN, { slug });
+export async function getPolicy(slug: string, accessToken: string): Promise<PolicyData | undefined> {
+  return queryApi(getPolicyQuery, accessToken, { slug });
 }
 
 async function queryApi(query: string, token: string, variables = {}) {
-  const apiUrl = workspace.getConfiguration(SETTINGS.NAMESPACE).get<boolean>(SETTINGS.REMOTE_POLICY_URL);
-
-  if (!apiUrl) {
-    // Log error as this should not happen, we only should use this helper when remote policy is enabled.
-    logger.error('Trying to use \'queryApi\' despite remote policy not being configured.');
-    return undefined;
-  }
-
+  const apiUrl = globals.remotePolicyUrl;
   const apiEndpointUrl = normalizeUrl(`${apiUrl}/graphql`);
 
   logger.log('apiEndpointUrl', apiEndpointUrl);

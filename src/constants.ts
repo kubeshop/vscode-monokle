@@ -8,19 +8,23 @@ export const TMP_POLICY_FILE_SUFFIX = '.config.tmp.yaml';
 
 export const REMOTE_POLICY_FILE_SUFFIX = '.config.remote.yaml';
 
+export const DEFAULT_REMOTE_POLICY_URL = 'https://api.monokle.com';
+
 export const SETTINGS = {
   NAMESPACE: 'monokle',
   ENABLED: 'enabled',
   CONFIGURATION_PATH: 'configurationPath',
   VERBOSE: 'verbose',
-  REMOTE_POLICY_URL: 'remotePolicyUrl',
+  OVERWRITE_REMOTE_POLICY_URL: 'overwriteRemotePolicyUrl',
   ENABLED_PATH: 'monokle.enabled',
   CONFIGURATION_PATH_PATH: 'monokle.configurationPath',
   VERBOSE_PATH: 'monokle.verbose',
-  REMOTE_POLICY_URL_PATH: 'monokle.remotePolicyUrl',
+  OVERWRITE_REMOTE_POLICY_URL_PATH: 'monokle.overwriteRemotePolicyUrl',
 };
 
 export const COMMANDS = {
+  LOGIN: 'monokle.login',
+  LOGOUT: 'monokle.logout',
   VALIDATE: 'monokle.validate',
   SHOW_PANEL: 'monokle.showPanel',
   SHOW_CONFIGURATION: 'monokle.showConfiguration',

@@ -1,6 +1,6 @@
 import { window } from 'vscode';
 import { canRun } from '../utils/commands';
-import { SETTINGS } from '../constants';
+import { COMMANDS } from '../constants';
 import globals from '../utils/globals';
 import type { RuntimeContext } from '../utils/runtime-context';
 
@@ -10,8 +10,8 @@ export function getDownloadPolicyCommand(context: RuntimeContext) {
       return null;
     }
 
-    if (!globals.remotePolicyUrl) {
-      window.showWarningMessage(`The '${SETTINGS.REMOTE_POLICY_URL_PATH}' configuration option is not set, cannot download remote policy.`);
+    if (!globals.isAuthenticated) {
+      window.showWarningMessage(`You are not authenticated, cannot download remote policy. Run ${COMMANDS.LOGIN} to authenticate first.}`);
       return null;
     }
 

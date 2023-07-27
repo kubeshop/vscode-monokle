@@ -43,6 +43,16 @@
   "contributes": {
     "commands": [
       {
+        "command": "monokle.login",
+        "category": "Monokle",
+        "title": "Login"
+      },
+      {
+        "command": "monokle.logout",
+        "category": "Monokle",
+        "title": "Logout"
+      },
+      {
         "command": "monokle.validate",
         "category": "Monokle",
         "title": "Validate"
@@ -79,13 +89,13 @@
           "default": null,
           "description": "Path to configuration file. If not set it will be searched in the workspace root."
         },
-        "monokle.remotePolicyUrl": {
+        "monokle.overwriteRemotePolicyUrl": {
           "type": [
             "string",
             "null"
           ],
           "default": null,
-          "description": "Monokle Cloud URL to fetch policies from. If not set local config will be used. If you are using Monokle Cloud, set it to https://api.monokle.com."
+          "description": "Overwrite Monokle Cloud URL which is used to authenticate and fetch policies from. Useful when running on-premise Monokle Cloud."
         },
         "monokle.enabled": {
           "type": "boolean",
@@ -141,6 +151,8 @@
   },
   "dependencies": {
     "@monokle/validation": "^0.23.9",
+    "env-paths": "^2.2.1",
+    "mkdirp": "^3.0.1",
     "node-fetch": "2.6.12",
     "normalize-url": "4.5.1",
     "simple-git": "^3.19.1",

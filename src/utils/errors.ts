@@ -67,3 +67,18 @@ export async function raiseWarning(msg: string, actions?: ErrorAction[]) {
 
   return window.showWarningMessage(msg);
 }
+
+export async function raiseInfo(msg: string, actions?: ErrorAction[]) {
+  if (actions?.length) {
+    return window.showErrorMessage(msg, {}, ...actions)
+      .then(selectedAction => {
+        if (!selectedAction?.callback) {
+          return;
+        }
+
+        return selectedAction.callback();
+      });
+  }
+
+  return window.showInformationMessage(msg);
+}

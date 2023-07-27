@@ -1,6 +1,7 @@
 import { join, normalize } from 'path';
 import { commands, workspace, window, StatusBarAlignment, MarkdownString } from 'vscode';
 import { COMMANDS, SETTINGS, STATUS_BAR_TEXTS, STORAGE_DIR_NAME } from './constants';
+import { getLoginCommand } from './commands/login';
 import { getValidateCommand } from './commands/validate';
 import { getWatchCommand } from './commands/watch';
 import { getShowPanelCommand } from './commands/show-panel';
@@ -14,6 +15,8 @@ import { getTooltipContentDefault } from './utils/tooltip';
 import logger from './utils/logger';
 import globals from './utils/globals';
 import type { ExtensionContext } from 'vscode';
+import { getStoreAuthSync } from './utils/store';
+import { getLogoutCommand } from './commands/logout';
 
 let runtimeContext: RuntimeContext;
 
@@ -36,6 +39,13 @@ export function activate(context: ExtensionContext) {
     statusBarItem
   );
 
+  const activeUserData = getStoreAuthSync();
+  if (activeUserData?.auth?.accessToken) {
+    runtimeContext.user = activeUserData.auth.email;
+  }
+
+  const commandLogin = commands.registerCommand(COMMANDS.LOGIN, getLoginCommand(runtimeContext));
+  const commandLogout = commands.registerCommand(COMMANDS.LOGOUT, getLogoutCommand(runtimeContext));
   const commandValidate = commands.registerCommand(COMMANDS.VALIDATE, getValidateCommand(runtimeContext));
   const commandShowPanel = commands.registerCommand(COMMANDS.SHOW_PANEL, getShowPanelCommand());
   const commandShowConfiguration = commands.registerCommand(COMMANDS.SHOW_CONFIGURATION, getShowConfigurationCommand());
@@ -63,7 +73,7 @@ export function activate(context: ExtensionContext) {
       logger.debug = globals.verbose;
     }
 
-    if (event.affectsConfiguration(SETTINGS.REMOTE_POLICY_URL_PATH)) {
+    if (event.affectsConfiguration(SETTINGS.OVERWRITE_REMOTE_POLICY_URL_PATH)) {
       runtimeContext.policyPuller.url = globals.remotePolicyUrl;
       await runtimeContext.policyPuller.refresh();
       await commands.executeCommand(COMMANDS.VALIDATE);
@@ -76,7 +86,15 @@ export function activate(context: ExtensionContext) {
     await commands.executeCommand(COMMANDS.WATCH);
   });
 
+  runtimeContext.onSessionChanged(() => {
+    runtimeContext.policyPuller.refresh()
+      .then(() => commands.executeCommand(COMMANDS.VALIDATE))
+      .then(() => commands.executeCommand(COMMANDS.WATCH));
+  });
+
   context.subscriptions.push(
+    commandLogin,
+    commandLogout,
     commandValidate,
     commandWatch,
     commandShowPanel,
