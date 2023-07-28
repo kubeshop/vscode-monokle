@@ -64,7 +64,7 @@ Use command palette to interact with extension, run validation, see current conf
 * `Monokle: Show validation panel` - opens validation panel (this can be also done be clicking on Monokle status bar icon).
 * `Monokle: Show configuration` - opens validation configuration file which is used as validation configuration for given project.
 * `Monokle: Bootstrap configuration` - creates `monokle.validation.yaml` configuration file. It is a quick way to adjust validation config.
-* `Monokle: Download policy` - downloads remote policy. This requires `monokle.remotePolicyUrl` to be configured.
+* `Monokle: Synchronize` - synchronizes remote policy from Monokle Cloud.
 
 ## Default Validation Policy
 
@@ -85,7 +85,7 @@ This extension contributes the following settings:
 * `monokle.enable` - Enable/disable this extension.
 * `monokle.configurationPath` - Set path to validation configuration file.
 * `monokle.verbose` - Log runtime info to VSC Developer Console.
-* `monokle.remotePolicyUrl` - Set Monokle Cloud URL to fetch policies from.
+* `monokle.overwriteRemotePolicyUrl` - Overwrite default Monokle Cloud URL to fetch policies from.
 
 ## Dependencies
 

@@ -12,13 +12,13 @@ export function getLogoutCommand(context: RuntimeContext) {
     }
 
     if (!globals.user.isAuthenticated) {
-        raiseInfo(`You are already logged out. You can login with ${'Monokle: Login'} command.`);
+        raiseInfo(`You are already logged out. You can login with 'Monokle: Login' command.`);
         return;
     }
 
     try {
         await emptyStoreAuth();
-        raiseInfo(`You have been successfully logged out.`);
+        raiseInfo('You have been successfully logged out.');
         context.triggerUserChange();
     } catch (err) {
         logger.error(err);

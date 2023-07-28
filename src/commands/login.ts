@@ -14,7 +14,7 @@ export function getLoginCommand(context: RuntimeContext) {
     }
 
     if (globals.user.isAuthenticated) {
-        raiseInfo(`You are already logged in. Please logout first with ${'Monokle: Logout'}.`);
+        raiseInfo(`You are already logged in. Please logout first with 'Monokle: Logout'.`);
         return;
     }
 
@@ -28,8 +28,6 @@ export function getLoginCommand(context: RuntimeContext) {
         raiseInfo('Monokle Cloud login cancelled. Resources will be validated with local configuration.');
         return;
     }
-
-    // window.withProgress
 
     try {
         const userData = await getUser(token.trim());
