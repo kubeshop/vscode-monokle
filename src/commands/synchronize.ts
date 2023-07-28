@@ -4,14 +4,14 @@ import { COMMANDS } from '../constants';
 import globals from '../utils/globals';
 import type { RuntimeContext } from '../utils/runtime-context';
 
-export function getDownloadPolicyCommand(context: RuntimeContext) {
+export function getSynchronizeCommand(context: RuntimeContext) {
   return async () => {
     if (!canRun()) {
       return null;
     }
 
     if (!globals.user.isAuthenticated) {
-      window.showWarningMessage(`You are not authenticated, cannot download remote policy. Run ${COMMANDS.LOGIN} to authenticate first.}`);
+      window.showWarningMessage(`You are not authenticated, cannot synchronize policies. Run ${COMMANDS.LOGIN} to authenticate first.}`);
       return null;
     }
 

@@ -1,5 +1,5 @@
 import { join, normalize } from 'path';
-import { commands, workspace, window, StatusBarAlignment, MarkdownString } from 'vscode';
+import { commands, workspace, window, StatusBarAlignment } from 'vscode';
 import { COMMANDS, SETTINGS, STATUS_BAR_TEXTS, STORAGE_DIR_NAME } from './constants';
 import { getLoginCommand } from './commands/login';
 import { getValidateCommand } from './commands/validate';
@@ -7,7 +7,7 @@ import { getWatchCommand } from './commands/watch';
 import { getShowPanelCommand } from './commands/show-panel';
 import { getShowConfigurationCommand } from './commands/show-configuration';
 import { getBootstrapConfigurationCommand } from './commands/bootstrap-configuration';
-import { getDownloadPolicyCommand } from './commands/download-policy';
+import { getSynchronizeCommand } from './commands/synchronize';
 import { RuntimeContext } from './utils/runtime-context';
 import { SarifWatcher } from './utils/sarif-watcher';
 import { PolicyPuller } from './utils/policy-puller';
@@ -44,7 +44,7 @@ export function activate(context: ExtensionContext) {
   const commandShowPanel = commands.registerCommand(COMMANDS.SHOW_PANEL, getShowPanelCommand());
   const commandShowConfiguration = commands.registerCommand(COMMANDS.SHOW_CONFIGURATION, getShowConfigurationCommand());
   const commandBootstrapConfiguration = commands.registerCommand(COMMANDS.BOOTSTRAP_CONFIGURATION, getBootstrapConfigurationCommand());
-  const commandDownloadPolicy = commands.registerCommand(COMMANDS.DOWNLOAD_POLICY, getDownloadPolicyCommand(runtimeContext));
+  const commandDownloadPolicy = commands.registerCommand(COMMANDS.SYNCHRONIZE, getSynchronizeCommand(runtimeContext));
   const commandWatch = commands.registerCommand(COMMANDS.WATCH, getWatchCommand(runtimeContext));
 
   const configurationWatcher = workspace.onDidChangeConfiguration(async (event) => {

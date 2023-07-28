@@ -29,7 +29,7 @@ export const COMMANDS = {
   SHOW_PANEL: 'monokle.showPanel',
   SHOW_CONFIGURATION: 'monokle.showConfiguration',
   BOOTSTRAP_CONFIGURATION: 'monokle.bootstrapConfiguration',
-  DOWNLOAD_POLICY: 'monokle.downloadPolicy',
+  SYNCHRONIZE: 'monokle.synchronize',
   WATCH: 'monokle.watch',
 };
 

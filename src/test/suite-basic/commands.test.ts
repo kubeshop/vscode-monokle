@@ -48,6 +48,6 @@ suite(`Basic - Commands: ${process.env.ROOT_PATH}`, () => {
 
   test('Exposes download policy command', async () => {
     const commandList = await commands.getCommands(false);
-    ok(commandList.includes(COMMANDS.DOWNLOAD_POLICY));
+    ok(commandList.includes(COMMANDS.SYNCHRONIZE));
   });
 });

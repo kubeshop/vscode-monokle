@@ -73,9 +73,9 @@
         "title": "Bootstrap configuration"
       },
       {
-        "command": "monokle.downloadPolicy",
+        "command": "monokle.synchronize",
         "category": "Monokle",
-        "title": "Download policy"
+        "title": "Synchronize"
       }
     ],
     "configuration": {
