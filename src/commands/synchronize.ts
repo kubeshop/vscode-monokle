@@ -1,4 +1,4 @@
-import { window } from 'vscode';
+import { window, commands } from 'vscode';
 import { canRun } from '../utils/commands';
 import { COMMANDS } from '../constants';
 import globals from '../utils/globals';
@@ -15,6 +15,8 @@ export function getSynchronizeCommand(context: RuntimeContext) {
       return null;
     }
 
-    return await context.policyPuller.refresh();
+    await context.policyPuller.refresh();
+
+    return commands.executeCommand(COMMANDS.VALIDATE);
   };
 }
