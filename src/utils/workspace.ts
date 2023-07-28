@@ -43,8 +43,7 @@ export async function getWorkspaceResources(workspaceFolder: Folder) {
 }
 
 export async function getWorkspaceConfig(workspaceFolder: Folder): Promise<WorkspaceFolderConfig> {
-  const remotePolicyUrl = workspace.getConfiguration(SETTINGS.NAMESPACE).get<string>(SETTINGS.REMOTE_POLICY_URL);
-  if (remotePolicyUrl) {
+  if (globals.user.isAuthenticated) {
     // If given folder is not a git repo, we want to fallback to other options.
     const gitRepo = await isGitRepo(workspaceFolder.uri.fsPath);
     if (!gitRepo) {

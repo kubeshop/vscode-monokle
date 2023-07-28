@@ -2,7 +2,6 @@ import { Uri, commands, window } from 'vscode';
 import { canRun } from '../utils/commands';
 import { getWorkspaceConfig, getWorkspaceFolders } from '../utils/workspace';
 import { createTemporaryConfigFile } from '../utils/validation';
-import type { RuntimeContext } from '../utils/runtime-context';
 import type { Folder } from '../utils/workspace';
 
 type FolderItem = {

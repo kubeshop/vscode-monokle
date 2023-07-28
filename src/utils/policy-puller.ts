@@ -14,25 +14,12 @@ const REFETCH_POLICY_INTERVAL_MS = 1000 * 30;
 
 export class PolicyPuller {
 
-  private _url = '';
   private _isPulling = false;
   private _pullPromise: Promise<void> | undefined;
   private _policyFetcherId: NodeJS.Timer | undefined;
 
-  constructor(url: string) {
-    this.url = url;
-  }
-
-  get url() {
-    return this._url;
-  }
-
-  set url(value: string) {
-    this._url = value;
-  }
-
   async refresh() {
-    if (!this._url) {
+    if (!globals.user.isAuthenticated) {
       return this.dispose();
     }
 
@@ -71,7 +58,7 @@ export class PolicyPuller {
   }
 
   private async fetchPolicyFiles(roots: Folder[]) {
-    const userData = await getUser();
+    const userData = await getUser(globals.user.accessToken);
 
     logger.log('userData', userData);
 
@@ -110,7 +97,7 @@ export class PolicyPuller {
       if (!repoProject) {
         const projectUrl = getMonokleCloudUrl(globals.remotePolicyUrl, `/dashboard/projects`);
         raiseCannotGetPolicyError(
-          `The '${folder.name}' repository does not belong to any project in Monokle Cloud.`,
+          `The '${folder.name}' repository does not belong to any project in Monokle Cloud. Configure it and run ''Monokle: Synchronize' command.`,
           [{
             title: 'Configure project',
             callback: () => {
@@ -121,14 +108,14 @@ export class PolicyPuller {
         continue;
       }
 
-      const repoPolicy = await getPolicy(repoProject.project.slug);
+      const repoPolicy = await getPolicy(repoProject.project.slug, globals.user.accessToken);
 
       logger.log('repoPolicy', repoPolicy);
 
       const policyUrl = getMonokleCloudUrl(globals.remotePolicyUrl, `/dashboard/projects/${repoProject.project.slug}/policy`);
       if (!repoPolicy?.data?.getProject?.policy) {
         raiseCannotGetPolicyError(
-          `The '${folder.name}' repository project does not have policy defined.`,
+          `The '${folder.name}' repository project does not have policy defined. Configure it and run ''Monokle: Synchronize' command.`,
           [{
             title: 'Configure policy',
             callback: () => {

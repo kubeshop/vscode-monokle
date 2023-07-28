@@ -41,7 +41,12 @@ export async function getTooltipContent() {
     return `**${folder.name}**: ❌ ${errors} ⚠️ ${warnings} (_config: ${configType}_)`;
   }));
 
-  const content = new MarkdownString(`${folderList.join('<br>')}<br><br>Show validation panel`);
+  let activeUserText = '';
+  if (globals.user.isAuthenticated) {
+    activeUserText = `<hr><br>Logged in as **${globals.user.email}**`;
+  }
+
+  const content = new MarkdownString(`${folderList.join('<br>')}${activeUserText}<hr><br>Show validation panel`);
   content.supportHtml = true;
 
   return content;

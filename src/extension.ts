@@ -1,16 +1,18 @@
 import { join, normalize } from 'path';
-import { commands, workspace, window, StatusBarAlignment, MarkdownString } from 'vscode';
+import { commands, workspace, window, StatusBarAlignment } from 'vscode';
 import { COMMANDS, SETTINGS, STATUS_BAR_TEXTS, STORAGE_DIR_NAME } from './constants';
+import { getLoginCommand } from './commands/login';
 import { getValidateCommand } from './commands/validate';
 import { getWatchCommand } from './commands/watch';
 import { getShowPanelCommand } from './commands/show-panel';
 import { getShowConfigurationCommand } from './commands/show-configuration';
 import { getBootstrapConfigurationCommand } from './commands/bootstrap-configuration';
-import { getDownloadPolicyCommand } from './commands/download-policy';
+import { getSynchronizeCommand } from './commands/synchronize';
 import { RuntimeContext } from './utils/runtime-context';
 import { SarifWatcher } from './utils/sarif-watcher';
 import { PolicyPuller } from './utils/policy-puller';
 import { getTooltipContentDefault } from './utils/tooltip';
+import { getLogoutCommand } from './commands/logout';
 import logger from './utils/logger';
 import globals from './utils/globals';
 import type { ExtensionContext } from 'vscode';
@@ -32,24 +34,24 @@ export function activate(context: ExtensionContext) {
   runtimeContext = new RuntimeContext(
     context,
     new SarifWatcher(),
-    new PolicyPuller(globals.remotePolicyUrl),
+    new PolicyPuller(),
     statusBarItem
   );
 
+  const commandLogin = commands.registerCommand(COMMANDS.LOGIN, getLoginCommand(runtimeContext));
+  const commandLogout = commands.registerCommand(COMMANDS.LOGOUT, getLogoutCommand(runtimeContext));
   const commandValidate = commands.registerCommand(COMMANDS.VALIDATE, getValidateCommand(runtimeContext));
   const commandShowPanel = commands.registerCommand(COMMANDS.SHOW_PANEL, getShowPanelCommand());
   const commandShowConfiguration = commands.registerCommand(COMMANDS.SHOW_CONFIGURATION, getShowConfigurationCommand());
   const commandBootstrapConfiguration = commands.registerCommand(COMMANDS.BOOTSTRAP_CONFIGURATION, getBootstrapConfigurationCommand());
-  const commandDownloadPolicy = commands.registerCommand(COMMANDS.DOWNLOAD_POLICY, getDownloadPolicyCommand(runtimeContext));
+  const commandDownloadPolicy = commands.registerCommand(COMMANDS.SYNCHRONIZE, getSynchronizeCommand(runtimeContext));
   const commandWatch = commands.registerCommand(COMMANDS.WATCH, getWatchCommand(runtimeContext));
 
   const configurationWatcher = workspace.onDidChangeConfiguration(async (event) => {
     if (event.affectsConfiguration(SETTINGS.ENABLED_PATH)) {
       const enabled = globals.enabled;
       if (enabled) {
-        await runtimeContext.policyPuller.refresh();
-        await commands.executeCommand(COMMANDS.VALIDATE);
-        await commands.executeCommand(COMMANDS.WATCH);
+        await initialRun(runtimeContext);
       } else {
         await runtimeContext.dispose();
       }
@@ -63,8 +65,7 @@ export function activate(context: ExtensionContext) {
       logger.debug = globals.verbose;
     }
 
-    if (event.affectsConfiguration(SETTINGS.REMOTE_POLICY_URL_PATH)) {
-      runtimeContext.policyPuller.url = globals.remotePolicyUrl;
+    if (event.affectsConfiguration(SETTINGS.OVERWRITE_REMOTE_POLICY_URL_PATH)) {
       await runtimeContext.policyPuller.refresh();
       await commands.executeCommand(COMMANDS.VALIDATE);
     }
@@ -77,6 +78,8 @@ export function activate(context: ExtensionContext) {
   });
 
   context.subscriptions.push(
+    commandLogin,
+    commandLogout,
     commandValidate,
     commandWatch,
     commandShowPanel,
@@ -91,9 +94,7 @@ export function activate(context: ExtensionContext) {
     return;
   }
 
-  runtimeContext.policyPuller.refresh()
-    .then(() => commands.executeCommand(COMMANDS.VALIDATE))
-    .then(() => commands.executeCommand(COMMANDS.WATCH));
+  initialRun(runtimeContext);
 }
 
 export function deactivate() {
@@ -102,4 +103,16 @@ export function deactivate() {
   if (runtimeContext) {
     runtimeContext.dispose();
   }
+}
+
+function initialRun(runtimeContext: RuntimeContext) {
+  runtimeContext.onUserChanged(() => {
+    runtimeContext.policyPuller.refresh()
+      .then(() => commands.executeCommand(COMMANDS.VALIDATE))
+      .then(() => commands.executeCommand(COMMANDS.WATCH));
+  });
+
+  runtimeContext.policyPuller.refresh()
+    .then(() => commands.executeCommand(COMMANDS.VALIDATE))
+    .then(() => commands.executeCommand(COMMANDS.WATCH));
 }

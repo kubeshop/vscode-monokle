@@ -19,7 +19,7 @@ type TestWorkspace = {
   disabled?: boolean;
 };
 
-async function runSuite(testFile: string, workspaces: TestWorkspace[]) {
+async function runSuite(testFile: string, workspaces: TestWorkspace[], setupRemoteEnv = false) {
   let currentWorkspace: TestWorkspace | undefined;
 
   try {
@@ -78,6 +78,10 @@ async function runSuite(testFile: string, workspaces: TestWorkspace[]) {
           WORKSPACE_CONFIG_TYPE: workspace.config,
           // eslint-disable-next-line @typescript-eslint/naming-convention
           WORKSPACE_DISABLED: Boolean(workspace.disabled === true).toString(),
+          // eslint-disable-next-line @typescript-eslint/naming-convention
+          MONOKLE_TEST_CONFIG_PATH: setupRemoteEnv ? fixturesDestDir : testTmpDir,
+          // eslint-disable-next-line @typescript-eslint/naming-convention
+          MONOKLE_TEST_SERVER_URL: setupRemoteEnv ? 'http://localhost:5000' : '',
         }
       });
     }
@@ -110,7 +114,7 @@ async function main() {
       folders: 2,
       config: 'config',
     },
-    // This folder has validation disabled in setting by default.
+    // This folder has validation disabled in settings by default.
     {
       path: './folder-with-config',
       resources: 1,
@@ -123,10 +127,13 @@ async function main() {
   await runSuite('./suite-basic/index', [workspaces[0]]);
 
   // Run policies tests on single repo.
-  await runSuite('./suite-policies/index', [workspaces[3]]);
+  await runSuite('./suite-policies/index', [workspaces[3]], true);
 
-  // Run integration-like tests on multiple, different workspaces.
-  await runSuite('./suite-integration/index', workspaces);
+  // Run integration-like tests on multiple, different workspaces (local config).
+  await runSuite('./suite-integration/index', workspaces.slice(0, -1));
+
+  // Run integration-like tests for remote config separately as it needs different setup.
+  await runSuite('./suite-integration/index', [workspaces[3]], true);
 }
 
 main();
