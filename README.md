@@ -24,24 +24,6 @@ This is **Technical Preview** release. We are open to any feedback and eager to 
 
 ## Features
 
-### Centralize policy management with Monokle Cloud
-
-Quickly define and manage polices in Monokle Cloud which will be used for anyone working with the project in VSC.
-
-#### Configure policy easily with Monokle Cloud
-
-<p align="center">
-  <img src="assets/gifs/remote-policy-config.gif"/>
-</p>
-
-#### Synchronizes automatically and with single command
-
-<p align="center">
-  <img src="assets/gifs/remote-policy-sync.gif"/>
-</p>
-
-See [**Monokle Cloud integration setup** section](#monokle-cloud-integration-setup) below on how to configure it.
-
 ### Easily navigate through all errors and resources
 
 Monokle validation panel allows you to easily see all validation errors grouped by resource or rule id, see each rule details and navigate to exact line in each resource where violation was detected.
@@ -73,6 +55,25 @@ With dedicated `Monokle: Bootstrap configuration` command, you can customize val
 <p align="center">
   <img src="assets/gifs/configuration.gif"/>
 </p>
+
+### Centralize policies management with Monokle Cloud
+
+Quickly define and manage polices in Monokle Cloud which will be used for anyone working with the project in VSC.
+
+#### Configure policies easily with Monokle Cloud
+
+<p align="center">
+  <img src="assets/gifs/remote-policy-config.gif"/>
+</p>
+
+#### Synchronizes automatically and with single command
+
+<p align="center">
+  <img src="assets/gifs/remote-policy-sync.gif"/>
+</p>
+
+See [**Monokle Cloud integration setup** section](#monokle-cloud-integration-setup) below on how to configure it.
+
 
 ### Runs with commands
 
