@@ -155,6 +155,7 @@
     "mkdirp": "^3.0.1",
     "node-fetch": "2.6.12",
     "normalize-url": "4.5.1",
+    "openid-client": "^5.4.3",
     "simple-git": "^3.19.1",
     "uuid": "^9.0.0"
   },

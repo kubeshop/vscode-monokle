@@ -70,7 +70,7 @@ export async function raiseWarning(msg: string, actions?: ErrorAction[]) {
 
 export async function raiseInfo(msg: string, actions?: ErrorAction[]) {
   if (actions?.length) {
-    return window.showErrorMessage(msg, {}, ...actions)
+    return window.showInformationMessage(msg, {}, ...actions)
       .then(selectedAction => {
         if (!selectedAction?.callback) {
           return;

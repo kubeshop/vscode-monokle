@@ -4,11 +4,13 @@ import { mkdirp } from 'mkdirp';
 import { existsSync, readFileSync } from 'fs';
 import { readFile, writeFile } from 'fs/promises';
 import { dirname, join, normalize } from 'path';
+import type { Token } from '../commands/login';
 
 type StoreAuth = {
   auth?: {
     email: string;
     accessToken: string;
+    accessTokenData: Token;
   }
 };
 
@@ -30,13 +32,14 @@ export async function emptyStoreAuth(): Promise<boolean> {
   return writeStoreData(configPath, '');
 }
 
-export async function setStoreAuth(email: string, accessToken: string): Promise<boolean> {
+export async function setStoreAuth(email: string, accessTokenData: Token): Promise<boolean> {
   const configPath = getStoreConfigPath(CONFIG_FILE_AUTH);
   const configDoc = new Document();
   configDoc.contents = ({
     auth: {
       email,
-      accessToken
+      accessToken: accessTokenData.access_token,
+      accessTokenData,
     }
   } as any);
 

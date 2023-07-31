@@ -10,6 +10,8 @@ export const REMOTE_POLICY_FILE_SUFFIX = '.config.remote.yaml';
 
 export const DEFAULT_REMOTE_POLICY_URL = 'https://api.monokle.com';
 
+export const DEVICE_FLOW_CLIENT_ID = 'monokle-cli';
+
 export const SETTINGS = {
   NAMESPACE: 'monokle',
   ENABLED: 'enabled',
