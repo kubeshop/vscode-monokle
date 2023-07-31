@@ -28,9 +28,19 @@ This is **Technical Preview** release. We are open to any feedback and eager to 
 
 Quickly define and manage polices in Monokle Cloud which will be used for anyone working with the project in VSC.
 
+#### Configure policy easily with Monokle Cloud
 
+<p align="center">
+  <img src="assets/gifs/remote-policy-config.gif"/>
+</p>
 
-See **Monokle Cloud integration setup** section below on how to configure it.
+#### Synchronizes automatically and with single command
+
+<p align="center">
+  <img src="assets/gifs/remote-policy-sync.gif"/>
+</p>
+
+See [**Monokle Cloud integration setup** section](#monokle-cloud-integration-setup) below on how to configure it.
 
 ### Easily navigate through all errors and resources
 
@@ -146,6 +156,15 @@ We are happy to help and assist you in case of any doubts or questions.
 For contributing code see [CONTRIBUTING.md](https://github.com/kubeshop/vscode-monokle/blob/main/CONTRIBUTING.md) file.
 
 ## Release Notes
+
+### 0.2.0
+
+### New Features
+
+* Introduced `Monokle: Login` command to allow logging in to Monokle Cloud with access token.
+* Introduced `Monokle: Logout` command to allow logging out from Monokle Cloud.
+* Introduced `Monokle: Synchronize` command to manually trigger remote policy synchronization from Monokle Cloud.
+* Introduced `monokle.overwriteRemotePolicyUrl` configuration option to allow overwriting default Monokle Cloud URL used for authentication and policies fetching.
 
 ### 0.1.2
 
