@@ -1,6 +1,7 @@
 import { workspace } from 'vscode';
 import { DEFAULT_REMOTE_POLICY_URL, SETTINGS } from '../constants';
-import { getStoreAuthSync } from './store';
+import { getStoreAuthSync, setStoreAuth } from './store';
+import { refreshAuthFlow } from './device-flow';
 
 class Globals {
   private _storagePath: string = '';
@@ -44,6 +45,32 @@ class Globals {
 
   refetchUser() {
     this._activeUser = getStoreAuthSync() ?? {};
+  }
+
+  async refreshUserToken() {
+    if (!this._activeUser) {
+      return;
+    }
+
+    const expiresAt = this._activeUser.auth?.accessTokenData?.expires_at;
+    if (!expiresAt) {
+      return;
+    }
+
+    const now = new Date();
+    const expiresAtDate = new Date(expiresAt * 1000);
+    const diffMinutes = expiresAtDate.getTime() - now.getTime();
+
+    if (diffMinutes < 5) {
+      const refreshToken = this._activeUser.auth?.accessTokenData?.refresh_token;
+      if (!refreshToken) {
+        return;
+      }
+
+      const token = await refreshAuthFlow(refreshToken);
+      await setStoreAuth(this._activeUser.auth.email, token);
+      this.refetchUser();
+    }
   }
 
   asObject() {

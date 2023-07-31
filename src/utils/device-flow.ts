@@ -26,9 +26,9 @@ export async function pollAuthFlow(handle: DeviceFlowHandle<BaseClient>) {
   return token;
 }
 
-export async function refreshAuthFlow(token: TokenSet) {
+export async function refreshAuthFlow(refreshToken: string) {
   const client = await getClient();
-  return client.refresh(token);
+  return client.refresh(refreshToken);
 }
 
 let currentClient: BaseClient | null = null;

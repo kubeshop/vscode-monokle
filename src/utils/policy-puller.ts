@@ -58,6 +58,8 @@ export class PolicyPuller {
   }
 
   private async fetchPolicyFiles(roots: Folder[]) {
+    await globals.refreshUserToken();
+
     const userData = await getUser(globals.user.accessToken);
 
     logger.log('userData', userData);
