@@ -37,9 +37,9 @@ class Globals {
 
   get user() {
     return {
-      isAuthenticated: Boolean(this._activeUser.auth?.accessToken),
+      isAuthenticated: Boolean(this._activeUser.auth?.token.access_token),
       email: this._activeUser.auth?.email,
-      accessToken: this._activeUser.auth?.accessToken,
+      accessToken: this._activeUser.auth?.token.access_token,
     };
   }
 

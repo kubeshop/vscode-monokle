@@ -132,14 +132,14 @@ suite(`Policies - Remote: ${process.env.ROOT_PATH}`, () => {
     const userData = await getStoreAuth();
 
     ok(userData.auth.email);
-    ok(userData.auth.accessToken);
+    ok(userData.auth.token.access_token);
 
     await commands.executeCommand(COMMANDS.LOGOUT);
 
     const userDataEmpty = await getStoreAuth();
 
     ok(userDataEmpty?.auth?.email === undefined);
-    ok(userDataEmpty?.auth?.accessToken === undefined);
+    ok(userDataEmpty?.auth?.token.access_token === undefined);
   }).timeout(15000);
 });
 

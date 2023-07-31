@@ -1,4 +1,3 @@
-
 import { Issuer, DeviceFlowHandle, BaseClient, TokenSet } from 'openid-client';
 import { DEVICE_FLOW_CLIENT_ID } from '../constants';
 import logger from './logger';

@@ -1,4 +1,4 @@
-import { window } from 'vscode';
+import { MessageOptions, window } from 'vscode';
 import { SETTINGS } from '../constants';
 import globals from './globals';
 import type { WorkspaceFolderConfig, Folder } from './workspace';
@@ -38,9 +38,9 @@ export async function raiseCannotGetPolicyError(msg: string, actions?: ErrorActi
   return raiseError(`${msg} Remote policy cannot be fetched and resources will not be validated.`, actions);
 }
 
-export async function raiseError(msg: string, actions?: ErrorAction[]) {
+export async function raiseError(msg: string, actions: ErrorAction[] = [], options: MessageOptions = {}) {
   if (actions?.length) {
-    return window.showErrorMessage(msg, {}, ...actions)
+    return window.showErrorMessage(msg, options, ...actions)
       .then(selectedAction => {
         if (!selectedAction?.callback) {
           return;
@@ -50,12 +50,12 @@ export async function raiseError(msg: string, actions?: ErrorAction[]) {
       });
   }
 
-  return window.showErrorMessage(msg);
+  return window.showErrorMessage(msg, options);
 }
 
-export async function raiseWarning(msg: string, actions?: ErrorAction[]) {
+export async function raiseWarning(msg: string, actions: ErrorAction[] = [], options: MessageOptions = {}) {
   if (actions?.length) {
-    return window.showErrorMessage(msg, {}, ...actions)
+    return window.showErrorMessage(msg, options, ...actions)
       .then(selectedAction => {
         if (!selectedAction?.callback) {
           return;
@@ -65,12 +65,12 @@ export async function raiseWarning(msg: string, actions?: ErrorAction[]) {
       });
   }
 
-  return window.showWarningMessage(msg);
+  return window.showWarningMessage(msg, options);
 }
 
-export async function raiseInfo(msg: string, actions?: ErrorAction[]) {
+export async function raiseInfo(msg: string, actions: ErrorAction[] = [], options: MessageOptions = {}) {
   if (actions?.length) {
-    return window.showInformationMessage(msg, {}, ...actions)
+    return window.showInformationMessage(msg, options, ...actions)
       .then(selectedAction => {
         if (!selectedAction?.callback) {
           return;
@@ -80,5 +80,5 @@ export async function raiseInfo(msg: string, actions?: ErrorAction[]) {
       });
   }
 
-  return window.showInformationMessage(msg);
+  return window.showInformationMessage(msg, options);
 }

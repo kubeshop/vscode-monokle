@@ -1,3 +1,4 @@
 auth:
   email: testuser@monokle.com
-  accessToken: testtoken
+  token:
+    access_token: testtoken

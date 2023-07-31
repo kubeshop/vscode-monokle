@@ -45,7 +45,10 @@ export function getLoginCommand(context: RuntimeContext) {
           callback: () => {
             env.openExternal(Uri.parse(handle.verification_uri_complete));
           }
-        }]
+        }],
+        {
+          modal: true,
+        },
       );
 
       const tokenSet = await pollAuthFlow(handle);

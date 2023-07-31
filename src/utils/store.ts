@@ -9,8 +9,7 @@ import type { Token } from '../commands/login';
 type StoreAuth = {
   auth?: {
     email: string;
-    accessToken: string;
-    accessTokenData: Token;
+    token: Token;
   }
 };
 
@@ -32,14 +31,13 @@ export async function emptyStoreAuth(): Promise<boolean> {
   return writeStoreData(configPath, '');
 }
 
-export async function setStoreAuth(email: string, accessTokenData: Token): Promise<boolean> {
+export async function setStoreAuth(email: string, token: Token): Promise<boolean> {
   const configPath = getStoreConfigPath(CONFIG_FILE_AUTH);
   const configDoc = new Document();
   configDoc.contents = ({
     auth: {
       email,
-      accessToken: accessTokenData.access_token,
-      accessTokenData,
+      token: token,
     }
   } as any);
 
