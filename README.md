@@ -56,15 +56,36 @@ With dedicated `Monokle: Bootstrap configuration` command, you can customize val
   <img src="assets/gifs/configuration.gif"/>
 </p>
 
+### Centralize policies management with Monokle Cloud
+
+Quickly define and manage polices in Monokle Cloud which will be used for anyone working with the project in VSC.
+
+#### Configure policies easily with Monokle Cloud
+
+<p align="center">
+  <img src="assets/gifs/remote-policy-config.gif"/>
+</p>
+
+#### Synchronizes automatically and with single command
+
+<p align="center">
+  <img src="assets/gifs/remote-policy-sync.gif"/>
+</p>
+
+See [**Monokle Cloud integration setup** section](#monokle-cloud-integration-setup) below on how to configure it.
+
+
 ### Runs with commands
 
 Use command palette to interact with extension, run validation, see current configuration and more.
 
 * `Monokle: Validate` - runs validation of Kubernetes resources on demand.
+* `Monokle: Synchronize` - synchronizes remote policy from Monokle Cloud.
+* `Monokle: Login` - logins to Monokle Cloud.
+* `Monokle: Logout` - logouts from Monokle Cloud.
 * `Monokle: Show validation panel` - opens validation panel (this can be also done be clicking on Monokle status bar icon).
 * `Monokle: Show configuration` - opens validation configuration file which is used as validation configuration for given project.
 * `Monokle: Bootstrap configuration` - creates `monokle.validation.yaml` configuration file. It is a quick way to adjust validation config.
-* `Monokle: Synchronize` - synchronizes remote policy from Monokle Cloud.
 
 ## Default Validation Policy
 
@@ -76,7 +97,41 @@ The default configuration used for resource validation enables the following val
 
 Read about these plugins and their individual validation rules in the [Core Plugins documentation](https://github.com/kubeshop/monokle-core/blob/main/packages/validation/docs/core-plugins.md).
 
-To customize default configuration you can run `Monokle: Bootstrap validation` command to generate local `monokle.validation.yaml` configuration file in your project folder.
+To customize default configuration you can run `Monokle: Bootstrap validation` command to generate local `monokle.validation.yaml` configuration file in your project folder or connect with remote policy with Monokle Cloud.
+
+## Monokle Cloud integration setup
+
+To use remote policy with Monokle extension you will need to create a project and configure policy for it in Monokle Cloud. Start by signing in to [Monokle Cloud](https://app.monokle.com).
+
+> In case of doubts, refer to [Getting Started Guide](https://docs.monokle.com/tutorials/getting-started) or hit us directly on [Discord](https://discord.com/invite/6zupCZFQbe).
+
+### Project setup
+
+After signing up, start by creating a project on [Projects page](https://app.monokle.com/dashboard/projects):
+
+<p align="center">
+  <img src="assets/images/projects.png"/>
+</p>
+
+### Add your repository to your project
+
+After project is created, add a repository (the one you will be working locally with) to a project. This can be done by going to `Repositories` tab in project view and using `Add repository` button:
+
+<p align="center">
+  <img src="assets/images/repos.png"/>
+</p>
+
+### Policy setup
+
+The last step is policy setup. You can use policy wizard by going to `Policy` tab in project view:
+
+<p align="center">
+  <img src="assets/images/policies.png"/>
+</p>
+
+### Synchronize
+
+After the setup is done, you can run `Monokle: Synchronize` command to speed-up initial policy fetching and get the validation going.
 
 ## Extension Settings
 
@@ -102,6 +157,15 @@ We are happy to help and assist you in case of any doubts or questions.
 For contributing code see [CONTRIBUTING.md](https://github.com/kubeshop/vscode-monokle/blob/main/CONTRIBUTING.md) file.
 
 ## Release Notes
+
+### 0.2.0
+
+### New Features
+
+* Introduced `Monokle: Login` command to allow logging in to Monokle Cloud with access token.
+* Introduced `Monokle: Logout` command to allow logging out from Monokle Cloud.
+* Introduced `Monokle: Synchronize` command to manually trigger remote policy synchronization from Monokle Cloud.
+* Introduced `monokle.overwriteRemotePolicyUrl` configuration option to allow overwriting default Monokle Cloud URL used for authentication and policies fetching.
 
 ### 0.1.2
 
