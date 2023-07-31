@@ -160,7 +160,7 @@ For contributing code see [CONTRIBUTING.md](https://github.com/kubeshop/vscode-m
 
 ### 0.2.0
 
-### New Features
+#### New Features
 
 * Introduced `Monokle: Login` command to allow logging in to Monokle Cloud with access token.
 * Introduced `Monokle: Logout` command to allow logging out from Monokle Cloud.
