@@ -1,5 +1,6 @@
 import { canRun } from '../utils/commands';
 import { raiseError, raiseInfo } from '../utils/errors';
+import { COMMAND_NAMES } from '../constants';
 import logger from '../utils/logger';
 import type { RuntimeContext } from '../utils/runtime-context';
 
@@ -12,7 +13,7 @@ export function getLogoutCommand(context: RuntimeContext) {
     const authenticator = await context.getAuthenticatorInstance();
 
     if (!authenticator.user.isAuthenticated) {
-        raiseInfo(`You are already logged out. You can login with 'Monokle: Login' command.`);
+        raiseInfo(`You are already logged out. You can login with '${COMMAND_NAMES.LOGOUT}' command.`);
         return;
     }
 

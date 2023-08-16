@@ -111,19 +111,29 @@ function initialRun(runtimeContext: RuntimeContext) {
       globals.setAuthenticator(authenticator);
 
       authenticator.on('login', async (user) => {
-        logger.log('login', user);
+        logger.log('EVENT:login', user);
 
         await runtimeContext.policyPuller.refresh();
         await commands.executeCommand(COMMANDS.VALIDATE);
-        await commands.executeCommand(COMMANDS.WATCH);
       });
 
       authenticator.on('logout', async () => {
-        logger.log('logout');
+        logger.log('EVENT:logout');
 
         await runtimeContext.policyPuller.refresh();
         await commands.executeCommand(COMMANDS.VALIDATE);
-        await commands.executeCommand(COMMANDS.WATCH);
+      });
+    })
+    .then(() => runtimeContext.getSynchronizerInstance())
+    .then((synchronizer) => {
+      globals.setSynchronizer(synchronizer);
+      runtimeContext.policyPuller.initialize(synchronizer);
+
+      synchronizer.on('synchronize', async (policy) => {
+        logger.log('EVENT:synchronize', policy);
+
+        await runtimeContext.policyPuller.refresh();
+        await commands.executeCommand(COMMANDS.VALIDATE);
       });
     })
     .then(() => runtimeContext.policyPuller.refresh())

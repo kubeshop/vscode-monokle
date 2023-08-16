@@ -2,6 +2,7 @@
 import { STATUS_BAR_TEXTS } from '../constants';
 import { getTooltipContent } from './tooltip';
 import { getAuthenticator } from './authentication';
+import { getSynchronizer } from './synchronization';
 import type { Disposable, ExtensionContext, StatusBarItem } from 'vscode';
 import type { SarifWatcher } from './sarif-watcher';
 import type { PolicyPuller } from './policy-puller';
@@ -15,7 +16,8 @@ export class RuntimeContext {
     private _sarifWatcher: SarifWatcher,
     private _policyPuller: PolicyPuller,
     private _statusBarItem: StatusBarItem,
-    private _authenticator: Awaited<ReturnType<typeof getAuthenticator>> = null) {}
+    private _authenticator: Awaited<ReturnType<typeof getAuthenticator>> = null,
+    private _synchronizer: Awaited<ReturnType<typeof getSynchronizer>> = null) {}
 
   get extensionContext() {
     return this._extensionContext;
@@ -54,6 +56,14 @@ export class RuntimeContext {
     return this._authenticator;
   }
 
+  async getSynchronizerInstance() {
+    if (!this._synchronizer) {
+      this._synchronizer = await getSynchronizer();
+    }
+
+    return this._synchronizer;
+  }
+
   async updateTooltip() {
     this._statusBarItem.tooltip = await getTooltipContent();
   }
@@ -79,6 +89,10 @@ export class RuntimeContext {
 
     if (this._authenticator) {
       this._authenticator.removeAllListeners();
+    }
+
+    if (this._synchronizer) {
+      this._synchronizer.removeAllListeners();
     }
   }
 }

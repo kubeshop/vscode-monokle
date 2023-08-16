@@ -1,6 +1,7 @@
 import { window, env, Uri } from 'vscode';
 import { canRun } from '../utils/commands';
 import { raiseError, raiseInfo } from '../utils/errors';
+import { COMMAND_NAMES } from '../constants';
 import logger from '../utils/logger';
 import type { TokenSet } from 'openid-client';
 import type { RuntimeContext } from '../utils/runtime-context';
@@ -27,7 +28,7 @@ export function getLoginCommand(context: RuntimeContext) {
     const authenticator = await context.getAuthenticatorInstance();
 
     if (authenticator.user.isAuthenticated) {
-        raiseInfo(`You are already logged in. Please logout first with 'Monokle: Logout'.`);
+        raiseInfo(`You are already logged in. Please logout first with '${COMMAND_NAMES.LOGIN}'.`);
         return;
     }
 

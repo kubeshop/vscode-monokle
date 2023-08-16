@@ -6,11 +6,7 @@ export const VALIDATION_FILE_SUFFIX = '.validation.json';
 
 export const TMP_POLICY_FILE_SUFFIX = '.config.tmp.yaml';
 
-export const REMOTE_POLICY_FILE_SUFFIX = '.config.remote.yaml';
-
-export const DEFAULT_REMOTE_POLICY_URL = 'https://api.monokle.com';
-
-export const DEVICE_FLOW_CLIENT_ID = 'monokle-cli';
+export const DEFAULT_REMOTE_POLICY_URL = 'https://dev.monokle.com';
 
 export const SETTINGS = {
   NAMESPACE: 'monokle',
@@ -33,6 +29,17 @@ export const COMMANDS = {
   BOOTSTRAP_CONFIGURATION: 'monokle.bootstrapConfiguration',
   SYNCHRONIZE: 'monokle.synchronize',
   WATCH: 'monokle.watch',
+};
+
+export const COMMAND_NAMES = {
+  LOGIN: 'Monokle: Login',
+  LOGOUT: 'Monokle: Logout',
+  VALIDATE: 'Monokle: Validate',
+  SHOW_PANEL: 'Monokle: Show validation panel',
+  SHOW_CONFIGURATION: 'Monokle: Show configuration',
+  BOOTSTRAP_CONFIGURATION: 'Monokle: Bootstrap configuration',
+  SYNCHRONIZE: 'Monokle: Synchronize',
+  WATCH: 'Monokle: Watch',
 };
 
 export const STATUS_BAR_TEXTS = {

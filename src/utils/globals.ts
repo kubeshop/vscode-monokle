@@ -1,10 +1,12 @@
 import { workspace } from 'vscode';
 import { DEFAULT_REMOTE_POLICY_URL, SETTINGS } from '../constants';
 import { getAuthenticator } from './authentication';
+import { getSynchronizer } from './synchronization';
 
 class Globals {
   private _storagePath: string = '';
   private _authenticator: Awaited<ReturnType<typeof getAuthenticator>> = null;
+  private _synchronizer: Awaited<ReturnType<typeof getSynchronizer>> = null;
 
   get storagePath() {
     return this._storagePath;
@@ -36,14 +38,26 @@ class Globals {
 
   get user(): Awaited<ReturnType<typeof getAuthenticator>>['user'] {
     if (!this._authenticator) {
-      throw new Error('Authenticator not initialized for globals.')
+      throw new Error('Authenticator not initialized for globals.');
     }
 
     return this._authenticator.user;
   }
 
+  async getRemotePolicy(path: string) {
+    if (!this._synchronizer) {
+      throw new Error('Synchronizer not initialized for globals.');
+    }
+
+    return this._synchronizer.getPolicy(path);
+  }
+
   setAuthenticator(authenticator: Awaited<ReturnType<typeof getAuthenticator>>) {
     this._authenticator = authenticator;
+  }
+
+  setSynchronizer(synchronizer: Awaited<ReturnType<typeof getSynchronizer>>) {
+    this._synchronizer = synchronizer;
   }
 
   asObject() {

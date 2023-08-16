@@ -60,13 +60,9 @@ export async function getValidator(validatorId: string, config?: any) {
 export async function validateFolder(root: Folder): Promise<Uri | null> {
   const resources = await getWorkspaceResources(root);
 
-  logger.log(root.name, 'resources');
-
   if(!resources.length) {
     return null;
   }
-
-  resources.forEach(resource => logger.log(resource.id, resource.name, resource.content));
 
   const workspaceConfig = await getWorkspaceConfig(root);
 
