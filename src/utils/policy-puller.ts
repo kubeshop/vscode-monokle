@@ -58,9 +58,9 @@ export class PolicyPuller {
   }
 
   private async fetchPolicyFiles(roots: Folder[]) {
-    await globals.refreshUserToken();
+    // await globals.refreshUserToken();
 
-    const userData = await getUser(globals.user.accessToken);
+    const userData = await getUser(globals.user.token);
 
     logger.log('userData', userData);
 
@@ -110,7 +110,7 @@ export class PolicyPuller {
         continue;
       }
 
-      const repoPolicy = await getPolicy(repoProject.project.slug, globals.user.accessToken);
+      const repoPolicy = await getPolicy(repoProject.project.slug, globals.user.token);
 
       logger.log('repoPolicy', repoPolicy);
 

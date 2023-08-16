@@ -1,7 +1,7 @@
 import { mkdir, readFile, unlink, writeFile } from 'fs/promises';
 import { join, normalize } from 'path';
 import { platform } from 'os';
-import { Uri, workspace } from 'vscode';
+import { Uri } from 'vscode';
 import { Document } from 'yaml';
 import { getWorkspaceConfig, getWorkspaceResources } from './workspace';
 import { VALIDATION_FILE_SUFFIX, DEFAULT_CONFIG_FILE_NAME, TMP_POLICY_FILE_SUFFIX } from '../constants';

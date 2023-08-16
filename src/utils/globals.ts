@@ -1,11 +1,10 @@
 import { workspace } from 'vscode';
 import { DEFAULT_REMOTE_POLICY_URL, SETTINGS } from '../constants';
-import { getStoreAuthSync, setStoreAuth } from './store';
-import { refreshAuthFlow } from './device-flow';
+import { getAuthenticator } from './authentication';
 
 class Globals {
   private _storagePath: string = '';
-  private _activeUser: any = {};
+  private _authenticator: Awaited<ReturnType<typeof getAuthenticator>> = null;
 
   get storagePath() {
     return this._storagePath;
@@ -35,42 +34,16 @@ class Globals {
     return workspace.getConfiguration(SETTINGS.NAMESPACE).get<boolean>(SETTINGS.VERBOSE);
   }
 
-  get user() {
-    return {
-      isAuthenticated: Boolean(this._activeUser.auth?.token.access_token),
-      email: this._activeUser.auth?.email,
-      accessToken: this._activeUser.auth?.token.access_token,
-    };
+  get user(): Awaited<ReturnType<typeof getAuthenticator>>['user'] {
+    if (!this._authenticator) {
+      throw new Error('Authenticator not initialized for globals.')
+    }
+
+    return this._authenticator.user;
   }
 
-  refetchUser() {
-    this._activeUser = getStoreAuthSync() ?? {};
-  }
-
-  async refreshUserToken() {
-    if (!this._activeUser) {
-      return;
-    }
-
-    const expiresAt = this._activeUser.auth?.accessTokenData?.expires_at;
-    if (!expiresAt) {
-      return;
-    }
-
-    const now = new Date();
-    const expiresAtDate = new Date(expiresAt * 1000);
-    const diffMinutes = expiresAtDate.getTime() - now.getTime();
-
-    if (diffMinutes < 5) {
-      const refreshToken = this._activeUser.auth?.accessTokenData?.refresh_token;
-      if (!refreshToken) {
-        return;
-      }
-
-      const token = await refreshAuthFlow(refreshToken);
-      await setStoreAuth(this._activeUser.auth.email, token);
-      this.refetchUser();
-    }
+  setAuthenticator(authenticator: Awaited<ReturnType<typeof getAuthenticator>>) {
+    this._authenticator = authenticator;
   }
 
   asObject() {
@@ -87,7 +60,5 @@ class Globals {
 }
 
 const globalsInstance = new Globals();
-
-globalsInstance.refetchUser();
 
 export default globalsInstance;

@@ -23,7 +23,7 @@ export function activate(context: ExtensionContext) {
   globals.storagePath = normalize(join(context.extensionPath, STORAGE_DIR_NAME));
   logger.debug = globals.verbose;
 
-  logger.log('Activating extension...', globals.asObject());
+  logger.log('Activating extension...');
 
   const statusBarItem = window.createStatusBarItem(StatusBarAlignment.Left, 25);
   statusBarItem.text = STATUS_BAR_TEXTS.DEFAULT;
@@ -106,13 +106,29 @@ export function deactivate() {
 }
 
 function initialRun(runtimeContext: RuntimeContext) {
-  runtimeContext.onUserChanged(() => {
-    runtimeContext.policyPuller.refresh()
-      .then(() => commands.executeCommand(COMMANDS.VALIDATE))
-      .then(() => commands.executeCommand(COMMANDS.WATCH));
-  });
+  runtimeContext.getAuthenticatorInstance()
+    .then((authenticator) => {
+      globals.setAuthenticator(authenticator);
 
-  runtimeContext.policyPuller.refresh()
+      authenticator.on('login', async (user) => {
+        logger.log('login', user);
+
+        await runtimeContext.policyPuller.refresh();
+        await commands.executeCommand(COMMANDS.VALIDATE);
+        await commands.executeCommand(COMMANDS.WATCH);
+      });
+
+      authenticator.on('logout', async () => {
+        logger.log('logout');
+
+        await runtimeContext.policyPuller.refresh();
+        await commands.executeCommand(COMMANDS.VALIDATE);
+        await commands.executeCommand(COMMANDS.WATCH);
+      });
+    })
+    .then(() => runtimeContext.policyPuller.refresh())
     .then(() => commands.executeCommand(COMMANDS.VALIDATE))
-    .then(() => commands.executeCommand(COMMANDS.WATCH));
+    .then(() => commands.executeCommand(COMMANDS.WATCH))
+    .then(() => logger.log('Extension activated...', globals.asObject()))
+    .catch((err) => logger.error('Error activating extension:', err));
 }
