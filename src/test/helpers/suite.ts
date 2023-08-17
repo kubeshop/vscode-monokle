@@ -27,7 +27,7 @@ export async function runForFolders(folders: Folder[], fn: (folder: Folder) => P
 }
 
 async function clearStorageDir() {
-  return rm(getStorageDir(), { recursive: true, force: true });
+  return rm(getStorageDir(), { recursive: true, force: true, maxRetries: 3 });
 }
 
 function getStorageDir() {

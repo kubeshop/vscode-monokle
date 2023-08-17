@@ -149,7 +149,7 @@ suite(`Integration - Validation: ${process.env.ROOT_PATH}`, function () {
     await runForFolders(folders, async (folder) => {
       const existingResource = resolve(folder.uri.fsPath, 'pod-errors.yaml');
 
-      await rm(existingResource);
+      await rm(existingResource, { force: true });
 
       const result = await waitForValidationResults(folder);
       assertValidationResults(result);

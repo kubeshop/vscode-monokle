@@ -57,7 +57,7 @@ suite(`Policies - Remote: ${process.env.ROOT_PATH}`, function () {
     ok(configRemote.isValid);
     ok(configRemote.path);
 
-    await rm(configRemote.path);
+    await rm(configRemote.path, { force: true });
 
     ok(existsSync(configRemote.path) === false);
 
