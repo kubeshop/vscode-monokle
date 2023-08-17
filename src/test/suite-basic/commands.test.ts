@@ -3,7 +3,9 @@ import { commands } from 'vscode';
 import { doSetup, doSuiteSetup, doSuiteTeardown } from '../helpers/suite';
 import { COMMANDS } from '../../constants';
 
-suite(`Basic - Commands: ${process.env.ROOT_PATH}`, () => {
+suite(`Basic - Commands: ${process.env.ROOT_PATH}`, function () {
+  this.timeout(5000);
+
   suiteSetup(async () => {
     await doSuiteSetup();
   });

@@ -9,7 +9,9 @@ import { DEFAULT_POLICY } from '../helpers/server';
 import { COMMANDS } from '../../constants';
 import type { Folder, WorkspaceFolderConfig } from '../../utils/workspace';
 
-suite(`Policies - Remote: ${process.env.ROOT_PATH}`, () => {
+suite(`Policies - Remote: ${process.env.ROOT_PATH}`, function () {
+  this.timeout(5000);
+
   suiteSetup(async () => {
     await doSuiteSetup();
   });

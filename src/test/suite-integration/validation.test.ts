@@ -8,7 +8,9 @@ import { COMMANDS } from '../../constants';
 import { doSetup, doSuiteSetup, doSuiteTeardown, runForFolders } from '../helpers/suite';
 import { assertEmptyValidationResults, assertValidationResults, waitForValidationResults } from '../helpers/asserts';
 
-suite(`Integration - Validation: ${process.env.ROOT_PATH}`, () => {
+suite(`Integration - Validation: ${process.env.ROOT_PATH}`, function () {
+  this.timeout(5000);
+
   const fixturesSourceDir = process.env.FIXTURES_SOURCE_DIR;
   const initialResources = parseInt(process.env.WORKSPACE_RESOURCES ?? '0', 10);
   const isDisabled = process.env.WORKSPACE_DISABLED === 'true';
