@@ -13,29 +13,15 @@ import { SarifWatcher } from './utils/sarif-watcher';
 import { PolicyPuller } from './utils/policy-puller';
 import { getTooltipContentDefault } from './utils/tooltip';
 import { getLogoutCommand } from './commands/logout';
+import { getAuthenticator } from './utils/authentication';
+import { getSynchronizer } from './utils/synchronization';
 import logger from './utils/logger';
 import globals from './utils/globals';
 import type { ExtensionContext } from 'vscode';
-import { getAuthenticator } from './utils/authentication';
-import { getSynchronizer } from './utils/synchronization';
 
 let runtimeContext: RuntimeContext;
 
-export function activate(context: ExtensionContext) {
-  return activateExtension(context);
-}
-
-export function deactivate() {
-  logger.log('Deactivating extension...');
-
-  if (runtimeContext) {
-    runtimeContext.dispose();
-    runtimeContext.authenticator.removeAllListeners();
-    runtimeContext.synchronizer.removeAllListeners();
-  }
-}
-
-async function activateExtension(context: ExtensionContext) {
+export async function activate(context: ExtensionContext): Promise<any> {
   globals.storagePath = normalize(join(context.extensionPath, STORAGE_DIR_NAME));
   logger.debug = globals.verbose;
 
@@ -162,4 +148,14 @@ async function activateExtension(context: ExtensionContext) {
   isActivated = true;
 
   logger.log('Extension activated...', globals.asObject());
+}
+
+export async function deactivate() {
+  logger.log('Deactivating extension...');
+
+  if (runtimeContext) {
+    runtimeContext.dispose();
+    runtimeContext.authenticator.removeAllListeners();
+    runtimeContext.synchronizer.removeAllListeners();
+  }
 }
