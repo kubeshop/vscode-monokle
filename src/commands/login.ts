@@ -3,15 +3,7 @@ import { canRun } from '../utils/commands';
 import { raiseError, raiseInfo } from '../utils/errors';
 import { COMMAND_NAMES } from '../constants';
 import logger from '../utils/logger';
-import type { TokenSet } from 'openid-client';
 import type { RuntimeContext } from '../utils/runtime-context';
-
-export type AccessToken = {
-  access_token: string;
-  token_type: 'access_token';
-};
-
-export type Token = AccessToken | TokenSet;
 
 const AUTH_METHOD_LABELS = {
   'device code': 'Login with a web browser',

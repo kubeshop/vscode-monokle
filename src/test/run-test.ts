@@ -132,7 +132,7 @@ async function main() {
   await runSuite('./suite-initialization/index', [workspaces[0]]);
 
   // Run policies tests on single repo.
-  // await runSuite('./suite-policies/index', [workspaces[3]], true); @FIXME
+  await runSuite('./suite-policies/index', [workspaces[3]], true);
 
   // Run integration-like tests on multiple, different workspaces (local config).
   await runSuite('./suite-integration/index', workspaces.slice(0, -1));

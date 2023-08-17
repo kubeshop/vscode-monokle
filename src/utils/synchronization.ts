@@ -15,7 +15,7 @@ export async function getSynchronizer() {
 
     return new Synchronizer(
       new StorageHandlerPolicy(process.env.MONOKLE_TEST_CONFIG_PATH),
-      new ApiHandler(),
+      new ApiHandler(process.env.MONOKLE_TEST_SERVER_URL),
       gitHandler
     );
   }

@@ -11,12 +11,10 @@ export class PolicyPuller {
   private _isPulling = false;
   private _pullPromise: Promise<void> | undefined;
   private _policyFetcherId: NodeJS.Timer | undefined;
-  private _synchronizer: Awaited<ReturnType<typeof getSynchronizer>> | undefined;
 
-  async initialize(synchronizer: typeof this._synchronizer) {
-    this._synchronizer = synchronizer;
-    await this.refresh();
-  }
+  constructor(
+    private _synchronizer: Awaited<ReturnType<typeof getSynchronizer>>
+  ) {}
 
   async refresh() {
     if (!globals.user.isAuthenticated) {

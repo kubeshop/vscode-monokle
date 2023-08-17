@@ -44,7 +44,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
   runtimeContext = new RuntimeContext(
     context,
     new SarifWatcher(),
-    new PolicyPuller(),
+    new PolicyPuller(synchronizer),
     authenticator,
     synchronizer,
     statusBarItem,
@@ -141,7 +141,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
     return;
   }
 
-  await runtimeContext.policyPuller.initialize(synchronizer);
+  await runtimeContext.policyPuller.refresh();
   await commands.executeCommand(COMMANDS.VALIDATE);
   await commands.executeCommand(COMMANDS.WATCH);
 
