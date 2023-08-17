@@ -128,6 +128,9 @@ async function main() {
   // Run basic tests on single workspace.
   await runSuite('./suite-basic/index', [workspaces[0]]);
 
+  // Run initialization tests on single workspace.
+  await runSuite('./suite-initialization/index', [workspaces[0]]);
+
   // Run policies tests on single repo.
   // await runSuite('./suite-policies/index', [workspaces[3]], true); @FIXME
 

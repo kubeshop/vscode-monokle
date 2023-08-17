@@ -36,28 +36,6 @@ suite(`Integration - Validation: ${process.env.ROOT_PATH}`, () => {
     await doSuiteTeardown();
   });
 
-  // @FIXME require separate suite
-  // This test should be run first since it checks for a result file
-  // // created on VSCode instance start.
-  // test('Validates resources on start', async function () {
-  //   if (initialResources === 0) {
-  //     this.skip();
-  //   }
-
-  //   const folders = getWorkspaceFolders();
-
-  //   await runForFolders(folders, async (folder) => {
-  //     console.log('empty', 0);
-  //     await assertEmptyValidationResults(folder);
-  //     console.log('empty', 1);
-  //   });
-
-  //   await runForFolders(folders, async (folder) => {
-  //     const result = await waitForValidationResults(folder);
-  //     assertValidationResults(result);
-  //   });
-  // }).timeout(1000 * 15);
-
   test('Does not run validation on start when no resources', async function () {
     if (initialResources > 0) {
       this.skip();
