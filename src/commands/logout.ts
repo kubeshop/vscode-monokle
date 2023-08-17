@@ -10,7 +10,7 @@ export function getLogoutCommand(context: RuntimeContext) {
       return;
     }
 
-    const authenticator = await context.getAuthenticatorInstance();
+    const authenticator = context.authenticator;
 
     if (!authenticator.user.isAuthenticated) {
         raiseInfo(`You are already logged out. You can login with '${COMMAND_NAMES.LOGOUT}' command.`);

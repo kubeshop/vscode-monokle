@@ -25,7 +25,7 @@ export function getLoginCommand(context: RuntimeContext) {
       return;
     }
 
-    const authenticator = await context.getAuthenticatorInstance();
+    const authenticator = context.authenticator;
 
     if (authenticator.user.isAuthenticated) {
         raiseInfo(`You are already logged in. Please logout first with '${COMMAND_NAMES.LOGIN}'.`);

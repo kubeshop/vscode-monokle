@@ -1,4 +1,3 @@
-import { rm } from 'fs/promises';
 import { getWorkspaceFolders } from './workspace';
 import { getSynchronizer } from './synchronization';
 import logger from './logger';
@@ -36,16 +35,6 @@ export class PolicyPuller {
     if (this._policyFetcherId) {
       clearInterval(this._policyFetcherId);
       this._policyFetcherId = undefined;
-    }
-
-    if (this._synchronizer) {
-      const roots = getWorkspaceFolders();
-      for (const folder of roots) {
-        const policyData = await this._synchronizer.getPolicy(folder.uri.fsPath);
-        if (policyData?.path) {
-          await rm(policyData.path);
-        }
-      }
     }
   }
 

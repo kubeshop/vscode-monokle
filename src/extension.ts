@@ -16,14 +16,38 @@ import { getLogoutCommand } from './commands/logout';
 import logger from './utils/logger';
 import globals from './utils/globals';
 import type { ExtensionContext } from 'vscode';
+import { getAuthenticator } from './utils/authentication';
+import { getSynchronizer } from './utils/synchronization';
 
 let runtimeContext: RuntimeContext;
 
 export function activate(context: ExtensionContext) {
+  return activateExtension(context);
+}
+
+export function deactivate() {
+  logger.log('Deactivating extension...');
+
+  if (runtimeContext) {
+    runtimeContext.dispose();
+    runtimeContext.authenticator.removeAllListeners();
+    runtimeContext.synchronizer.removeAllListeners();
+  }
+}
+
+async function activateExtension(context: ExtensionContext) {
   globals.storagePath = normalize(join(context.extensionPath, STORAGE_DIR_NAME));
   logger.debug = globals.verbose;
 
   logger.log('Activating extension...');
+
+  let isActivated = false;
+
+  const authenticator = await getAuthenticator();
+  const synchronizer = await getSynchronizer();
+
+  globals.setAuthenticator(authenticator);
+  globals.setSynchronizer(synchronizer);
 
   const statusBarItem = window.createStatusBarItem(StatusBarAlignment.Left, 25);
   statusBarItem.text = STATUS_BAR_TEXTS.DEFAULT;
@@ -35,7 +59,9 @@ export function activate(context: ExtensionContext) {
     context,
     new SarifWatcher(),
     new PolicyPuller(),
-    statusBarItem
+    authenticator,
+    synchronizer,
+    statusBarItem,
   );
 
   const commandLogin = commands.registerCommand(COMMANDS.LOGIN, getLoginCommand(runtimeContext));
@@ -51,7 +77,9 @@ export function activate(context: ExtensionContext) {
     if (event.affectsConfiguration(SETTINGS.ENABLED_PATH)) {
       const enabled = globals.enabled;
       if (enabled) {
-        await initialRun(runtimeContext);
+        await runtimeContext.policyPuller.refresh();
+        await commands.executeCommand(COMMANDS.VALIDATE);
+        await commands.executeCommand(COMMANDS.WATCH);
       } else {
         await runtimeContext.dispose();
       }
@@ -77,6 +105,39 @@ export function activate(context: ExtensionContext) {
     await commands.executeCommand(COMMANDS.WATCH);
   });
 
+  authenticator.on('login', async (user) => {
+    logger.log('EVENT:login', user, isActivated);
+
+    if (!isActivated || !globals.enabled) {
+      return;
+    }
+
+    await runtimeContext.policyPuller.refresh();
+    await commands.executeCommand(COMMANDS.VALIDATE);
+  });
+
+  authenticator.on('logout', async () => {
+    logger.log('EVENT:logout', isActivated);
+
+    if (!isActivated || !globals.enabled) {
+      return;
+    }
+
+    await runtimeContext.policyPuller.refresh();
+    await commands.executeCommand(COMMANDS.VALIDATE);
+  });
+
+  synchronizer.on('synchronize', async (policy) => {
+    logger.log('EVENT:synchronize', policy, isActivated);
+
+    if (!isActivated || !globals.enabled) {
+      return;
+    }
+
+    await runtimeContext.policyPuller.refresh();
+    await commands.executeCommand(COMMANDS.VALIDATE);
+  });
+
   context.subscriptions.push(
     commandLogin,
     commandLogout,
@@ -94,51 +155,11 @@ export function activate(context: ExtensionContext) {
     return;
   }
 
-  initialRun(runtimeContext);
-}
+  await runtimeContext.policyPuller.initialize(synchronizer);
+  await commands.executeCommand(COMMANDS.VALIDATE);
+  await commands.executeCommand(COMMANDS.WATCH);
 
-export function deactivate() {
-  logger.log('Deactivating extension...');
+  isActivated = true;
 
-  if (runtimeContext) {
-    runtimeContext.dispose();
-  }
-}
-
-function initialRun(runtimeContext: RuntimeContext) {
-  runtimeContext.getAuthenticatorInstance()
-    .then((authenticator) => {
-      globals.setAuthenticator(authenticator);
-
-      authenticator.on('login', async (user) => {
-        logger.log('EVENT:login', user);
-
-        await runtimeContext.policyPuller.refresh();
-        await commands.executeCommand(COMMANDS.VALIDATE);
-      });
-
-      authenticator.on('logout', async () => {
-        logger.log('EVENT:logout');
-
-        await runtimeContext.policyPuller.refresh();
-        await commands.executeCommand(COMMANDS.VALIDATE);
-      });
-    })
-    .then(() => runtimeContext.getSynchronizerInstance())
-    .then((synchronizer) => {
-      globals.setSynchronizer(synchronizer);
-      runtimeContext.policyPuller.initialize(synchronizer);
-
-      synchronizer.on('synchronize', async (policy) => {
-        logger.log('EVENT:synchronize', policy);
-
-        await runtimeContext.policyPuller.refresh();
-        await commands.executeCommand(COMMANDS.VALIDATE);
-      });
-    })
-    .then(() => runtimeContext.policyPuller.refresh())
-    .then(() => commands.executeCommand(COMMANDS.VALIDATE))
-    .then(() => commands.executeCommand(COMMANDS.WATCH))
-    .then(() => logger.log('Extension activated...', globals.asObject()))
-    .catch((err) => logger.error('Error activating extension:', err));
+  logger.log('Extension activated...', globals.asObject());
 }

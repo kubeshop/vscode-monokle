@@ -15,9 +15,10 @@ export class RuntimeContext {
     private _extensionContext: ExtensionContext,
     private _sarifWatcher: SarifWatcher,
     private _policyPuller: PolicyPuller,
-    private _statusBarItem: StatusBarItem,
-    private _authenticator: Awaited<ReturnType<typeof getAuthenticator>> = null,
-    private _synchronizer: Awaited<ReturnType<typeof getSynchronizer>> = null) {}
+    private _authenticator: Awaited<ReturnType<typeof getAuthenticator>>,
+    private _synchronizer: Awaited<ReturnType<typeof getSynchronizer>>,
+    private _statusBarItem: StatusBarItem
+  ) {}
 
   get extensionContext() {
     return this._extensionContext;
@@ -29,6 +30,14 @@ export class RuntimeContext {
 
   get policyPuller() {
     return this._policyPuller;
+  }
+
+  get authenticator() {
+    return this._authenticator;
+  }
+
+  get synchronizer() {
+    return this._synchronizer;
   }
 
   get statusBarItem() {
@@ -46,22 +55,6 @@ export class RuntimeContext {
     if (!value) {
       this.updateTooltip();
     }
-  }
-
-  async getAuthenticatorInstance() {
-    if (!this._authenticator) {
-      this._authenticator = await getAuthenticator();
-    }
-
-    return this._authenticator;
-  }
-
-  async getSynchronizerInstance() {
-    if (!this._synchronizer) {
-      this._synchronizer = await getSynchronizer();
-    }
-
-    return this._synchronizer;
   }
 
   async updateTooltip() {
@@ -85,14 +78,6 @@ export class RuntimeContext {
 
     if (this.sarifWatcher) {
       await this.sarifWatcher.dispose();
-    }
-
-    if (this._authenticator) {
-      this._authenticator.removeAllListeners();
-    }
-
-    if (this._synchronizer) {
-      this._synchronizer.removeAllListeners();
     }
   }
 }
