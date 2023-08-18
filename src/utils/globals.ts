@@ -2,9 +2,16 @@ import { workspace } from 'vscode';
 import { DEFAULT_REMOTE_POLICY_URL, SETTINGS } from '../constants';
 import { getAuthenticator } from './authentication';
 import { getSynchronizer } from './synchronization';
+import { Folder } from './workspace';
+
+export type FolderStatus = {
+  valid: boolean;
+  error?: string;
+};
 
 class Globals {
   private _storagePath: string = '';
+  private statuses: Record<string, FolderStatus> = {};
   private _authenticator: Awaited<ReturnType<typeof getAuthenticator>> = null;
   private _synchronizer: Awaited<ReturnType<typeof getSynchronizer>> = null;
 
@@ -50,6 +57,17 @@ class Globals {
     }
 
     return this._synchronizer.getPolicy(path);
+  }
+
+  getFolderStatus(folder: Folder) {
+    return this.statuses[folder.id];
+  }
+
+  setFolderStatus(folder: Folder, error?: string) {
+    this.statuses[folder.id] = {
+      valid: !error,
+      error,
+    };
   }
 
   setAuthenticator(authenticator: Awaited<ReturnType<typeof getAuthenticator>>) {

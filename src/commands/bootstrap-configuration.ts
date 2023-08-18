@@ -2,6 +2,7 @@ import { Uri, commands, window } from 'vscode';
 import { canRun } from '../utils/commands';
 import { getWorkspaceConfig, getWorkspaceFolders } from '../utils/workspace';
 import { createDefaultConfigFile } from '../utils/validation';
+import { raiseInfo, raiseWarning } from '../utils/errors';
 import logger from '../utils/logger';
 import type { Folder } from '../utils/workspace';
 
@@ -27,17 +28,17 @@ export function getBootstrapConfigurationCommand() {
 
       const currentConfig = await getWorkspaceConfig(folder);
       if (currentConfig.type === 'file') {
-        window.showInformationMessage(`Local '${currentConfig.fileName}' configuration file already exists, opening it.`);
+        raiseInfo(`Local '${currentConfig.fileName}' configuration file already exists, opening it.`);
         return currentConfig.path;
       }
 
       if (currentConfig.type === 'config') {
-        window.showWarningMessage(`Shared '${currentConfig.path}' configuration file already exists, opening it.`);
+        raiseWarning(`Shared '${currentConfig.path}' configuration file already exists, opening it.`);
         return currentConfig.path;
       }
 
       if (currentConfig.type === 'remote') {
-        window.showWarningMessage(`Remote '${currentConfig.fileName}' configuration file already exists, opening it.`);
+        raiseWarning(`Remote '${currentConfig.fileName}' configuration file already exists, opening it.`);
         return currentConfig.path;
       }
 
