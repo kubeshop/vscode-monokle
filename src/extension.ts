@@ -15,7 +15,7 @@ import { getTooltipContentDefault } from './utils/tooltip';
 import { getLogoutCommand } from './commands/logout';
 import { getAuthenticator } from './utils/authentication';
 import { getSynchronizer } from './utils/synchronization';
-import { trackEvent } from './utils/telemetry';
+import { closeClient, trackEvent } from './utils/telemetry';
 import logger from './utils/logger';
 import globals from './utils/globals';
 import type { ExtensionContext } from 'vscode';
@@ -191,6 +191,8 @@ export async function activate(context: ExtensionContext): Promise<any> {
 
 export async function deactivate() {
   logger.log('Deactivating extension...');
+
+  await closeClient();
 
   if (runtimeContext) {
     runtimeContext.dispose();

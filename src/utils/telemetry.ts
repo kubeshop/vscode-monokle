@@ -8,7 +8,7 @@ let client: Analytics | undefined;
 
 const getSegmentClient = () => {
   if (!env.isTelemetryEnabled || !globals.telemetryEnabled ) {
-    client = undefined;
+    closeClient();
     return undefined;
   }
 
@@ -28,7 +28,7 @@ const enableSegment = () => {
 
 const machineId: string = machineIdSync();
 
-export const trackEvent = <TEvent extends Event>(eventName: TEvent, payload?: EventMap[TEvent]) => {
+export function trackEvent<TEvent extends Event>(eventName: TEvent, payload?: EventMap[TEvent]) {
   const segmentClient = getSegmentClient();
 
   logger.log('Track event', machineId, eventName, payload);
@@ -39,6 +39,14 @@ export const trackEvent = <TEvent extends Event>(eventName: TEvent, payload?: Ev
     userId: machineId,
   });
 };
+
+export async function closeClient() {
+  if (client) {
+    logger.log('Close Segment client');
+    await client.closeAndFlush();
+    client = undefined;
+  }
+}
 
 export type EventStatus = 'started' | 'success' | 'failure' | 'cancelled';
 export type BaseEvent = {status: EventStatus, error?: string};
