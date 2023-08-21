@@ -1,5 +1,5 @@
 import {machineIdSync} from 'node-machine-id';
-import Analytics from 'analytics-node';
+import {Analytics} from '@segment/analytics-node';
 import {env} from 'vscode';
 import logger from './logger';
 import globals from './globals';
@@ -22,7 +22,7 @@ const getSegmentClient = () => {
 const enableSegment = () => {
   if (process.env.SEGMENT_API_KEY) {
     logger.log('Enabled Segment');
-    client = new Analytics({writeKey: process.env.SEGMENT_API_KEY, flushAt: 1, errorHandler: logger.error});
+    client = new Analytics({writeKey: process.env.SEGMENT_API_KEY});
   }
 };
 
