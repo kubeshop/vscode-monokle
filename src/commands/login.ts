@@ -1,46 +1,100 @@
-import { window } from 'vscode';
+import { window, env, Uri } from 'vscode';
 import { canRun } from '../utils/commands';
 import { raiseError, raiseInfo } from '../utils/errors';
-import { getUser } from '../utils/api';
-import { setStoreAuth } from '../utils/store';
-import globals from '../utils/globals';
+import { COMMAND_NAMES } from '../constants';
 import logger from '../utils/logger';
 import type { RuntimeContext } from '../utils/runtime-context';
 
+const AUTH_METHOD_LABELS = {
+  'device code': 'Login with a web browser',
+  'token': 'Paste an authentication token',
+};
+
 export function getLoginCommand(context: RuntimeContext) {
+
   return async () => {
     if (!canRun()) {
       return;
     }
 
-    if (globals.user.isAuthenticated) {
-        raiseInfo(`You are already logged in. Please logout first with 'Monokle: Logout'.`);
+    const authenticator = context.authenticator;
+
+    if (authenticator.user.isAuthenticated) {
+        raiseInfo(`You are already logged in. Please logout first with '${COMMAND_NAMES.LOGIN}'.`);
         return;
     }
 
-    const token = await window.showInputBox({
-        title: 'Monokle Cloud login',
-        placeHolder: 'Enter your Monokle Cloud token',
-        prompt: 'You can create account on https://app.monokle.com.',
-    });
+    const method = await pickLoginMethod(authenticator.methods);
 
-    if (!token) {
-        raiseInfo('Monokle Cloud login cancelled. Resources will be validated with local configuration.');
+    if (!method) {
         return;
     }
 
     try {
-        const userData = await getUser(token.trim());
-        const authSaved = await setStoreAuth(userData?.data.me.email, token);
+      let loginRequest: Awaited<ReturnType<typeof authenticator.login>>;
 
-        context.triggerUserChange();
+      if (method === 'device code') {
+        loginRequest = await authenticator.login(method);
 
-        logger.log('login:authSaved', userData, authSaved);
+        const handle =  loginRequest.handle;
 
-        raiseInfo(`You are now logged in as ${userData?.data.me.email}.`);
+        raiseInfo(
+          `Please open ${handle.verification_uri_complete} and enter the code ${handle.user_code} to login.`,
+          [{
+            title: 'Open login page',
+            callback: () => {
+              env.openExternal(Uri.parse(handle.verification_uri_complete));
+            }
+          }],
+          {
+            modal: true,
+          },
+        );
+      } else if (method === 'token') {
+        const accessToken = await window.showInputBox({
+            title: 'Monokle Cloud token login',
+            placeHolder: 'Enter your Monokle Cloud authentication token',
+            prompt: 'You can create account on https://app.monokle.com.',
+        });
+
+        loginRequest = await authenticator.login(method, accessToken);
+      }
+
+      if (!loginRequest) {
+          return;
+      }
+
+      const user = await loginRequest.onDone;
+
+      raiseInfo(`You are now logged in as ${user.email}.`);
     } catch (err) {
         logger.error(err);
-        raiseError('Failed to login to Monokle Cloud. Please check out your token and try again.');
+        raiseError(`Failed to login to Monokle Cloud. Please try again. Error: ${err.message}`);
     }
   };
+}
+
+async function pickLoginMethod(methods: string[]): Promise<string | null> {
+  return new Promise((resolve) => {
+    const quickPick = window.createQuickPick<{label: string, id: string}>();
+
+    quickPick.items = methods.map(method => ({
+      label: AUTH_METHOD_LABELS[method] ?? method,
+      id: method,
+    }));
+
+    quickPick.onDidChangeSelection(async (selection) => {
+      if (selection.length > 0) {
+        quickPick.hide();
+        resolve(selection[0].id);
+      }
+    });
+
+    quickPick.onDidHide(() => {
+      quickPick.dispose();
+      resolve(null);
+    });
+
+    quickPick.show();
+  });
 }

@@ -1,5 +1,5 @@
 import { strictEqual } from 'assert';
-import { workspace, commands, ConfigurationTarget } from 'vscode';
+import { workspace, commands, ConfigurationTarget, extensions } from 'vscode';
 import { resolve, join} from 'path';
 import { readFile, writeFile, copyFile, rm } from 'fs/promises';
 import { parse, stringify } from 'yaml';
@@ -8,7 +8,9 @@ import { COMMANDS } from '../../constants';
 import { doSetup, doSuiteSetup, doSuiteTeardown, runForFolders } from '../helpers/suite';
 import { assertEmptyValidationResults, assertValidationResults, waitForValidationResults } from '../helpers/asserts';
 
-suite(`Integration - Validation: ${process.env.ROOT_PATH}`, () => {
+suite(`Integration - Validation: ${process.env.ROOT_PATH}`, function () {
+  this.timeout(5000);
+
   const fixturesSourceDir = process.env.FIXTURES_SOURCE_DIR;
   const initialResources = parseInt(process.env.WORKSPACE_RESOURCES ?? '0', 10);
   const isDisabled = process.env.WORKSPACE_DISABLED === 'true';
@@ -35,25 +37,6 @@ suite(`Integration - Validation: ${process.env.ROOT_PATH}`, () => {
   suiteTeardown(async () => {
     await doSuiteTeardown();
   });
-
-  // This test should be run first since it checks for a result file
-  // created on VSCode instance start.
-  test('Validates resources on start', async function () {
-    if (initialResources === 0) {
-      this.skip();
-    }
-
-    const folders = getWorkspaceFolders();
-
-    await runForFolders(folders, async (folder) => {
-      await assertEmptyValidationResults(folder);
-    });
-
-    await runForFolders(folders, async (folder) => {
-      const result = await waitForValidationResults(folder);
-      assertValidationResults(result);
-    });
-  }).timeout(1000 * 15);
 
   test('Does not run validation on start when no resources', async function () {
     if (initialResources > 0) {
@@ -166,7 +149,7 @@ suite(`Integration - Validation: ${process.env.ROOT_PATH}`, () => {
     await runForFolders(folders, async (folder) => {
       const existingResource = resolve(folder.uri.fsPath, 'pod-errors.yaml');
 
-      await rm(existingResource);
+      await rm(existingResource, { force: true });
 
       const result = await waitForValidationResults(folder);
       assertValidationResults(result);

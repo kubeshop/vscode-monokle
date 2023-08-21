@@ -13,17 +13,27 @@ import { SarifWatcher } from './utils/sarif-watcher';
 import { PolicyPuller } from './utils/policy-puller';
 import { getTooltipContentDefault } from './utils/tooltip';
 import { getLogoutCommand } from './commands/logout';
+import { getAuthenticator } from './utils/authentication';
+import { getSynchronizer } from './utils/synchronization';
 import logger from './utils/logger';
 import globals from './utils/globals';
 import type { ExtensionContext } from 'vscode';
 
 let runtimeContext: RuntimeContext;
 
-export function activate(context: ExtensionContext) {
+export async function activate(context: ExtensionContext): Promise<any> {
   globals.storagePath = normalize(join(context.extensionPath, STORAGE_DIR_NAME));
   logger.debug = globals.verbose;
 
-  logger.log('Activating extension...', globals.asObject());
+  logger.log('Activating extension...');
+
+  let isActivated = false;
+
+  const authenticator = await getAuthenticator();
+  const synchronizer = await getSynchronizer();
+
+  globals.setAuthenticator(authenticator);
+  globals.setSynchronizer(synchronizer);
 
   const statusBarItem = window.createStatusBarItem(StatusBarAlignment.Left, 25);
   statusBarItem.text = STATUS_BAR_TEXTS.DEFAULT;
@@ -34,8 +44,10 @@ export function activate(context: ExtensionContext) {
   runtimeContext = new RuntimeContext(
     context,
     new SarifWatcher(),
-    new PolicyPuller(),
-    statusBarItem
+    new PolicyPuller(synchronizer),
+    authenticator,
+    synchronizer,
+    statusBarItem,
   );
 
   const commandLogin = commands.registerCommand(COMMANDS.LOGIN, getLoginCommand(runtimeContext));
@@ -51,7 +63,9 @@ export function activate(context: ExtensionContext) {
     if (event.affectsConfiguration(SETTINGS.ENABLED_PATH)) {
       const enabled = globals.enabled;
       if (enabled) {
-        await initialRun(runtimeContext);
+        await runtimeContext.policyPuller.refresh();
+        await commands.executeCommand(COMMANDS.VALIDATE);
+        await commands.executeCommand(COMMANDS.WATCH);
       } else {
         await runtimeContext.dispose();
       }
@@ -77,6 +91,39 @@ export function activate(context: ExtensionContext) {
     await commands.executeCommand(COMMANDS.WATCH);
   });
 
+  authenticator.on('login', async (user) => {
+    logger.log('EVENT:login', user, isActivated);
+
+    if (!isActivated || !globals.enabled) {
+      return;
+    }
+
+    await runtimeContext.policyPuller.refresh();
+    await commands.executeCommand(COMMANDS.VALIDATE);
+  });
+
+  authenticator.on('logout', async () => {
+    logger.log('EVENT:logout', isActivated);
+
+    if (!isActivated || !globals.enabled) {
+      return;
+    }
+
+    await runtimeContext.policyPuller.refresh();
+    await commands.executeCommand(COMMANDS.VALIDATE);
+  });
+
+  synchronizer.on('synchronize', async (policy) => {
+    logger.log('EVENT:synchronize', policy, isActivated);
+
+    if (!isActivated || !globals.enabled) {
+      return;
+    }
+
+    await runtimeContext.policyPuller.refresh();
+    await commands.executeCommand(COMMANDS.VALIDATE);
+  });
+
   context.subscriptions.push(
     commandLogin,
     commandLogout,
@@ -94,25 +141,21 @@ export function activate(context: ExtensionContext) {
     return;
   }
 
-  initialRun(runtimeContext);
+  await runtimeContext.policyPuller.refresh();
+  await commands.executeCommand(COMMANDS.VALIDATE);
+  await commands.executeCommand(COMMANDS.WATCH);
+
+  isActivated = true;
+
+  logger.log('Extension activated...', globals.asObject());
 }
 
-export function deactivate() {
+export async function deactivate() {
   logger.log('Deactivating extension...');
 
   if (runtimeContext) {
     runtimeContext.dispose();
+    runtimeContext.authenticator.removeAllListeners();
+    runtimeContext.synchronizer.removeAllListeners();
   }
-}
-
-function initialRun(runtimeContext: RuntimeContext) {
-  runtimeContext.onUserChanged(() => {
-    runtimeContext.policyPuller.refresh()
-      .then(() => commands.executeCommand(COMMANDS.VALIDATE))
-      .then(() => commands.executeCommand(COMMANDS.WATCH));
-  });
-
-  runtimeContext.policyPuller.refresh()
-    .then(() => commands.executeCommand(COMMANDS.VALIDATE))
-    .then(() => commands.executeCommand(COMMANDS.WATCH));
 }

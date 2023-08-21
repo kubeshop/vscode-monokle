@@ -1,7 +1,7 @@
 import { mkdir, readFile, unlink, writeFile } from 'fs/promises';
 import { join, normalize } from 'path';
 import { platform } from 'os';
-import { Uri, workspace } from 'vscode';
+import { Uri } from 'vscode';
 import { Document } from 'yaml';
 import { getWorkspaceConfig, getWorkspaceResources } from './workspace';
 import { VALIDATION_FILE_SUFFIX, DEFAULT_CONFIG_FILE_NAME, TMP_POLICY_FILE_SUFFIX } from '../constants';
@@ -60,13 +60,9 @@ export async function getValidator(validatorId: string, config?: any) {
 export async function validateFolder(root: Folder): Promise<Uri | null> {
   const resources = await getWorkspaceResources(root);
 
-  logger.log(root.name, 'resources');
-
   if(!resources.length) {
     return null;
   }
-
-  resources.forEach(resource => logger.log(resource.id, resource.name, resource.content));
 
   const workspaceConfig = await getWorkspaceConfig(root);
 

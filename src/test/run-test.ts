@@ -82,6 +82,8 @@ async function runSuite(testFile: string, workspaces: TestWorkspace[], setupRemo
           MONOKLE_TEST_CONFIG_PATH: setupRemoteEnv ? fixturesDestDir : testTmpDir,
           // eslint-disable-next-line @typescript-eslint/naming-convention
           MONOKLE_TEST_SERVER_URL: setupRemoteEnv ? 'http://localhost:5000' : '',
+          // eslint-disable-next-line @typescript-eslint/naming-convention
+          MONOKLE_VSC_ENV: 'TEST',
         }
       });
     }
@@ -125,6 +127,9 @@ async function main() {
 
   // Run basic tests on single workspace.
   await runSuite('./suite-basic/index', [workspaces[0]]);
+
+  // Run initialization tests on single workspace.
+  await runSuite('./suite-initialization/index', [workspaces[0]]);
 
   // Run policies tests on single repo.
   await runSuite('./suite-policies/index', [workspaces[3]], true);
