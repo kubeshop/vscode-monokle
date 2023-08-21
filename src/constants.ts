@@ -13,10 +13,12 @@ export const SETTINGS = {
   ENABLED: 'enabled',
   CONFIGURATION_PATH: 'configurationPath',
   VERBOSE: 'verbose',
+  TELEMETRY_ENABLED: 'telemetryEnabled',
   OVERWRITE_REMOTE_POLICY_URL: 'overwriteRemotePolicyUrl',
   ENABLED_PATH: 'monokle.enabled',
   CONFIGURATION_PATH_PATH: 'monokle.configurationPath',
   VERBOSE_PATH: 'monokle.verbose',
+  TELEMETRY_ENABLED_PATH: 'monokle.telemetryEnabled',
   OVERWRITE_REMOTE_POLICY_URL_PATH: 'monokle.overwriteRemotePolicyUrl',
 };
 

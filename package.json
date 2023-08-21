@@ -97,6 +97,11 @@
           "default": null,
           "description": "Overwrite Monokle Cloud URL which is used to authenticate and fetch policies from. Useful when running on-premise Monokle Cloud."
         },
+        "monokle.telemetryEnabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whenever anonymous telemetry is enabled. It will be also disabled automatically when VSC telemetry is disabled globally."
+        },
         "monokle.enabled": {
           "type": "boolean",
           "default": true,
@@ -152,6 +157,8 @@
   "dependencies": {
     "@monokle/synchronizer": "^0.2.0",
     "@monokle/validation": "^0.25.2",
+    "analytics-node": "^6.2.0",
+    "node-machine-id": "^1.1.12",
     "uuid": "^9.0.0",
     "yaml": "^2.3.1"
   },
