@@ -15,7 +15,7 @@ import { getTooltipContentDefault } from './utils/tooltip';
 import { getLogoutCommand } from './commands/logout';
 import { getAuthenticator } from './utils/authentication';
 import { getSynchronizer } from './utils/synchronization';
-import { closeClient, trackEvent } from './utils/telemetry';
+import { trackEvent, initTelemetry, closeTelemetry } from './utils/telemetry';
 import logger from './utils/logger';
 import globals from './utils/globals';
 import type { ExtensionContext } from 'vscode';
@@ -71,10 +71,12 @@ export async function activate(context: ExtensionContext): Promise<any> {
       });
 
       if (enabled) {
+        await initTelemetry();
         await runtimeContext.policyPuller.refresh();
         await commands.executeCommand(COMMANDS.VALIDATE);
         await commands.executeCommand(COMMANDS.WATCH);
       } else {
+        await closeTelemetry();
         await runtimeContext.dispose();
       }
     }
@@ -116,6 +118,12 @@ export async function activate(context: ExtensionContext): Promise<any> {
         name: SETTINGS.TELEMETRY_ENABLED,
         value: String(globals.telemetryEnabled),
       });
+
+      if (globals.telemetryEnabled) {
+        await initTelemetry();
+      } else {
+        await closeTelemetry();
+      }
     }
   });
 
@@ -180,6 +188,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
     return;
   }
 
+  await initTelemetry();
   await runtimeContext.policyPuller.refresh();
   await commands.executeCommand(COMMANDS.VALIDATE);
   await commands.executeCommand(COMMANDS.WATCH);
@@ -192,7 +201,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
 export async function deactivate() {
   logger.log('Deactivating extension...');
 
-  await closeClient();
+  await closeTelemetry();
 
   if (runtimeContext) {
     runtimeContext.dispose();

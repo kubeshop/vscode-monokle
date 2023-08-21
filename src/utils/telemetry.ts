@@ -1,32 +1,59 @@
-import {machineIdSync} from 'node-machine-id';
-import {Analytics} from '@segment/analytics-node';
-import {env} from 'vscode';
+import os from 'os';
+import { machineIdSync } from 'node-machine-id';
+import { join, normalize } from 'path';
+import { mkdir, writeFile, readFile } from 'fs/promises';
+import { closeSegmentClient, getSegmentClient } from './telemetry-client';
 import logger from './logger';
 import globals from './globals';
+import { extensions } from 'vscode';
 
-let client: Analytics | undefined;
-
-const getSegmentClient = () => {
-  if (!env.isTelemetryEnabled || !globals.telemetryEnabled ) {
-    closeClient();
-    return undefined;
-  }
-
-  if (!client) {
-    enableSegment();
-  }
-
-  return client;
-};
-
-const enableSegment = () => {
-  if (process.env.SEGMENT_API_KEY) {
-    logger.log('Enabled Segment');
-    client = new Analytics({writeKey: process.env.SEGMENT_API_KEY});
-  }
-};
+let sessionTimeStart : number;
 
 const machineId: string = machineIdSync();
+
+// Should be called on extension start or when extension or telemetry gets enabled.
+export async function initTelemetry() {
+  sessionTimeStart = Date.now();
+
+  const storedMachineId = await readMachineId();
+  if (!storedMachineId) {
+    await saveMachineId(machineId);
+
+    const segmentClient = getSegmentClient();
+
+    logger.log('Identify user', machineId);
+
+    segmentClient?.identify({
+      userId: machineId,
+    });
+
+    trackEvent('ext/installed', {
+      status: 'success',
+      appVersion: getAppVersion(),
+      deviceOS: os.platform(),
+    });
+  }
+
+  trackEvent('ext/session', {
+    status: 'success',
+    appVersion: getAppVersion(),
+    startTimeMs: sessionTimeStart,
+  });
+}
+
+// Should be called on extension stop, when extension gets disabled or when telemetry gets disabled.
+export async function closeTelemetry() {
+  const sessionTimeEnd = Date.now();
+  trackEvent('ext/session_end', {
+    status: 'success',
+    endTimeMs: sessionTimeEnd,
+    timeSpentSec: Math.ceil((sessionTimeEnd - sessionTimeStart) / 1000),
+  });
+
+  sessionTimeStart = 0;
+
+  return closeSegmentClient();
+}
 
 export function trackEvent<TEvent extends Event>(eventName: TEvent, payload?: EventMap[TEvent]) {
   const segmentClient = getSegmentClient();
@@ -38,14 +65,6 @@ export function trackEvent<TEvent extends Event>(eventName: TEvent, payload?: Ev
     properties: payload,
     userId: machineId,
   });
-};
-
-export async function closeClient() {
-  if (client) {
-    logger.log('Close Segment client');
-    await client.closeAndFlush();
-    client = undefined;
-  }
 }
 
 export type EventStatus = 'started' | 'success' | 'failure' | 'cancelled';
@@ -53,9 +72,9 @@ export type BaseEvent = {status: EventStatus, error?: string};
 
 export type Event = keyof EventMap;
 export type EventMap = {
-  'ext/installed': BaseEvent & {appVersion: string; deviceOS: string};
-  'ext/session': BaseEvent & {appVersion: string};
-  'ext/session_end': BaseEvent & {timeSpent: number};
+  'ext/installed': BaseEvent & {appVersion: string; deviceOS: NodeJS.Platform};
+  'ext/session': BaseEvent & {appVersion: string, startTimeMs: number};
+  'ext/session_end': BaseEvent & {endTimeMs: number, timeSpentSec: number};
   'command/login': BaseEvent & {method?: string};
   'command/logout': BaseEvent;
   'command/validate': BaseEvent & {rootCount?: number};
@@ -77,3 +96,28 @@ export type EventMap = {
   // When policy is synced from Monokle Cloud.
   'policy/synchronize': BaseEvent & {errorCode?: string};
 };
+
+function getAppVersion(): string {
+  return extensions.getExtension('kubeshop.monokle')?.packageJSON?.version ?? 'unknown';
+}
+
+async function readMachineId(): Promise<string | null> {
+  try {
+    const filePath = normalize(join(globals.storagePath, `machine.id`));
+    const machineId = await readFile(filePath);
+    return machineId.toString().trim();
+  } catch (e) {
+    logger.error('Failed to read machine id', e);
+    return null;
+  }
+}
+
+async function saveMachineId(machineId: string) {
+  try {
+    await mkdir(globals.storagePath, { recursive: true });
+    const filePath = normalize(join(globals.storagePath, `machine.id`));
+    await writeFile(filePath, machineId);
+  } catch (e) {
+    logger.error('Failed to save machine id', e);
+  }
+}
