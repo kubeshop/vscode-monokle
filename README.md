@@ -141,6 +141,7 @@ This extension contributes the following settings:
 * `monokle.configurationPath` - Set path to validation configuration file.
 * `monokle.verbose` - Log runtime info to VSC Developer Console.
 * `monokle.overwriteRemotePolicyUrl` - Overwrite default Monokle Cloud URL to fetch policies from.
+* `monokle.telemetryEnabled` - Enable anonymous telemetry.
 
 ## Dependencies
 
