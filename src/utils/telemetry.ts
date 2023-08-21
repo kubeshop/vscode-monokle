@@ -57,9 +57,13 @@ export function trackEvent<TEvent extends Event>(eventName: TEvent, payload?: Ev
   const segmentClient = getSegmentClient();
   const eventPayload = { ...payload, sessionId: env.sessionId };
 
+  if (!segmentClient) {
+    return;
+  }
+
   logger.log('Track event', env.machineId, eventName, eventPayload);
 
-  segmentClient?.track({
+  segmentClient.track({
     event: eventName,
     properties: eventPayload,
     userId: env.machineId,

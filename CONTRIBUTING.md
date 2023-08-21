@@ -42,7 +42,7 @@ And then using _Install from VSIX_ option in VSC.
 
 Releasing requires [`@vscode/vsce`](https://www.npmjs.com/package/@vscode/vsce) package installed.
 
-**IMPORTANT**: To keep telemetry working, before running any `vsce` command, please update `SEGMENT_API_KEY` to correct value for a time of builidng the extension (DO NOT COMMIT THOUGH!).
+**IMPORTANT**: To keep telemetry working, before running any `vsce` command, please update `SEGMENT_API_KEY` in `src/config.ts` to correct value for a time of building the extension (DO NOT COMMIT THOUGH!).
 
 After that, run:
 
