@@ -3,9 +3,10 @@ import { join, normalize } from 'path';
 import { platform } from 'os';
 import { Uri } from 'vscode';
 import { Document } from 'yaml';
-import { getWorkspaceConfig, getWorkspaceResources } from './workspace';
+import { getWorkspaceConfig, getWorkspaceResources, WorkspaceFolderConfig } from './workspace';
 import { VALIDATION_FILE_SUFFIX, DEFAULT_CONFIG_FILE_NAME, TMP_POLICY_FILE_SUFFIX } from '../constants';
 import { getInvalidConfigError } from './errors';
+import { trackEvent } from './telemetry';
 import logger from '../utils/logger';
 import globals from './globals';
 import type { Folder } from './workspace';
@@ -58,9 +59,18 @@ export async function getValidator(validatorId: string, config?: any) {
 }
 
 export async function validateFolder(root: Folder): Promise<Uri | null> {
+  trackEvent('workspace/validate', {
+    status: 'started',
+  });
+
   const resources = await getWorkspaceResources(root);
 
   if(!resources.length) {
+    trackEvent('workspace/validate', {
+      status: 'cancelled',
+      resourceCount: 0,
+    });
+
     return null;
   }
 
@@ -71,6 +81,15 @@ export async function validateFolder(root: Folder): Promise<Uri | null> {
       // For remote config, error is already send from policy puller.
       globals.setFolderStatus(root, getInvalidConfigError(workspaceConfig));
     }
+
+    trackEvent('workspace/validate', {
+      status: 'failure',
+      resourceCount: resources.length,
+      configurationType: workspaceConfig.type,
+      isValidConfiguration: false,
+      error: 'Invalid configuration',
+    });
+
     return null;
   }
 
@@ -102,7 +121,11 @@ export async function validateFolder(root: Folder): Promise<Uri | null> {
 
   globals.setFolderStatus(root);
 
-  return Uri.file(resultsFilePath);
+  const resultFilePath = Uri.file(resultsFilePath);
+
+  sendSuccessValidationTelemetry(resources.length, workspaceConfig, result);
+
+  return resultFilePath;
 }
 
 export async function getValidationResult(fileName: string) {
@@ -221,6 +244,29 @@ async function getConfigurableValidator() {
     loader: schemaLoader,
     validator: createExtensibleMonokleValidator(parser, schemaLoader),
   };
+}
+
+function sendSuccessValidationTelemetry(resourceCount: number, workspaceConfig: WorkspaceFolderConfig, validationResult: any) {
+  const results = validationResult?.runs?.length ? validationResult.runs[0].results : [];
+
+  let errors = 0;
+  let warnings = 0;
+  results.forEach(result => {
+    if (result.level === 'warning') {
+      warnings++;
+    } else if (result.level === 'error') {
+      errors++;
+    }
+  });
+
+  trackEvent('workspace/validate', {
+    status: 'success',
+    resourceCount,
+    configurationType: workspaceConfig.type,
+    isValidConfiguration: workspaceConfig.isValid,
+    validationWarnings: warnings,
+    validationErrors: errors,
+  });
 }
 
 // For some reason (according to specs? to be checked) SARIF extension doesn't like

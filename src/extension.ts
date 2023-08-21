@@ -15,6 +15,7 @@ import { getTooltipContentDefault } from './utils/tooltip';
 import { getLogoutCommand } from './commands/logout';
 import { getAuthenticator } from './utils/authentication';
 import { getSynchronizer } from './utils/synchronization';
+import { trackEvent } from './utils/telemetry';
 import logger from './utils/logger';
 import globals from './utils/globals';
 import type { ExtensionContext } from 'vscode';
@@ -62,6 +63,13 @@ export async function activate(context: ExtensionContext): Promise<any> {
   const configurationWatcher = workspace.onDidChangeConfiguration(async (event) => {
     if (event.affectsConfiguration(SETTINGS.ENABLED_PATH)) {
       const enabled = globals.enabled;
+
+      trackEvent('config/change', {
+        status: 'success',
+        name: SETTINGS.ENABLED,
+        value: String(enabled),
+      });
+
       if (enabled) {
         await runtimeContext.policyPuller.refresh();
         await commands.executeCommand(COMMANDS.VALIDATE);
@@ -72,20 +80,51 @@ export async function activate(context: ExtensionContext): Promise<any> {
     }
 
     if (event.affectsConfiguration(SETTINGS.CONFIGURATION_PATH_PATH)) {
-      commands.executeCommand(COMMANDS.VALIDATE);
+      trackEvent('config/change', {
+        status: 'success',
+        name: SETTINGS.CONFIGURATION_PATH,
+        value: 'redacted', // Can include sensitive data.
+      });
+
+      await commands.executeCommand(COMMANDS.VALIDATE);
     }
 
     if (event.affectsConfiguration(SETTINGS.VERBOSE_PATH)) {
+      trackEvent('config/change', {
+        status: 'success',
+        name: SETTINGS.VERBOSE,
+        value: String(globals.verbose),
+      });
+
       logger.debug = globals.verbose;
     }
 
     if (event.affectsConfiguration(SETTINGS.OVERWRITE_REMOTE_POLICY_URL_PATH)) {
+      trackEvent('config/change', {
+        status: 'success',
+        name: SETTINGS.OVERWRITE_REMOTE_POLICY_URL,
+        value: 'redacted', // Can include sensitive data.
+      });
+
       await runtimeContext.policyPuller.refresh();
       await commands.executeCommand(COMMANDS.VALIDATE);
+    }
+
+    if (event.affectsConfiguration(SETTINGS.TELEMETRY_ENABLED_PATH)) {
+      trackEvent('config/change', {
+        status: 'success',
+        name: SETTINGS.TELEMETRY_ENABLED,
+        value: String(globals.telemetryEnabled),
+      });
     }
   });
 
   const workspaceWatcher = workspace.onDidChangeWorkspaceFolders(async () => {
+    trackEvent('workspace/change', {
+      status: 'success',
+      rootCount: workspace.workspaceFolders?.length ?? 0,
+    });
+
     await runtimeContext.policyPuller.refresh();
     await commands.executeCommand(COMMANDS.VALIDATE);
     await commands.executeCommand(COMMANDS.WATCH);
