@@ -2,6 +2,7 @@ import { window, env, Uri } from 'vscode';
 import { canRun } from '../utils/commands';
 import { raiseError, raiseInfo } from '../utils/errors';
 import { COMMAND_NAMES } from '../constants';
+import { trackEvent } from '../utils/telemetry';
 import logger from '../utils/logger';
 import type { RuntimeContext } from '../utils/runtime-context';
 
@@ -11,23 +12,37 @@ const AUTH_METHOD_LABELS = {
 };
 
 export function getLoginCommand(context: RuntimeContext) {
-
   return async () => {
     if (!canRun()) {
       return;
     }
 
+    trackEvent('command/login', {
+      status: 'started',
+    });
+
     const authenticator = context.authenticator;
 
     if (authenticator.user.isAuthenticated) {
         raiseInfo(`You are already logged in. Please logout first with '${COMMAND_NAMES.LOGIN}'.`);
+
+        trackEvent('command/login', {
+          status: 'cancelled',
+          error: 'User already logged in.'
+        });
+
         return;
     }
 
     const method = await pickLoginMethod(authenticator.methods);
 
     if (!method) {
-        return;
+      trackEvent('command/login', {
+        status: 'cancelled',
+        error: 'No login method selected.'
+      });
+
+      return;
     }
 
     try {
@@ -57,19 +72,45 @@ export function getLoginCommand(context: RuntimeContext) {
             prompt: 'You can create account on https://app.monokle.com.',
         });
 
+        if (!accessToken) {
+          trackEvent('command/login', {
+            status: 'cancelled',
+            method,
+            error: 'No access token provided.'
+          });
+
+          return;
+        }
+
         loginRequest = await authenticator.login(method, accessToken);
       }
 
       if (!loginRequest) {
-          return;
+        trackEvent('command/login', {
+          status: 'cancelled',
+          method,
+        });
+
+        return;
       }
 
       const user = await loginRequest.onDone;
 
       raiseInfo(`You are now logged in as ${user.email}.`);
+
+      trackEvent('command/login', {
+        status: 'success',
+        method,
+      });
     } catch (err) {
         logger.error(err);
         raiseError(`Failed to login to Monokle Cloud. Please try again. Error: ${err.message}`);
+
+        trackEvent('command/login', {
+          status: 'failure',
+          method,
+          error: err.message,
+        });
     }
   };
 }

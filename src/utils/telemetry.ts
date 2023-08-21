@@ -50,16 +50,16 @@ export type EventMap = {
   'ext/session_end': BaseEvent & {timeSpent: number};
   'command/login': BaseEvent & {method?: string};
   'command/logout': BaseEvent;
-  'command/validate': BaseEvent & {configurationType: string};
+  'command/validate': BaseEvent & {rootCount?: number};
   'command/show_panel': BaseEvent;
-  'command/show_configuration': BaseEvent & {configurationType: string};
-  'command/bootstrap_configuration': BaseEvent;
+  'command/show_configuration': BaseEvent & {configurationType?: string};
+  'command/bootstrap_configuration': BaseEvent & {configurationType?: string};
   'command/synchronize': BaseEvent;
   'config/change': BaseEvent & {name: string; value: string};
   // When new folder is added/removed to/from VSC workspace.
   'workspace/change': BaseEvent & {rootCount: number};
   // When validation is completed for a workspace, usually triggered by file modification.
-  'workspace/validated': BaseEvent;
+  'workspace/validate': BaseEvent & {configurationType: string, isValidConfiguration: boolean};
   // When policy is synced from Monokle Cloud.
   'policy/sync': BaseEvent;
 };
