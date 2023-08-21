@@ -1,5 +1,6 @@
 import {Analytics} from '@segment/analytics-node';
 import {env} from 'vscode';
+import {SEGMENT_API_KEY} from '../config';
 import logger from './logger';
 import globals from './globals';
 
@@ -11,9 +12,9 @@ export function getSegmentClient() {
   }
 
   if (!client) {
-    if (process.env.SEGMENT_API_KEY) {
+    if (SEGMENT_API_KEY) {
       logger.log('Enabled Segment');
-      client = new Analytics({writeKey: process.env.SEGMENT_API_KEY});
+      client = new Analytics({writeKey: SEGMENT_API_KEY});
     }
   }
 

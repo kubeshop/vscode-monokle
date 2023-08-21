@@ -1,7 +1,7 @@
 import os from 'os';
-import { machineIdSync } from 'node-machine-id';
 import { join, normalize } from 'path';
 import { mkdir, writeFile, readFile } from 'fs/promises';
+import { env } from 'vscode';
 import { closeSegmentClient, getSegmentClient } from './telemetry-client';
 import logger from './logger';
 import globals from './globals';
@@ -9,22 +9,20 @@ import { extensions } from 'vscode';
 
 let sessionTimeStart : number;
 
-const machineId: string = machineIdSync();
-
 // Should be called on extension start or when extension or telemetry gets enabled.
 export async function initTelemetry() {
   sessionTimeStart = Date.now();
 
   const storedMachineId = await readMachineId();
   if (!storedMachineId) {
-    await saveMachineId(machineId);
+    await saveMachineId(env.machineId);
 
     const segmentClient = getSegmentClient();
 
-    logger.log('Identify user', machineId);
+    logger.log('Identify user', env.machineId);
 
     segmentClient?.identify({
-      userId: machineId,
+      userId: env.machineId,
     });
 
     trackEvent('ext/installed', {
@@ -57,13 +55,14 @@ export async function closeTelemetry() {
 
 export function trackEvent<TEvent extends Event>(eventName: TEvent, payload?: EventMap[TEvent]) {
   const segmentClient = getSegmentClient();
+  const eventPayload = { ...payload, sessionId: env.sessionId };
 
-  logger.log('Track event', machineId, eventName, payload);
+  logger.log('Track event', env.machineId, eventName, eventPayload);
 
   segmentClient?.track({
     event: eventName,
-    properties: payload,
-    userId: machineId,
+    properties: eventPayload,
+    userId: env.machineId,
   });
 }
 
