@@ -211,14 +211,14 @@ async function getDefaultValidator() {
 }
 
 async function getConfigurableValidator() {
-  const {ResourceParser, SchemaLoader, MonokleValidator, createDefaultPluginLoader} = await import('@monokle/validation');
+  const {ResourceParser, SchemaLoader, createExtensibleMonokleValidator} = await import('@monokle/validation');
   const parser = new ResourceParser();
   const schemaLoader = new SchemaLoader();
 
   return {
     parser,
     loader: schemaLoader,
-    validator: new MonokleValidator(createDefaultPluginLoader(parser, schemaLoader)),
+    validator: createExtensibleMonokleValidator(parser, schemaLoader),
   };
 }
 
