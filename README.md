@@ -48,7 +48,7 @@ Validation runs in a background every time a file is modified and saved. This wa
   <img src="assets/gifs/realtime-validation.gif"/>
 </p>
 
-### Tailored to your needs
+### Adjust to your needs
 
 With dedicated `Monokle: Bootstrap configuration` command, you can customize validation configuration in seconds and adjust to your specific needs.
 
@@ -56,7 +56,7 @@ With dedicated `Monokle: Bootstrap configuration` command, you can customize val
   <img src="assets/gifs/configuration.gif"/>
 </p>
 
-### Centralize policies management with Monokle Cloud
+### Enforce policies with Monokle Cloud
 
 Quickly define and manage polices in Monokle Cloud which will be used for anyone working with the project in VSC.
 
@@ -90,10 +90,10 @@ Use command palette to interact with extension, run validation, see current conf
 ## Default Validation Policy
 
 The default configuration used for resource validation enables the following validation plugins:
-- **Security Policy** validation, based on Open-Policy-Agent rules from Aqua Security
-- **Kubernetes Schema** validation for checking schema and Kubernetes version compliance
-- **Resource Links** validation to ensure that all references between resources are valid
-- **YAML syntax** validation
+- **Pod Security Standard** validation, based on the corresponding standard from the Kubernetes project.
+- **Kubernetes Schema** validation for checking schema and Kubernetes version compliance.
+- **Resource Links** validation to ensure that all references between resources are valid.
+- **YAML syntax** validation.
 
 Read about these plugins and their individual validation rules in the [Core Plugins documentation](https://github.com/kubeshop/monokle-core/blob/main/packages/validation/docs/core-plugins.md).
 
@@ -141,7 +141,7 @@ This extension contributes the following settings:
 * `monokle.configurationPath` - Set path to validation configuration file.
 * `monokle.verbose` - Log runtime info to VSC Developer Console.
 * `monokle.overwriteRemotePolicyUrl` - Overwrite default Monokle Cloud URL to fetch policies from.
-* `monokle.telemetryEnabled` - Enable anonymous telemetry.
+* `monokle.telemetryEnabled` - Enable/disable anonymous telemetry.
 
 ## Dependencies
 
@@ -158,6 +158,22 @@ We are happy to help and assist you in case of any doubts or questions.
 For contributing code see [CONTRIBUTING.md](https://github.com/kubeshop/vscode-monokle/blob/main/CONTRIBUTING.md) file.
 
 ## Release Notes
+
+### 0.3.0
+
+#### New Features
+
+* Introduced authentication to Monokle Cloud via web browser (device flow).
+* Introduced support for custom plugins.
+* Introduced `monokle.telemetryEnabled` configuration options.
+
+#### Fixes
+
+* Minor performance improvements and bugfixes.
+
+#### Other updates
+
+* Added anonymous telemetry to help us improve the extension.
 
 ### 0.2.0
 

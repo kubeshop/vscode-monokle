@@ -60,7 +60,16 @@ class Globals {
       throw new Error('Synchronizer not initialized for globals.');
     }
 
-    return this._synchronizer.getPolicy(path);
+    try {
+      const policy = await this._synchronizer.getPolicy(path);
+      return policy;
+    } catch (err) {
+      return {
+        valid: false,
+        path: '',
+        policy: {},
+      };
+    }
   }
 
   getFolderStatus(folder: Folder) {
