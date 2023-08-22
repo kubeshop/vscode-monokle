@@ -1,5 +1,21 @@
 # Change Log
 
+## 0.3.0
+
+### New Features
+
+* Introduced authentication to Monokle Cloud via web browser (device flow).
+* Introduced support for custom plugins.
+* Introduced `monokle.telemetryEnabled` configuration options.
+
+### Fixes
+
+* Minor performance improvements and bugfixes.
+
+### Other updates
+
+* Added anonymous telemetry to help us improve the extension.
+
 ## 0.2.0
 
 ### New Features
