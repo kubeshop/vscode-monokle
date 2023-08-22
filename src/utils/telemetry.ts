@@ -1,4 +1,4 @@
-import os from 'os';
+import { platform } from 'node:os';
 import { join, normalize } from 'path';
 import { mkdir, writeFile, readFile } from 'fs/promises';
 import { env } from 'vscode';
@@ -28,7 +28,7 @@ export async function initTelemetry() {
     trackEvent('ext/installed', {
       status: 'success',
       appVersion: getAppVersion(),
-      deviceOS: os.platform(),
+      deviceOS: platform(),
     });
   }
 
