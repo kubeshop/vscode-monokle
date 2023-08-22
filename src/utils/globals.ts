@@ -43,6 +43,10 @@ class Globals {
     return workspace.getConfiguration(SETTINGS.NAMESPACE).get<boolean>(SETTINGS.VERBOSE);
   }
 
+  get telemetryEnabled() {
+    return workspace.getConfiguration(SETTINGS.NAMESPACE).get<boolean>(SETTINGS.VERBOSE);
+  }
+
   get user(): Awaited<ReturnType<typeof getAuthenticator>>['user'] {
     if (!this._authenticator) {
       throw new Error('Authenticator not initialized for globals.');

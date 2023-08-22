@@ -1,6 +1,7 @@
 import { rm } from 'fs/promises';
 import { getWorkspaceFolders } from './workspace';
 import { getSynchronizer } from './synchronization';
+import { trackEvent } from './telemetry';
 import logger from './logger';
 import globals from './globals';
 import type { Folder } from './workspace';
@@ -65,10 +66,19 @@ export class PolicyPuller {
 
   private async fetchPolicyFiles(roots: Folder[]) {
     for (const folder of roots) {
+
+      trackEvent('policy/synchronize', {
+        status: 'started',
+      });
+
       try {
         const policy = await this._synchronizer.synchronize(folder.uri.fsPath, globals.user.token);
         logger.log('fetchPolicyFiles', policy);
         globals.setFolderStatus(folder);
+
+        trackEvent('policy/synchronize', {
+          status: 'success',
+        });
       } catch (error) {
         const errorDetails = this.getErrorDetails(error);
 
@@ -83,6 +93,12 @@ export class PolicyPuller {
         }
 
         globals.setFolderStatus(folder, errorDetails.message);
+
+        trackEvent('policy/synchronize', {
+          status: 'failure',
+          errorCode: errorDetails.type,
+          error: error.msg,
+        });
       }
     }
 

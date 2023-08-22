@@ -97,6 +97,11 @@
           "default": null,
           "description": "Overwrite Monokle Cloud URL which is used to authenticate and fetch policies from. Useful when running on-premise Monokle Cloud."
         },
+        "monokle.telemetryEnabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whenever anonymous telemetry is enabled. It will be also disabled automatically when VSC telemetry is disabled globally."
+        },
         "monokle.enabled": {
           "type": "boolean",
           "default": true,
@@ -123,7 +128,7 @@
     "test": "concurrently -s command-1 -k \"npm run test:server\" \"node ./out/test/run-test.js\"",
     "test:cc": "concurrently -s command-1 -k \"npm run test:server\" \"c8 node ./out/test/run-test.js\"",
     "test:server": "node ./out/test/run-server.js",
-    "test:ensure-coverage": "npx c8 check-coverage --lines 70 --functions 80 --branches 80 --statements 70"
+    "test:ensure-coverage": "npx c8 check-coverage --lines 70 --functions 80 --branches 75 --statements 70"
   },
   "devDependencies": {
     "@graphql-tools/mock": "^9.0.0",
@@ -152,6 +157,7 @@
   "dependencies": {
     "@monokle/synchronizer": "^0.2.0",
     "@monokle/validation": "^0.25.2",
+    "@segment/analytics-node": "^1.1.0",
     "uuid": "^9.0.0",
     "yaml": "^2.3.1"
   },

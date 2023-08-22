@@ -2,6 +2,7 @@ import { Uri, commands, window } from 'vscode';
 import { canRun } from '../utils/commands';
 import { getWorkspaceConfig, getWorkspaceFolders } from '../utils/workspace';
 import { createTemporaryConfigFile } from '../utils/validation';
+import { trackEvent } from '../utils/telemetry';
 import type { Folder } from '../utils/workspace';
 
 type FolderItem = {
@@ -15,6 +16,10 @@ export function getShowConfigurationCommand() {
       return null;
     }
 
+    trackEvent('command/show_configuration', {
+      status: 'started',
+    });
+
     const folders = getWorkspaceFolders();
 
     if (!folders.length) {
@@ -27,11 +32,20 @@ export function getShowConfigurationCommand() {
         Uri.file(config.path) :
         await createTemporaryConfigFile(config.config, config.owner);
 
-      return commands.executeCommand('vscode.open', configUri);
+      await commands.executeCommand('vscode.open', configUri);
+
+      return config.type;
     };
 
     if (folders.length === 1) {
-      return await showConfig(folders[0]);
+      const configType = await showConfig(folders[0]);
+
+      trackEvent('command/show_configuration', {
+        status: 'success',
+        configurationType: configType,
+      });
+
+      return;
     }
 
     const quickPick = window.createQuickPick<FolderItem>();
@@ -47,7 +61,12 @@ export function getShowConfigurationCommand() {
 
         quickPick.hide();
 
-        await showConfig(selectedFolder);
+        const configType = await showConfig(selectedFolder);
+
+        trackEvent('command/show_configuration', {
+          status: 'success',
+          configurationType: configType,
+        });
       }
     });
     quickPick.onDidHide(() => quickPick.dispose());
