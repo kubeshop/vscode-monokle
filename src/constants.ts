@@ -44,5 +44,6 @@ export const COMMAND_NAMES = {
 
 export const STATUS_BAR_TEXTS = {
   DEFAULT: '🔍 Monokle',
-  VALIDATING: '🤔 Validating...',
+  VALIDATING: '🤔 Monokle: Validating',
+  ERROR: '❌ Monokle: Needs attention',
 };

@@ -1,3 +1,4 @@
+import { rm } from 'fs/promises';
 import { getWorkspaceFolders } from './workspace';
 import { getSynchronizer } from './synchronization';
 import logger from './logger';
@@ -67,13 +68,55 @@ export class PolicyPuller {
       try {
         const policy = await this._synchronizer.synchronize(folder.uri.fsPath, globals.user.token);
         logger.log('fetchPolicyFiles', policy);
+        globals.setFolderStatus(folder);
       } catch (error) {
-        logger.error(error);
-        // @TODO update status bar
+        const errorDetails = this.getErrorDetails(error);
+
+        logger.error('fetchPolicyFiles', error, errorDetails);
+
+        if (errorDetails.type === 'NO_PROJECT' || errorDetails.type === 'NO_POLICY') {
+          const outdatedPolicy = await this._synchronizer.getPolicy(folder.uri.fsPath);
+
+          if (outdatedPolicy.path) {
+            await rm(outdatedPolicy.path, { force: true });
+          }
+        }
+
+        globals.setFolderStatus(folder, errorDetails.message);
       }
     }
 
     this._isPulling = false;
     this._pullPromise = undefined;
+  }
+
+  private getErrorDetails(err: any) {
+    const message = err.message || '';
+
+    let type = 'UNKNOWN';
+
+    if (message.length === 0) {
+      return {
+        type,
+        message: ''
+      };
+    }
+
+    if (message.includes('Cannot fetch user data')) {
+      type = 'NO_USER';
+    }
+
+    if (message.includes('does not belong to any project')) {
+      type = 'NO_PROJECT';
+    }
+
+    if (message.includes('does not have policy defined')) {
+      type = 'NO_POLICY';
+    }
+
+    return {
+      type,
+      message: `${type}: ${message}`
+    };
   }
 }

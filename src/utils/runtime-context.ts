@@ -1,6 +1,6 @@
 
 import { STATUS_BAR_TEXTS } from '../constants';
-import { getTooltipContent } from './tooltip';
+import { getTooltipData } from './tooltip';
 import { getAuthenticator } from './authentication';
 import { getSynchronizer } from './synchronization';
 import type { Disposable, ExtensionContext, StatusBarItem } from 'vscode';
@@ -58,7 +58,9 @@ export class RuntimeContext {
   }
 
   async updateTooltip() {
-    this._statusBarItem.tooltip = await getTooltipContent();
+    const tooltipData = await getTooltipData();
+    this._statusBarItem.text = tooltipData.status === 'ok' ? STATUS_BAR_TEXTS.DEFAULT : STATUS_BAR_TEXTS.ERROR;
+    this._statusBarItem.tooltip = tooltipData.content;
   }
 
   registerDisposables(disposables: Disposable[]) {

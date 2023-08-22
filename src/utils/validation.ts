@@ -5,7 +5,7 @@ import { Uri } from 'vscode';
 import { Document } from 'yaml';
 import { getWorkspaceConfig, getWorkspaceResources } from './workspace';
 import { VALIDATION_FILE_SUFFIX, DEFAULT_CONFIG_FILE_NAME, TMP_POLICY_FILE_SUFFIX } from '../constants';
-import { raiseInvalidConfigError } from './errors';
+import { getInvalidConfigError } from './errors';
 import logger from '../utils/logger';
 import globals from './globals';
 import type { Folder } from './workspace';
@@ -67,11 +67,10 @@ export async function validateFolder(root: Folder): Promise<Uri | null> {
   const workspaceConfig = await getWorkspaceConfig(root);
 
   if (workspaceConfig.isValid === false) {
-    if (workspaceConfig.type === 'remote') {
-      return null; // Error will be already shown by policy puller.
+    if (workspaceConfig.type !== 'remote') {
+      // For remote config, error is already send from policy puller.
+      globals.setFolderStatus(root, getInvalidConfigError(workspaceConfig));
     }
-
-    raiseInvalidConfigError(workspaceConfig, root);
     return null;
   }
 
@@ -100,6 +99,8 @@ export async function validateFolder(root: Folder): Promise<Uri | null> {
   const resultsFilePath = await saveValidationResults(result, root.id);
 
   logger.log(root.name, 'resultsFilePath', resultsFilePath);
+
+  globals.setFolderStatus(root);
 
   return Uri.file(resultsFilePath);
 }

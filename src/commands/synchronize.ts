@@ -1,6 +1,7 @@
-import { window, commands } from 'vscode';
+import { commands } from 'vscode';
 import { canRun } from '../utils/commands';
 import { COMMANDS, COMMAND_NAMES } from '../constants';
+import { raiseWarning } from '../utils/errors';
 import globals from '../utils/globals';
 import type { RuntimeContext } from '../utils/runtime-context';
 
@@ -11,7 +12,7 @@ export function getSynchronizeCommand(context: RuntimeContext) {
     }
 
     if (!globals.user.isAuthenticated) {
-      window.showWarningMessage(`You are not authenticated, cannot synchronize policies. Run ${COMMAND_NAMES.LOGIN} to authenticate first.}`);
+      raiseWarning(`You are not authenticated, cannot synchronize policies. Run ${COMMAND_NAMES.LOGIN} to authenticate first.}`);
       return null;
     }
 
