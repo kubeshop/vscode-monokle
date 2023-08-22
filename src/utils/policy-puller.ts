@@ -85,11 +85,7 @@ export class PolicyPuller {
         logger.error('fetchPolicyFiles', error, errorDetails);
 
         if (errorDetails.type === 'NO_PROJECT' || errorDetails.type === 'NO_POLICY') {
-          const outdatedPolicy = await this._synchronizer.getPolicy(folder.uri.fsPath);
-
-          if (outdatedPolicy.path) {
-            await rm(outdatedPolicy.path, { force: true });
-          }
+          await this.removeOutdatedPolicy(folder.uri.fsPath);
         }
 
         globals.setFolderStatus(folder, errorDetails.message);
@@ -118,6 +114,10 @@ export class PolicyPuller {
       };
     }
 
+    if (message.includes('is not a git repository')) {
+      type = 'NO_REPO';
+    }
+
     if (message.includes('Cannot fetch user data')) {
       type = 'NO_USER';
     }
@@ -134,5 +134,17 @@ export class PolicyPuller {
       type,
       message: `${type}: ${message}`
     };
+  }
+
+  private async removeOutdatedPolicy(path: string) {
+    try {
+      const outdatedPolicy = await this._synchronizer.getPolicy(path);
+
+      if (outdatedPolicy.path) {
+        await rm(outdatedPolicy.path, { force: true });
+      }
+    } catch (err) {
+      logger.error('removeOutdatedPolicy', err);
+    }
   }
 }

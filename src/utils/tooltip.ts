@@ -77,6 +77,10 @@ export async function getTooltipData(): Promise<TooltipData> {
 }
 
 function getFixTip(err: string) {
+  if (err.startsWith('NO_REPO')) {
+    return 'Current folder needs to be a git repository.';
+  }
+
   if (err.startsWith('NO_USER')) {
     return `Try logging again with _${COMMAND_NAMES.LOGIN}_ command.`;
   }
