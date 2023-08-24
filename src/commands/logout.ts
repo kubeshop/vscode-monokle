@@ -3,6 +3,7 @@ import { raiseError, raiseInfo } from '../utils/errors';
 import { COMMAND_NAMES } from '../constants';
 import { trackEvent } from '../utils/telemetry';
 import logger from '../utils/logger';
+import globals from '../utils/globals';
 import type { RuntimeContext } from '../utils/runtime-context';
 
 export function getLogoutCommand(context: RuntimeContext) {
@@ -16,8 +17,9 @@ export function getLogoutCommand(context: RuntimeContext) {
     });
 
     const authenticator = context.authenticator;
+    const user = await globals.getUser();
 
-    if (!authenticator.user.isAuthenticated) {
+    if (!user.isAuthenticated) {
         raiseInfo(`You are already logged out. You can login with '${COMMAND_NAMES.LOGOUT}' command.`);
 
         trackEvent('command/logout', {

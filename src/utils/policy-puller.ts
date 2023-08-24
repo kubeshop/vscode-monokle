@@ -19,7 +19,9 @@ export class PolicyPuller {
   ) {}
 
   async refresh() {
-    if (!globals.user.isAuthenticated) {
+    const user = await globals.getUser();
+
+    if (!user.isAuthenticated) {
       return this.dispose();
     }
 
@@ -65,6 +67,8 @@ export class PolicyPuller {
   }
 
   private async fetchPolicyFiles(roots: Folder[]) {
+    const user = await globals.getUser();
+
     for (const folder of roots) {
 
       trackEvent('policy/synchronize', {
@@ -72,7 +76,7 @@ export class PolicyPuller {
       });
 
       try {
-        const policy = await this._synchronizer.synchronize(folder.uri.fsPath, globals.user.token);
+        const policy = await this._synchronizer.synchronize(folder.uri.fsPath, user.token);
         logger.log('fetchPolicyFiles', policy);
         globals.setFolderStatus(folder);
 
