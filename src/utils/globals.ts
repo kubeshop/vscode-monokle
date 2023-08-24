@@ -91,6 +91,14 @@ class Globals {
     this._synchronizer = synchronizer;
   }
 
+  async forceRefreshToken() {
+    if (!this._authenticator) {
+      throw new Error('Authenticator not initialized for globals.');
+    }
+
+    return this._authenticator.refreshToken(true);
+  }
+
   asObject() {
     return {
       storagePath: this.storagePath,

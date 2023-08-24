@@ -158,6 +158,7 @@
     "@monokle/synchronizer": "^0.4.0",
     "@monokle/validation": "^0.25.3",
     "@segment/analytics-node": "^1.1.0",
+    "p-retry": "^4.6.2",
     "uuid": "^9.0.0",
     "yaml": "^2.3.1"
   },
