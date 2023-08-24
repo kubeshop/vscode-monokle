@@ -4,6 +4,7 @@ import { raiseError, raiseInfo } from '../utils/errors';
 import { COMMAND_NAMES } from '../constants';
 import { trackEvent } from '../utils/telemetry';
 import logger from '../utils/logger';
+import globals from '../utils/globals';
 import type { RuntimeContext } from '../utils/runtime-context';
 
 const AUTH_METHOD_LABELS = {
@@ -22,9 +23,10 @@ export function getLoginCommand(context: RuntimeContext) {
     });
 
     const authenticator = context.authenticator;
+    const user = await globals.getUser();
 
-    if (authenticator.user.isAuthenticated) {
-        raiseInfo(`You are already logged in. Please logout first with '${COMMAND_NAMES.LOGIN}'.`);
+    if (user.isAuthenticated) {
+        raiseInfo(`You are already logged in. Please logout first with '${COMMAND_NAMES.LOGOUT}'.`);
 
         trackEvent('command/login', {
           status: 'cancelled',

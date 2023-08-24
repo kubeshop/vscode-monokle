@@ -16,7 +16,9 @@ export function getSynchronizeCommand(context: RuntimeContext) {
       status: 'started'
     });
 
-    if (!globals.user.isAuthenticated) {
+    const user = await globals.getUser();
+
+    if (!user.isAuthenticated) {
       raiseWarning(`You are not authenticated, cannot synchronize policies. Run ${COMMAND_NAMES.LOGIN} to authenticate first.}`);
 
       trackEvent('command/synchronize', {

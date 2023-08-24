@@ -41,7 +41,9 @@ export async function getWorkspaceResources(workspaceFolder: Folder) {
 }
 
 export async function getWorkspaceConfig(workspaceFolder: Folder): Promise<WorkspaceFolderConfig> {
-  if (globals.user.isAuthenticated) {
+  const user = await globals.getUser();
+
+  if (user.isAuthenticated) {
     const policyData = await globals.getRemotePolicy(workspaceFolder.uri.fsPath);
 
     return {

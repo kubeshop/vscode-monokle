@@ -19,9 +19,13 @@ export async function initTelemetry() {
 
     const segmentClient = getSegmentClient();
 
+    if (!segmentClient) {
+      return;
+    }
+
     logger.log('Identify user', env.machineId);
 
-    segmentClient?.identify({
+    segmentClient.identify({
       userId: env.machineId,
     });
 

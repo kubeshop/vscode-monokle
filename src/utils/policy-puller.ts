@@ -1,4 +1,5 @@
 import { rm } from 'fs/promises';
+import pRetry, {AbortError} from 'p-retry';
 import { getWorkspaceFolders } from './workspace';
 import { getSynchronizer } from './synchronization';
 import { trackEvent } from './telemetry';
@@ -19,7 +20,9 @@ export class PolicyPuller {
   ) {}
 
   async refresh() {
-    if (!globals.user.isAuthenticated) {
+    const user = await globals.getUser();
+
+    if (!user.isAuthenticated) {
       return this.dispose();
     }
 
@@ -72,7 +75,7 @@ export class PolicyPuller {
       });
 
       try {
-        const policy = await this._synchronizer.synchronize(folder.uri.fsPath, globals.user.token);
+        const policy = await this.getPolicyData(folder);
         logger.log('fetchPolicyFiles', policy);
         globals.setFolderStatus(folder);
 
@@ -100,6 +103,27 @@ export class PolicyPuller {
 
     this._isPulling = false;
     this._pullPromise = undefined;
+  }
+
+  private getPolicyData(root: Folder) {
+    return pRetry(async (attempt) => {
+      if (attempt === 3) {
+        await globals.forceRefreshToken();
+      }
+
+      const user = await globals.getUser();
+      const policy = await this._synchronizer.synchronize(root.uri.fsPath, user.token);
+
+      return policy;
+    }, {
+      retries: 3,
+      factor: 1.2,
+      minTimeout: 100,
+      maxTimeout: 250,
+      onFailedAttempt: (err) => {
+        logger.error('getPolicyData', err);
+      },
+    });
   }
 
   private getErrorDetails(err: any) {

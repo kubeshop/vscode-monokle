@@ -1,5 +1,11 @@
 # Change Log
 
+## 0.3.1
+
+### Fixes
+
+* Minor improvements and bugfixes related to Monokle Cloud integration.
+
 ## 0.3.0
 
 ### New Features

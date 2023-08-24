@@ -47,12 +47,12 @@ class Globals {
     return workspace.getConfiguration(SETTINGS.NAMESPACE).get<boolean>(SETTINGS.VERBOSE);
   }
 
-  get user(): Awaited<ReturnType<typeof getAuthenticator>>['user'] {
+  async getUser(): Promise<Awaited<ReturnType<typeof getAuthenticator>>['user']> {
     if (!this._authenticator) {
       throw new Error('Authenticator not initialized for globals.');
     }
 
-    return this._authenticator.user;
+    return this._authenticator.getUser();
   }
 
   async getRemotePolicy(path: string) {
@@ -91,6 +91,14 @@ class Globals {
     this._synchronizer = synchronizer;
   }
 
+  async forceRefreshToken() {
+    if (!this._authenticator) {
+      throw new Error('Authenticator not initialized for globals.');
+    }
+
+    return this._authenticator.refreshToken(true);
+  }
+
   asObject() {
     return {
       storagePath: this.storagePath,
@@ -99,7 +107,6 @@ class Globals {
       overwriteRemotePolicyUrl: this.overwriteRemotePolicyUrl,
       enabled: this.enabled,
       verbose: this.verbose,
-      user: this.user,
     };
   }
 }
