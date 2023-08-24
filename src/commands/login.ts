@@ -24,7 +24,7 @@ export function getLoginCommand(context: RuntimeContext) {
     const authenticator = context.authenticator;
 
     if (authenticator.user.isAuthenticated) {
-        raiseInfo(`You are already logged in. Please logout first with '${COMMAND_NAMES.LOGIN}'.`);
+        raiseInfo(`You are already logged in. Please logout first with '${COMMAND_NAMES.LOGOUT}'.`);
 
         trackEvent('command/login', {
           status: 'cancelled',
