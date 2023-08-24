@@ -84,7 +84,7 @@ function getFixTip(err: string) {
   }
 
   if (err.startsWith('NO_USER')) {
-    return `Try logging again with _${COMMAND_NAMES.LOGIN}_ command.`;
+    return `Looks like connection or authentication issue. Try logging again with _${COMMAND_NAMES.LOGIN}_ command.`;
   }
 
   if (err.startsWith('NO_PROJECT')) {
