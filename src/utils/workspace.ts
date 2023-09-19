@@ -25,6 +25,7 @@ export type WorkspaceFolderConfig = {
   isValid: boolean;
   path?: string;
   fileName?: string;
+  remoteProjectName?: string;
 };
 
 export function getWorkspaceFolders(): Folder[] {
@@ -45,6 +46,7 @@ export async function getWorkspaceConfig(workspaceFolder: Folder): Promise<Works
 
   if (user.isAuthenticated) {
     const policyData = await globals.getRemotePolicy(workspaceFolder.uri.fsPath);
+    const projectName = await globals.getRemoteProjectName(workspaceFolder.uri.fsPath);
 
     return {
       type: 'remote',
@@ -53,6 +55,7 @@ export async function getWorkspaceConfig(workspaceFolder: Folder): Promise<Works
       isValid: policyData.valid,
       path: policyData.path,
       fileName: basename(policyData.path),
+      remoteProjectName: projectName,
     };
   }
 

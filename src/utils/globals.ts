@@ -55,6 +55,24 @@ class Globals {
     return this._authenticator.getUser();
   }
 
+  async getRemoteProjectName(path: string) {
+    if (!this._authenticator) {
+      throw new Error('Authenticator not initialized for globals.');
+    }
+
+    if (!this._synchronizer) {
+      throw new Error('Synchronizer not initialized for globals.');
+    }
+
+    try {
+      const user = await this._authenticator.getUser();
+      const projectInfo = await this._synchronizer.getProjectInfo(path, user.token);
+      return projectInfo?.name ?? '';
+    } catch (err) {
+      return '';
+    }
+  }
+
   async getRemotePolicy(path: string) {
     if (!this._synchronizer) {
       throw new Error('Synchronizer not initialized for globals.');
