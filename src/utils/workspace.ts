@@ -1,10 +1,10 @@
 import { RelativePattern, Uri, workspace } from 'vscode';
-import { basename, join, normalize, resolve } from 'path';
+import { basename, join, normalize } from 'path';
 import { stat } from 'fs/promises';
-import { Resource, extractK8sResources } from './extract';
 import { clearResourceCache, getDefaultConfig, getValidationResultPath, readConfig, validateFolder } from './validation';
 import { generateId } from './helpers';
 import { SETTINGS, DEFAULT_CONFIG_FILE_NAME } from '../constants';
+import { extractK8sResources } from './parser';
 import logger from '../utils/logger';
 import globals from '../utils/globals';
 import type { WorkspaceFolder } from 'vscode';
@@ -168,7 +168,7 @@ async function findYamlFiles(folderPath: string): Promise<File[]> {
     });
 }
 
-async function convertFilesToK8sResources(files: File[]): Promise<Resource[]> {
+async function convertFilesToK8sResources(files: File[]): Promise<ReturnType<Awaited<typeof extractK8sResources>>> {
   const filesWithContent = await Promise.all(files.map(async file => {
     const contentRaw = await workspace.fs.readFile(Uri.file(file.path));
     const content = Buffer.from(contentRaw.buffer).toString('utf8');
