@@ -27,7 +27,7 @@ npm run test:cc  # Runs tests with code coverage.
 If you are in a GUI-less environment (like CI runner or WSL), you can use:
 
 ```bash
-xvfb-run -a npm run test
+DONT_PROMPT_WSL_INSTALL=1 xvfb-run -a npm run test
 ```
 
 For manual testing you can test in development mode by running `Watch and Run Extension` task. You can also pack and install the extension by running:

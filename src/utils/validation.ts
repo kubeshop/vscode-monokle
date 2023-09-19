@@ -40,7 +40,7 @@ const VALIDATORS = new Map<string, {config: string, validator: ConfigurableValid
 
 export async function getValidator(validatorId: string, config?: any) {
   const validatorItem = VALIDATORS.get(validatorId);
-  const validatorObj = validatorItem?.validator ?? await getConfigurableValidator();
+  const validatorObj = validatorItem?.validator ?? await getValidatorInstance();
   const validator = validatorObj.validator;
   const oldConfig = validatorItem?.config ?? null;
   const newConfig = JSON.stringify(config);
@@ -226,23 +226,26 @@ export async function readConfig(path: string) {
 }
 
 export async function getDefaultConfig() {
-  return (await getDefaultValidator()).config;
+  return (await getValidatorInstance()).validator.config;
 }
 
-async function getDefaultValidator() {
-  const {createDefaultMonokleValidator} = await import('@monokle/validation');
-  return createDefaultMonokleValidator();
-}
+async function getValidatorInstance() {
+  const {MonokleValidator, ResourceParser, SchemaLoader, RemotePluginLoader, DisabledFixer} = await import('@monokle/validation');
 
-async function getConfigurableValidator() {
-  const {ResourceParser, SchemaLoader, createExtensibleMonokleValidator} = await import('@monokle/validation');
   const parser = new ResourceParser();
-  const schemaLoader = new SchemaLoader();
+  const loader = new SchemaLoader();
+  const validator = new MonokleValidator({
+    loader: new RemotePluginLoader(),
+    parser,
+    schemaLoader: loader,
+    suppressors: [],
+    fixer: new DisabledFixer(),
+  });
 
   return {
     parser,
-    loader: schemaLoader,
-    validator: createExtensibleMonokleValidator(parser, schemaLoader),
+    loader,
+    validator,
   };
 }
 
