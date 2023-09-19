@@ -44,7 +44,7 @@ class Globals {
   }
 
   get telemetryEnabled() {
-    return workspace.getConfiguration(SETTINGS.NAMESPACE).get<boolean>(SETTINGS.VERBOSE);
+    return workspace.getConfiguration(SETTINGS.NAMESPACE).get<boolean>(SETTINGS.TELEMETRY_ENABLED);
   }
 
   async getUser(): Promise<Awaited<ReturnType<typeof getAuthenticator>>['user']> {
