@@ -38,6 +38,9 @@ const DEFAULT_PLUGIN_MAP = {
 // validator for each root (which will be reconfigured only when root related config changes).
 const VALIDATORS = new Map<string, {config: string, validator: ConfigurableValidator}>();
 
+// Store validation results for each root so those can bo compared.
+const RESULTS = new Map<string, any>();
+
 export async function getValidator(validatorId: string, config?: any) {
   const validatorItem = VALIDATORS.get(validatorId);
   const validatorObj = validatorItem?.validator ?? await getValidatorInstance();
@@ -115,17 +118,23 @@ export async function validateFolder(root: Folder): Promise<Uri | null> {
     });
   });
 
-  const resultsFilePath = await saveValidationResults(result, root.id);
+  // This causes SARIF panel to reload so we want to write new results only when they are different.
+  const resultUnchanged = await areValidationResultsSame(RESULTS.get(root.id), result);
+  if (!resultUnchanged) {
+    await saveValidationResults(result, root.id);
+  }
 
-  logger.log(root.name, 'resultsFilePath', resultsFilePath);
+  RESULTS.set(root.id, result);
 
   globals.setFolderStatus(root);
 
-  const resultFilePath = Uri.file(resultsFilePath);
+  const resultFilePath = await getValidationResultPath(root.id);
+
+  logger.log(root.name, 'resultFilePath', resultFilePath, 'resultUnchanged', resultUnchanged);
 
   sendSuccessValidationTelemetry(resources.length, workspaceConfig, result);
 
-  return resultFilePath;
+  return Uri.file(resultFilePath);
 }
 
 export async function getValidationResult(fileName: string) {
@@ -281,4 +290,30 @@ function normalizePathForWindows(path: string) {
   }
 
   return path;
+}
+
+function areValidationResultsSame(previous: any, current: any) {
+  if (!previous || !current) {
+    return false;
+  }
+
+  return removeUniqueIds(JSON.stringify(previous)) === removeUniqueIds(JSON.stringify(current));
+}
+
+function removeUniqueIds(initialText: string) {
+  let text = initialText;
+
+  const guidRegexp = /"guid":\s*"([\d\w-]*)"/g;
+  const matchesGuid = text.matchAll(guidRegexp);
+  for (const match of matchesGuid) {
+    text = text.replace(match[1], '');
+  }
+
+  const hashRegexp = /"monokleHash\/v1":\s*"([\d\w-]*)"/g;
+  const matchesHash = text.matchAll(hashRegexp);
+  for (const match of matchesHash) {
+    text = text.replace(match[1], '');
+  }
+
+  return text;
 }
