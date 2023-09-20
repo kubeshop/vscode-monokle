@@ -7,6 +7,7 @@ import { getWorkspaceConfig, getWorkspaceResources, WorkspaceFolderConfig } from
 import { VALIDATION_FILE_SUFFIX, DEFAULT_CONFIG_FILE_NAME, TMP_POLICY_FILE_SUFFIX } from '../constants';
 import { getInvalidConfigError } from './errors';
 import { trackEvent } from './telemetry';
+import { getResultCache } from './result-cache';
 import logger from '../utils/logger';
 import globals from './globals';
 import type { Folder } from './workspace';
@@ -38,9 +39,12 @@ const DEFAULT_PLUGIN_MAP = {
 // validator for each root (which will be reconfigured only when root related config changes).
 const VALIDATORS = new Map<string, {config: string, validator: ConfigurableValidator}>();
 
+// Store validation results for each root so those can bo compared.
+const RESULTS = getResultCache<string, any>();
+
 export async function getValidator(validatorId: string, config?: any) {
   const validatorItem = VALIDATORS.get(validatorId);
-  const validatorObj = validatorItem?.validator ?? await getConfigurableValidator();
+  const validatorObj = validatorItem?.validator ?? await getValidatorInstance();
   const validator = validatorObj.validator;
   const oldConfig = validatorItem?.config ?? null;
   const newConfig = JSON.stringify(config);
@@ -115,17 +119,23 @@ export async function validateFolder(root: Folder): Promise<Uri | null> {
     });
   });
 
-  const resultsFilePath = await saveValidationResults(result, root.id);
+  // This causes SARIF panel to reload so we want to write new results only when they are different.
+  const resultUnchanged = await areValidationResultsSame(RESULTS.get(root.id), result);
+  if (!resultUnchanged) {
+    await saveValidationResults(result, root.id);
+  }
 
-  logger.log(root.name, 'resultsFilePath', resultsFilePath);
+  RESULTS.set(root.id, result);
 
   globals.setFolderStatus(root);
 
-  const resultFilePath = Uri.file(resultsFilePath);
+  const resultFilePath = await getValidationResultPath(root.id);
+
+  logger.log(root.name, 'resultFilePath', resultFilePath, 'resultUnchanged', resultUnchanged);
 
   sendSuccessValidationTelemetry(resources.length, workspaceConfig, result);
 
-  return resultFilePath;
+  return Uri.file(resultFilePath);
 }
 
 export async function getValidationResult(fileName: string) {
@@ -226,23 +236,26 @@ export async function readConfig(path: string) {
 }
 
 export async function getDefaultConfig() {
-  return (await getDefaultValidator()).config;
+  return (await getValidatorInstance()).validator.config;
 }
 
-async function getDefaultValidator() {
-  const {createDefaultMonokleValidator} = await import('@monokle/validation');
-  return createDefaultMonokleValidator();
-}
+async function getValidatorInstance() {
+  const {MonokleValidator, ResourceParser, SchemaLoader, RemotePluginLoader, DisabledFixer} = await import('@monokle/validation');
 
-async function getConfigurableValidator() {
-  const {ResourceParser, SchemaLoader, createExtensibleMonokleValidator} = await import('@monokle/validation');
   const parser = new ResourceParser();
-  const schemaLoader = new SchemaLoader();
+  const loader = new SchemaLoader();
+  const validator = new MonokleValidator({
+    loader: new RemotePluginLoader(),
+    parser,
+    schemaLoader: loader,
+    suppressors: [],
+    fixer: new DisabledFixer(),
+  });
 
   return {
     parser,
-    loader: schemaLoader,
-    validator: createExtensibleMonokleValidator(parser, schemaLoader),
+    loader,
+    validator,
   };
 }
 
@@ -278,4 +291,30 @@ function normalizePathForWindows(path: string) {
   }
 
   return path;
+}
+
+function areValidationResultsSame(previous: any, current: any) {
+  if (!previous || !current) {
+    return false;
+  }
+
+  return removeUniqueIds(JSON.stringify(previous)) === removeUniqueIds(JSON.stringify(current));
+}
+
+function removeUniqueIds(initialText: string) {
+  let text = initialText;
+
+  const guidRegexp = /"guid":\s*"([\d\w-]*)"/g;
+  const matchesGuid = text.matchAll(guidRegexp);
+  for (const match of matchesGuid) {
+    text = text.replace(match[1], '');
+  }
+
+  const hashRegexp = /"monokleHash\/v1":\s*"([\d\w-]*)"/g;
+  const matchesHash = text.matchAll(hashRegexp);
+  for (const match of matchesHash) {
+    text = text.replace(match[1], '');
+  }
+
+  return text;
 }

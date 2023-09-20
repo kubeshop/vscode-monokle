@@ -59,7 +59,12 @@ export async function getTooltipData(): Promise<TooltipData> {
       }
     });
 
-    return `**${folder.name}**: ❌ ${errors} ⚠️ ${warnings} (_config: ${configType}_)`;
+    let configInfo = `${configType} config`;
+    if (config.type === 'remote' && config.remoteProjectName) {
+      configInfo = `remote config from **${config.remoteProjectName}** project`;
+    }
+
+    return `**${folder.name}**: ❌ ${errors} ⚠️ ${warnings} (_${configInfo}_)`;
   }));
 
   let activeUserText = '';

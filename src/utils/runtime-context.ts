@@ -50,7 +50,6 @@ export class RuntimeContext {
 
   set isValidating(value: boolean) {
     this._isValidating = value;
-    this._statusBarItem.text = value ? STATUS_BAR_TEXTS.VALIDATING : STATUS_BAR_TEXTS.DEFAULT;
 
     if (!value) {
       this.updateTooltip();
