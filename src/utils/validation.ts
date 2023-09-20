@@ -7,6 +7,7 @@ import { getWorkspaceConfig, getWorkspaceResources, WorkspaceFolderConfig } from
 import { VALIDATION_FILE_SUFFIX, DEFAULT_CONFIG_FILE_NAME, TMP_POLICY_FILE_SUFFIX } from '../constants';
 import { getInvalidConfigError } from './errors';
 import { trackEvent } from './telemetry';
+import { getResultCache } from './result-cache';
 import logger from '../utils/logger';
 import globals from './globals';
 import type { Folder } from './workspace';
@@ -39,7 +40,7 @@ const DEFAULT_PLUGIN_MAP = {
 const VALIDATORS = new Map<string, {config: string, validator: ConfigurableValidator}>();
 
 // Store validation results for each root so those can bo compared.
-const RESULTS = new Map<string, any>();
+const RESULTS = getResultCache<string, any>();
 
 export async function getValidator(validatorId: string, config?: any) {
   const validatorItem = VALIDATORS.get(validatorId);

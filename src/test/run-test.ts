@@ -19,7 +19,16 @@ type TestWorkspace = {
   disabled?: boolean;
 };
 
-async function runSuite(testFile: string, workspaces: TestWorkspace[], setupRemoteEnv = false) {
+type TestFlags = {
+  setupRemoteEnv?: boolean;
+  skipResultCache?: boolean;
+};
+
+async function runSuite(
+  testFile: string,
+  workspaces: TestWorkspace[],
+  flags: TestFlags = { setupRemoteEnv: false, skipResultCache: false }
+) {
   let currentWorkspace: TestWorkspace | undefined;
 
   try {
@@ -79,11 +88,13 @@ async function runSuite(testFile: string, workspaces: TestWorkspace[], setupRemo
           // eslint-disable-next-line @typescript-eslint/naming-convention
           WORKSPACE_DISABLED: Boolean(workspace.disabled === true).toString(),
           // eslint-disable-next-line @typescript-eslint/naming-convention
-          MONOKLE_TEST_CONFIG_PATH: setupRemoteEnv ? fixturesDestDir : testTmpDir,
+          MONOKLE_TEST_CONFIG_PATH: flags.setupRemoteEnv ? fixturesDestDir : testTmpDir,
           // eslint-disable-next-line @typescript-eslint/naming-convention
-          MONOKLE_TEST_SERVER_URL: setupRemoteEnv ? 'http://localhost:5000' : '',
+          MONOKLE_TEST_SERVER_URL: flags.setupRemoteEnv ? 'http://localhost:5000' : '',
           // eslint-disable-next-line @typescript-eslint/naming-convention
           MONOKLE_VSC_ENV: 'TEST',
+          // eslint-disable-next-line @typescript-eslint/naming-convention
+          MONOKLE_TEST_SKIP_RESULT_CACHE: flags.skipResultCache ? 'Y' : undefined,
         }
       });
     }
@@ -132,13 +143,13 @@ async function main() {
   await runSuite('./suite-initialization/index', [workspaces[0]]);
 
   // Run policies tests on single repo.
-  await runSuite('./suite-policies/index', [workspaces[3]], true);
+  await runSuite('./suite-policies/index', [workspaces[3]], { setupRemoteEnv: true });
 
   // Run integration-like tests on multiple, different workspaces (local config).
-  await runSuite('./suite-integration/index', workspaces.slice(0, -1));
+  await runSuite('./suite-integration/index', workspaces.slice(0, -1), { skipResultCache: true });
 
   // Run integration-like tests for remote config separately as it needs different setup.
-  await runSuite('./suite-integration/index', [workspaces[3]], true);
+  await runSuite('./suite-integration/index', [workspaces[3]], { setupRemoteEnv: true });
 }
 
 main();
