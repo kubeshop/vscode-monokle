@@ -1,5 +1,21 @@
 # Change Log
 
+## 0.4.0
+
+### New Features
+
+* Monokle Cloud project name from which remote policy is used is now visible in the extension status bar icon tooltip - [#39](https://github.com/kubeshop/vscode-monokle/issues/39).
+
+### Fixes
+
+* Validation result panel will not reload unnecessarily - [#42](https://github.com/kubeshop/vscode-monokle/issues/42).
+* Polished and simplified extension status bar icon behavior and appearance - [#41](https://github.com/kubeshop/vscode-monokle/issues/41).
+
+### Other updates
+
+* Removed token authentication method in `login` command flow in favor of device flow.
+* Updated dependencies improving stability.
+
 ## 0.3.1
 
 ### Fixes
