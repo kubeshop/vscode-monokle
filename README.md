@@ -159,6 +159,12 @@ For contributing code see [CONTRIBUTING.md](https://github.com/kubeshop/vscode-m
 
 ## Release Notes
 
+### 0.4.1
+
+#### Fixes
+
+* Restored default validation configuration and aligned it with `Monokle: Bootstrap configuration` command.
+
 ### 0.4.0
 
 #### New Features
