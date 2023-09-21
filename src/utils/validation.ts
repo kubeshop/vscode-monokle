@@ -25,13 +25,19 @@ export type ConfigFileOptions = {
 // Use default map with full list of plugins so it's easier
 // for users to work with newly generated validation configuration file.
 const DEFAULT_PLUGIN_MAP = {
-  'open-policy-agent': true,
-  'resource-links': true,
   'yaml-syntax': true,
+  'resource-links': true,
   'kubernetes-schema': true,
-  'pod-security-standards': false,
+  'pod-security-standards': true,
+  'open-policy-agent': false,
   'practices': false,
   'metadata': false,
+};
+
+const DEFAULT_SETTINGS = {
+  'kubernetes-schema': {
+    schemaVersion: '1.28.2',
+  }
 };
 
 // Having multiple roots, each with different config will make it inefficient to reconfigure
@@ -177,6 +183,7 @@ export async function createTemporaryConfigFile(config: any, ownerRoot: Folder) 
 export async function createDefaultConfigFile(ownerRootDir: string) {
   const config = {
     plugins: DEFAULT_PLUGIN_MAP,
+    settings: DEFAULT_SETTINGS,
   };
 
   const commentBefore = [
@@ -250,6 +257,9 @@ async function getValidatorInstance() {
     schemaLoader: loader,
     suppressors: [],
     fixer: new DisabledFixer(),
+  }, {
+    plugins: DEFAULT_PLUGIN_MAP,
+    settings: DEFAULT_SETTINGS,
   });
 
   return {
