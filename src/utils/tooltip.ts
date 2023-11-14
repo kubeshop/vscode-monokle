@@ -1,9 +1,9 @@
 import { MarkdownString } from 'vscode';
 import { getWorkspaceConfig, getWorkspaceFolders } from './workspace';
 import { getValidationResult } from './validation';
-import { COMMAND_NAMES } from '../constants';
 import globals from './globals';
 import logger from './logger';
+import { getFixTip } from './get-fix-tip';
 
 export type TooltipData = {
   content: string | MarkdownString;
@@ -34,8 +34,7 @@ export async function getTooltipData(): Promise<TooltipData> {
     const configType = config.type === 'file' || config.type === 'config' ? 'local' : config.type;
 
     const folderStatus = globals.getFolderStatus(folder);
-    const errorStatus = folderStatus?.error ?? '';
-    const fixTip = getFixTip(errorStatus);
+    const fixTip = getFixTip(folderStatus);
 
     logger.log('folderStatus', folderStatus, fixTip);
 
@@ -81,24 +80,4 @@ export async function getTooltipData(): Promise<TooltipData> {
     content,
     status: isStatusOk ? 'ok' : 'error',
   };
-}
-
-function getFixTip(err: string) {
-  if (err.startsWith('NO_REPO')) {
-    return 'Current folder needs to be a git repository.';
-  }
-
-  if (err.startsWith('NO_USER')) {
-    return `Looks like connection or authentication issue. Try logging again with _${COMMAND_NAMES.LOGIN}_ command.`;
-  }
-
-  if (err.startsWith('NO_PROJECT')) {
-    return 'Add to project in Monokle Cloud.';
-  }
-
-  if (err.startsWith('NO_POLICY')) {
-    return 'Add policy in Monokle Cloud related project.';
-  }
-
-  return '';
 }
