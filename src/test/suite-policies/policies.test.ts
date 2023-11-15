@@ -32,7 +32,7 @@ suite(`Policies - Remote: ${process.env.ROOT_PATH}`, function () {
     const folder = folders[0];
     const config = await getWorkspaceConfig(folder);
 
-    ok(config.isValid === false);
+    ok(config.isValid === true); // True since we fallback to default config.
 
     await workspace.getConfiguration('monokle').update('enabled', true, ConfigurationTarget.Workspace);
 
@@ -48,7 +48,7 @@ suite(`Policies - Remote: ${process.env.ROOT_PATH}`, function () {
     const folder = folders[0];
     const config = await getWorkspaceConfig(folder);
 
-    ok(config.isValid === false);
+    ok(config.isValid === true); // True since we fallback to default config.
 
     await workspace.getConfiguration('monokle').update('enabled', true, ConfigurationTarget.Workspace);
 
