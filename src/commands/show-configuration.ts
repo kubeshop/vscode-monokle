@@ -3,6 +3,8 @@ import { canRun } from '../utils/commands';
 import { getWorkspaceConfig, getWorkspaceFolders } from '../utils/workspace';
 import { createTemporaryConfigFile } from '../utils/validation';
 import { trackEvent } from '../utils/telemetry';
+import globals from '../utils/globals';
+import { getFixTip } from '../utils/get-fix-tip';
 import type { Folder } from '../utils/workspace';
 
 type FolderItem = {
@@ -28,11 +30,22 @@ export function getShowConfigurationCommand() {
 
     const showConfig = async (folder: Folder) => {
       const config = await getWorkspaceConfig(folder);
-      const configUri = config.type !== 'default' ?
-        Uri.file(config.path) :
-        await createTemporaryConfigFile(config.config, config.owner);
 
-      await commands.executeCommand('vscode.open', configUri);
+      if (config.isValid) {
+        const configUri = config.type !== 'default' ?
+          Uri.file(config.path) :
+          await createTemporaryConfigFile(config.config, config.owner);
+
+        await commands.executeCommand('vscode.open', configUri);
+      } else {
+        const folderStatus = globals.getFolderStatus(folder);
+        const tip = getFixTip(folderStatus);
+        const message = `Cannot open ${config.type} configuration file. ${ tip ?? ''}`;
+
+        window.showErrorMessage(message, {
+          modal: true,
+        });
+      }
 
       return config.type;
     };

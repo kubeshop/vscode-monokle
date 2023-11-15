@@ -41,22 +41,34 @@ export async function getWorkspaceResources(workspaceFolder: Folder) {
   return convertFilesToK8sResources(resourceFiles);
 }
 
+// Config precedence:
+// 1. Remote policy (if user logged in).
+//   - If there is an error fetching (any other than NO_POLICY), fallback to other options.
+//   - If there is NO_POLICY error, treat as invalid config (as we assume, user intention is to use remote policy).
+// 2. Config from settings (if exists).
+// 3. Local config (if exists).
+// 4. Default config.
 export async function getWorkspaceConfig(workspaceFolder: Folder): Promise<WorkspaceFolderConfig> {
   const user = await globals.getUser();
 
   if (user.isAuthenticated) {
     const policyData = await globals.getRemotePolicy(workspaceFolder.uri.fsPath);
     const projectName = await globals.getRemoteProjectName(workspaceFolder.uri.fsPath);
+    const folderStatus = globals.getFolderStatus(workspaceFolder);
 
-    return {
-      type: 'remote',
-      config: policyData.policy,
-      owner: workspaceFolder,
-      isValid: policyData.valid,
-      path: policyData.path,
-      fileName: basename(policyData.path),
-      remoteProjectName: projectName,
-    };
+    // Use remote config when it is valid or when there is NO_POLICY error (meaning repo is already part
+    // of a project in Monokle Cloud which only lacks policy, so we assume user intention is to use remote policy).
+    if (policyData.valid || folderStatus?.error?.startsWith('NO_POLICY')) {
+      return {
+        type: 'remote',
+        config: policyData.policy,
+        owner: workspaceFolder,
+        isValid: policyData.valid,
+        path: policyData.path,
+        fileName: basename(policyData.path),
+        remoteProjectName: projectName,
+      };
+    }
   }
 
   const settingsConfigurationPath = workspace.getConfiguration(SETTINGS.NAMESPACE).get<string>(SETTINGS.CONFIGURATION_PATH);

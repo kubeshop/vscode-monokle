@@ -174,7 +174,11 @@ export async function createTemporaryConfigFile(config: any, ownerRoot: Folder) 
   const commentBefore = [
     ` The '${ownerRoot.name}' folder uses default validation configuration. This file is readonly.`,
     ` You can adjust configuration by generating local configuration file with 'Monokle: Bootstrap configuration' command`,
-    ` or by pointing to existing Monokle configuration file in 'monokle.configurationPath' setting.`
+    ` or by pointing to existing Monokle configuration file in 'monokle.configurationPath' setting.`,
+    ' ',
+    ' You can also use remote config by navigating to Monokle Cloud (https://app.monokle.com)',
+    ' and setting up new project with your repository and custom policy',
+    ' as described in https://github.com/kubeshop/vscode-monokle#monokle-cloud-integration-setup).',
   ].join('\n');
 
   return saveConfig(config, globals.storagePath, `${ownerRoot.id}${TMP_POLICY_FILE_SUFFIX}`, {commentBefore});
@@ -190,6 +194,10 @@ export async function createDefaultConfigFile(ownerRootDir: string) {
     ' This is default validation configuration. You can adjust it freely to suit your needs.',
     ' You can read more about Monokle validation configuration here:',
     ' https://github.com/kubeshop/monokle-core/blob/main/packages/validation/docs/configuration.md#monokle-validation-configuration.',
+    ' ',
+    ' You can also use remote config by navigating to Monokle Cloud (https://app.monokle.com)',
+    ' and setting up new project with your repository and custom policy',
+    ' as described in https://github.com/kubeshop/vscode-monokle#monokle-cloud-integration-setup).',
   ].join('\n');
 
   return saveConfig(config, ownerRootDir, DEFAULT_CONFIG_FILE_NAME, {commentBefore});
