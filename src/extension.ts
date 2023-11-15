@@ -28,6 +28,10 @@ export async function activate(context: ExtensionContext): Promise<any> {
 
   logger.log('Activating extension...');
 
+  // Pre-configure SARIF extension (workaround for #16).
+  workspace.getConfiguration('sarif-viewer').update('connectToGithubCodeScanning', 'off');
+  workspace.getConfiguration('sarif-viewer.explorer').update('openWhenNoResults', false);
+
   let isActivated = false;
 
   const authenticator = await getAuthenticator();
