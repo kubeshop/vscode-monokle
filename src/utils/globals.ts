@@ -27,12 +27,12 @@ class Globals {
     return workspace.getConfiguration(SETTINGS.NAMESPACE).get<string>(SETTINGS.CONFIGURATION_PATH);
   }
 
-  get remotePolicyUrl() {
-    return process.env.MONOKLE_TEST_SERVER_URL ?? this.overwriteRemotePolicyUrl ?? DEFAULT_REMOTE_POLICY_URL;
+  get remotePolicyUrl() { // @TODO this should be dropped
+    return process.env.MONOKLE_TEST_SERVER_URL ?? this.origin ?? '';
   }
 
-  get overwriteRemotePolicyUrl() {
-    return workspace.getConfiguration(SETTINGS.NAMESPACE).get<string>(SETTINGS.OVERWRITE_REMOTE_POLICY_URL);
+  get origin() {
+    return workspace.getConfiguration(SETTINGS.NAMESPACE).get<string>(SETTINGS.ORIGIN);
   }
 
   get enabled() {
@@ -66,7 +66,7 @@ class Globals {
 
     try {
       const user = await this._authenticator.getUser();
-      const projectInfo = await this._synchronizer.getProjectInfo(path, user.token);
+      const projectInfo = await this._synchronizer.getProjectInfo(path, user.tokenInfo);
       return projectInfo?.name ?? '';
     } catch (err) {
       return '';
@@ -122,7 +122,7 @@ class Globals {
       storagePath: this.storagePath,
       configurationPath: this.configurationPath,
       remotePolicyUrl: this.remotePolicyUrl,
-      overwriteRemotePolicyUrl: this.overwriteRemotePolicyUrl,
+      origin: this.origin,
       enabled: this.enabled,
       verbose: this.verbose,
     };

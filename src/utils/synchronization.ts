@@ -1,4 +1,4 @@
-export async function getSynchronizer() {
+export async function getSynchronizer(origin?: string) {
   /* DEV_ONLY_START */
   if (process.env.MONOKLE_VSC_ENV === 'TEST') {
     const {Synchronizer, StorageHandlerPolicy, ApiHandler, GitHandler} = await import('@monokle/synchronizer');
@@ -21,6 +21,13 @@ export async function getSynchronizer() {
   }
   /* DEV_ONLY_END */
 
-  const {createDefaultMonokleSynchronizer} = await import('@monokle/synchronizer');
-  return createDefaultMonokleSynchronizer();
+  const {createMonokleSynchronizerFromOrigin} = await import('@monokle/synchronizer');
+
+  try {
+    const synchronizer = await createMonokleSynchronizerFromOrigin(origin);
+    return synchronizer;
+  } catch (err: any) {
+    // Without this entire extension can't run. Needs to be obvious to users what went wrong and how to fix.
+    throw err;
+  }
 }

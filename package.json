@@ -89,13 +89,13 @@
           "default": null,
           "description": "Path to configuration file. If not set it will be searched in the workspace root."
         },
-        "monokle.overwriteRemotePolicyUrl": {
+        "monokle.origin": {
           "type": [
             "string",
             "null"
           ],
           "default": null,
-          "description": "Overwrite Monokle Cloud URL which is used to authenticate and fetch policies from. Useful when running on-premise Monokle Cloud."
+          "description": "Overwrite Monokle Cloud URL which is used to authenticate and fetch policies from. Useful when running Monokle Enterprise."
         },
         "monokle.telemetryEnabled": {
           "type": "boolean",

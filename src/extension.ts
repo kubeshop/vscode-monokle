@@ -34,11 +34,17 @@ export async function activate(context: ExtensionContext): Promise<any> {
 
   let isActivated = false;
 
-  const authenticator = await getAuthenticator();
-  const synchronizer = await getSynchronizer();
+  const authenticator = await getAuthenticator(globals.origin);
+  const synchronizer = await getSynchronizer(globals.origin);
 
-  globals.setAuthenticator(authenticator);
-  globals.setSynchronizer(synchronizer);
+  try {
+    globals.setAuthenticator(authenticator);
+    globals.setSynchronizer(synchronizer);
+  } catch (err: any) {
+    // @TODO
+    // Notify user about unreachable origin and ask to change it / fallback to default
+    // Should retry if fails couple of times
+  }
 
   const statusBarItem = window.createStatusBarItem(StatusBarAlignment.Left, 25);
   statusBarItem.text = STATUS_BAR_TEXTS.DEFAULT;
@@ -105,13 +111,16 @@ export async function activate(context: ExtensionContext): Promise<any> {
       logger.debug = globals.verbose;
     }
 
-    if (event.affectsConfiguration(SETTINGS.OVERWRITE_REMOTE_POLICY_URL_PATH)) {
+    if (event.affectsConfiguration(SETTINGS.ORIGIN_PATH)) {
       trackEvent('config/change', {
         status: 'success',
-        name: SETTINGS.OVERWRITE_REMOTE_POLICY_URL,
+        name: SETTINGS.ORIGIN,
         value: 'redacted', // Can include sensitive data.
       });
 
+      // @TODO
+      // If origin changes we should logout user too from previous one
+      // Also synchronizer and authenticator should be recreated from new origin
       await runtimeContext.policyPuller.refresh();
       await commands.executeCommand(COMMANDS.VALIDATE);
     }
