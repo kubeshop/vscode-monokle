@@ -15,10 +15,14 @@ export class RuntimeContext {
     private _extensionContext: ExtensionContext,
     private _sarifWatcher: SarifWatcher,
     private _policyPuller: PolicyPuller,
-    private _authenticator: Authenticator,
-    private _synchronizer: Synchronizer,
+    private _authenticator: Authenticator | undefined,
+    private _synchronizer: Synchronizer | undefined,
     private _statusBarItem: StatusBarItem
   ) {}
+
+  get isLocal() {
+    return !this._authenticator || !this._synchronizer;
+  }
 
   get extensionContext() {
     return this._extensionContext;
@@ -56,6 +60,14 @@ export class RuntimeContext {
     }
   }
 
+  async refreshPolicyPuller() {
+    if (!this.policyPuller) {
+      return;
+    }
+
+    await this.policyPuller.refresh();
+  }
+
   async reconfigure(
     policyPuller: PolicyPuller,
     authenticator: Authenticator,
@@ -76,6 +88,12 @@ export class RuntimeContext {
     this._policyPuller = policyPuller;
     this._authenticator = authenticator;
     this._synchronizer = synchronizer;
+  }
+
+  localOnly() {
+    this._policyPuller = undefined;
+    this._authenticator = undefined;
+    this._synchronizer = undefined;
   }
 
   async updateTooltip() {
@@ -101,6 +119,14 @@ export class RuntimeContext {
 
     if (this.sarifWatcher) {
       await this.sarifWatcher.dispose();
+    }
+
+    if (this.authenticator) {
+      this.authenticator.removeAllListeners();
+    }
+
+    if (this.synchronizer) {
+      this.synchronizer.removeAllListeners();
     }
   }
 }

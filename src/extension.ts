@@ -43,18 +43,16 @@ export async function activate(context: ExtensionContext): Promise<any> {
   statusBarItem.command = COMMANDS.SHOW_PANEL;
   statusBarItem.show();
 
-  // @TODO this may fail due to invalid or unreachable origin, what then?
-  const authenticator = await getAuthenticator(globals.origin);
-  const synchronizer = await getSynchronizer(globals.origin);
-
   runtimeContext = new RuntimeContext(
     context,
     new SarifWatcher(),
-    new PolicyPuller(synchronizer),
-    authenticator,
-    synchronizer,
+    undefined,
+    undefined,
+    undefined,
     statusBarItem,
   );
+
+  await configureRuntimeContext(runtimeContext);
 
   globals.setRuntimeContext(runtimeContext);
 
@@ -79,7 +77,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
 
       if (enabled) {
         await initTelemetry();
-        await runtimeContext.policyPuller.refresh();
+        await runtimeContext.refreshPolicyPuller();
         await commands.executeCommand(COMMANDS.VALIDATE);
         await commands.executeCommand(COMMANDS.WATCH);
       } else {
@@ -126,20 +124,12 @@ export async function activate(context: ExtensionContext): Promise<any> {
         });
       }
 
-      try {
-        const newAuthenticator = await getAuthenticator(globals.origin);
-        const newSynchronizer = await getSynchronizer(globals.origin);
-        const newPolicyPuller = new PolicyPuller(newSynchronizer);
+      await configureRuntimeContext(runtimeContext);
 
-        await runtimeContext.reconfigure(newPolicyPuller, newAuthenticator, newSynchronizer);
+      setupRemoteEventListeners(runtimeContext);
 
-        setupRemoteEventListeners(runtimeContext);
-
-        await runtimeContext.policyPuller.refresh();
-        await commands.executeCommand(COMMANDS.VALIDATE);
-      } catch (err: any) {
-        raiseError(`Failed to connect to given origin '${globals.origin}', please check your configuration. Error: ${err.message}`);
-      }
+      await runtimeContext.refreshPolicyPuller();
+      await commands.executeCommand(COMMANDS.VALIDATE);
     }
 
     if (event.affectsConfiguration(SETTINGS.TELEMETRY_ENABLED_PATH)) {
@@ -163,7 +153,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
       rootCount: workspace.workspaceFolders?.length ?? 0,
     });
 
-    await runtimeContext.policyPuller.refresh();
+    await runtimeContext.refreshPolicyPuller();
     await commands.executeCommand(COMMANDS.VALIDATE);
     await commands.executeCommand(COMMANDS.WATCH);
   });
@@ -188,7 +178,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
   }
 
   await initTelemetry();
-  await runtimeContext.policyPuller.refresh();
+  await runtimeContext.refreshPolicyPuller();
   await commands.executeCommand(COMMANDS.VALIDATE);
   await commands.executeCommand(COMMANDS.WATCH);
 
@@ -204,12 +194,27 @@ export async function deactivate() {
 
   if (runtimeContext) {
     runtimeContext.dispose();
-    runtimeContext.authenticator.removeAllListeners();
-    runtimeContext.synchronizer.removeAllListeners();
+  }
+}
+
+async function configureRuntimeContext(runtimeContext: RuntimeContext) {
+  try {
+    const newAuthenticator = await getAuthenticator(globals.origin);
+    const newSynchronizer = await getSynchronizer(globals.origin);
+    const newPolicyPuller = new PolicyPuller(newSynchronizer);
+
+    await runtimeContext.reconfigure(newPolicyPuller, newAuthenticator, newSynchronizer);
+  } catch (err: any) {
+    raiseError(`Failed to connect to given origin '${globals.origin}', please check your configuration. Error: ${err.message}`);
+    runtimeContext.localOnly();
   }
 }
 
 function setupRemoteEventListeners(runtimeContext: RuntimeContext) {
+  if (runtimeContext.isLocal) {
+    return;
+  }
+
   runtimeContext.authenticator.on('login', async (user) => {
     logger.log('EVENT:login', user, globals.isActivated);
 
@@ -217,7 +222,7 @@ function setupRemoteEventListeners(runtimeContext: RuntimeContext) {
       return;
     }
 
-    await runtimeContext.policyPuller.refresh();
+    await runtimeContext.refreshPolicyPuller();
     await commands.executeCommand(COMMANDS.VALIDATE);
   });
 
@@ -228,7 +233,7 @@ function setupRemoteEventListeners(runtimeContext: RuntimeContext) {
       return;
     }
 
-    await runtimeContext.policyPuller.refresh();
+    await runtimeContext.refreshPolicyPuller();
     await commands.executeCommand(COMMANDS.VALIDATE);
   });
 
@@ -239,7 +244,7 @@ function setupRemoteEventListeners(runtimeContext: RuntimeContext) {
       return;
     }
 
-    await runtimeContext.policyPuller.refresh();
+    await runtimeContext.refreshPolicyPuller();
     await commands.executeCommand(COMMANDS.VALIDATE);
   });
 }

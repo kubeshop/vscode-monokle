@@ -1,5 +1,5 @@
 import { commands } from 'vscode';
-import { canRun } from '../utils/commands';
+import { canRun, disabledForLocal } from '../utils/commands';
 import { raiseError, raiseInfo } from '../utils/errors';
 import { COMMAND_NAMES, COMMANDS } from '../constants';
 import { trackEvent } from '../utils/telemetry';
@@ -13,7 +13,7 @@ export type LogoutOptions = {
 
 export function getLogoutCommand(context: RuntimeContext) {
   return async (options: LogoutOptions) => {
-    if (!canRun()) {
+    if (!canRun() || disabledForLocal(context, COMMAND_NAMES.LOGOUT)) {
       return;
     }
 

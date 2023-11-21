@@ -68,6 +68,12 @@ class Globals {
   }
 
   async getUser(): Promise<Authenticator['user']> {
+    if (this._runtimeContext.isLocal) {
+      return {
+        isAuthenticated: false,
+      } as Authenticator['user'];
+    }
+
     if (!this._runtimeContext?.authenticator) {
       throw new Error('Authenticator not initialized for globals.');
     }
@@ -76,6 +82,10 @@ class Globals {
   }
 
   async getRemoteProjectName(path: string) {
+    if (this._runtimeContext.isLocal) {
+      return '';
+    }
+
     if (!this._runtimeContext?.authenticator) {
       throw new Error('Authenticator not initialized for globals.');
     }
@@ -94,6 +104,14 @@ class Globals {
   }
 
   async getRemotePolicy(path: string) {
+    if (this._runtimeContext.isLocal) {
+      return {
+        valid: false,
+        path: '',
+        policy: {},
+      };
+    }
+
     if (!this._runtimeContext?.synchronizer) {
       throw new Error('Synchronizer not initialized for globals.');
     }
@@ -122,6 +140,10 @@ class Globals {
   }
 
   async forceRefreshToken() {
+    if (this._runtimeContext.isLocal) {
+      return;
+    }
+
     if (!this._runtimeContext?.authenticator) {
       throw new Error('Authenticator not initialized for globals.');
     }

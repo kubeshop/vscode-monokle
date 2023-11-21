@@ -1,5 +1,3 @@
-import globals from './globals';
-
 export type Synchronizer = Awaited<ReturnType<typeof getSynchronizer>>;
 
 export async function getSynchronizer(origin?: string) {

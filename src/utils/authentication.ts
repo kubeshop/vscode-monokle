@@ -1,5 +1,3 @@
-import globals from './globals';
-
 export type Authenticator = Awaited<ReturnType<typeof getAuthenticator>>;
 
 export const AUTH_CLIENT_ID = 'mc-cli';

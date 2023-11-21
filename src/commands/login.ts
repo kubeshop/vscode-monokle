@@ -1,5 +1,5 @@
 import { env, Uri } from 'vscode';
-import { canRun } from '../utils/commands';
+import { canRun, disabledForLocal } from '../utils/commands';
 import { raiseError, raiseInfo } from '../utils/errors';
 import { COMMAND_NAMES } from '../constants';
 import { trackEvent } from '../utils/telemetry';
@@ -9,7 +9,7 @@ import type { RuntimeContext } from '../utils/runtime-context';
 
 export function getLoginCommand(context: RuntimeContext) {
   return async () => {
-    if (!canRun()) {
+    if (!canRun() || disabledForLocal(context, COMMAND_NAMES.LOGIN)) {
       return;
     }
 
