@@ -43,7 +43,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
   statusBarItem.command = COMMANDS.SHOW_PANEL;
   statusBarItem.show();
 
-  // TODO this may fail due to invalid or unrechable origin.
+  // @TODO this may fail due to invalid or unreachable origin, what then?
   const authenticator = await getAuthenticator(globals.origin);
   const synchronizer = await getSynchronizer(globals.origin);
 
@@ -121,7 +121,9 @@ export async function activate(context: ExtensionContext): Promise<any> {
       // 3. Propagate them to global context via runtimeContext.
       // 4. Run validation.
       if ((await globals.getUser()).isAuthenticated) {
-        await commands.executeCommand(COMMANDS.LOGOUT);
+        await commands.executeCommand(COMMANDS.LOGOUT, {
+          originChanged: true,
+        });
       }
 
       try {

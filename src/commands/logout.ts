@@ -1,13 +1,18 @@
+import { commands } from 'vscode';
 import { canRun } from '../utils/commands';
 import { raiseError, raiseInfo } from '../utils/errors';
-import { COMMAND_NAMES } from '../constants';
+import { COMMAND_NAMES, COMMANDS } from '../constants';
 import { trackEvent } from '../utils/telemetry';
 import logger from '../utils/logger';
 import globals from '../utils/globals';
 import type { RuntimeContext } from '../utils/runtime-context';
 
+export type LogoutOptions = {
+  originChanged?: boolean;
+};
+
 export function getLogoutCommand(context: RuntimeContext) {
-  return async () => {
+  return async (options: LogoutOptions) => {
     if (!canRun()) {
       return;
     }
@@ -20,7 +25,7 @@ export function getLogoutCommand(context: RuntimeContext) {
     const user = await globals.getUser();
 
     if (!user.isAuthenticated) {
-        raiseInfo(`You are already logged out. You can login with '${COMMAND_NAMES.LOGOUT}' command.`);
+        raiseInfo(`You are already logged out. You can login with '${COMMAND_NAMES.LOGIN}' command.`);
 
         trackEvent('command/logout', {
           status: 'cancelled',
@@ -32,7 +37,15 @@ export function getLogoutCommand(context: RuntimeContext) {
 
     try {
         await authenticator.logout();
-        raiseInfo('You have been successfully logged out.');
+
+        if (options.originChanged) {
+          raiseInfo('Logged out due to origin configuration change.', [{
+            title: 'Login to new origin',
+            callback: async () => commands.executeCommand(COMMANDS.LOGIN),
+          }]);
+        } else {
+          raiseInfo('You have been successfully logged out.');
+        }
 
         trackEvent('command/logout', {
           status: 'success',

@@ -1,3 +1,4 @@
+import normalizeUrl from 'normalize-url';
 import { workspace } from 'vscode';
 import { SETTINGS } from '../constants';
 import { Folder } from './workspace';
@@ -38,6 +39,15 @@ class Globals {
 
   get origin() {
     return workspace.getConfiguration(SETTINGS.NAMESPACE).get<string>(SETTINGS.ORIGIN) || this._defaultOrigin;
+  }
+
+  get originFormatted() {
+    return normalizeUrl(this.origin, {
+      stripHash: true,
+      stripProtocol: true,
+      stripWWW: true,
+      removeTrailingSlash: true,
+    });
   }
 
   get enabled() {
