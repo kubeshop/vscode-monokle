@@ -1,3 +1,5 @@
+import globals from './globals';
+
 export const AUTH_CLIENT_ID = 'mc-cli';
 
 export async function getAuthenticator(origin?: string) {
@@ -12,13 +14,15 @@ export async function getAuthenticator(origin?: string) {
   }
   /* DEV_ONLY_END */
 
-  const {createMonokleAuthenticatorFromOrigin} = await import('@monokle/synchronizer');
+  const {createMonokleAuthenticatorFromOrigin, DEFAULT_ORIGIN} = await import('@monokle/synchronizer');
+
+  globals.defaultOrigin = DEFAULT_ORIGIN;
 
   try {
     const authenticator = await createMonokleAuthenticatorFromOrigin(AUTH_CLIENT_ID, origin);
     return authenticator;
   } catch (err: any) {
-    // Without this entire extension can't run. Needs to be obvious to users what went wrong and how to fix.
+    // Without this entire extension can run only in local mode. Needs to be obvious to users what went wrong and how to fix.
     throw err;
   }
 }

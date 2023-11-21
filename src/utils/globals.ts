@@ -1,8 +1,9 @@
 import { workspace } from 'vscode';
-import { DEFAULT_REMOTE_POLICY_URL, SETTINGS } from '../constants';
+import { SETTINGS } from '../constants';
 import { getAuthenticator } from './authentication';
 import { getSynchronizer } from './synchronization';
 import { Folder } from './workspace';
+import { RuntimeContext } from './runtime-context';
 
 export type FolderStatus = {
   valid: boolean;
@@ -14,6 +15,7 @@ class Globals {
   private statuses: Record<string, FolderStatus> = {};
   private _authenticator: Awaited<ReturnType<typeof getAuthenticator>> = null;
   private _synchronizer: Awaited<ReturnType<typeof getSynchronizer>> = null;
+  private _defaultOrigin: string = '';
 
   get storagePath() {
     return this._storagePath;
@@ -32,7 +34,7 @@ class Globals {
   }
 
   get origin() {
-    return workspace.getConfiguration(SETTINGS.NAMESPACE).get<string>(SETTINGS.ORIGIN);
+    return workspace.getConfiguration(SETTINGS.NAMESPACE).get<string>(SETTINGS.ORIGIN) || this._defaultOrigin;
   }
 
   get enabled() {
@@ -45,6 +47,10 @@ class Globals {
 
   get telemetryEnabled() {
     return workspace.getConfiguration(SETTINGS.NAMESPACE).get<boolean>(SETTINGS.TELEMETRY_ENABLED);
+  }
+
+  set defaultOrigin(value: string) {
+    this._defaultOrigin = value;
   }
 
   async getUser(): Promise<Awaited<ReturnType<typeof getAuthenticator>>['user']> {

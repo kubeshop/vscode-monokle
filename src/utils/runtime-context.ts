@@ -56,6 +56,20 @@ export class RuntimeContext {
     }
   }
 
+  async reconfigure(
+    policyPuller: PolicyPuller,
+    authenticator: Awaited<ReturnType<typeof getAuthenticator>>,
+    synchronizer: Awaited<ReturnType<typeof getSynchronizer>>,
+  ) {
+    if (this.policyPuller) {
+      await this.policyPuller.dispose();
+    }
+
+    this._policyPuller = policyPuller;
+    this._authenticator = authenticator;
+    this._synchronizer = synchronizer;
+  }
+
   async updateTooltip() {
     const tooltipData = await getTooltipData();
     this._statusBarItem.text = tooltipData.status === 'ok' ? STATUS_BAR_TEXTS.DEFAULT : STATUS_BAR_TEXTS.ERROR;

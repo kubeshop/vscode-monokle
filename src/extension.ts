@@ -19,6 +19,7 @@ import { trackEvent, initTelemetry, closeTelemetry } from './utils/telemetry';
 import logger from './utils/logger';
 import globals from './utils/globals';
 import type { ExtensionContext } from 'vscode';
+import { raiseError } from './utils/errors';
 
 let runtimeContext: RuntimeContext;
 
@@ -34,17 +35,16 @@ export async function activate(context: ExtensionContext): Promise<any> {
 
   let isActivated = false;
 
+  // TODO this will fail
   const authenticator = await getAuthenticator(globals.origin);
   const synchronizer = await getSynchronizer(globals.origin);
 
-  try {
+  // try {
     globals.setAuthenticator(authenticator);
     globals.setSynchronizer(synchronizer);
-  } catch (err: any) {
-    // @TODO
-    // Notify user about unreachable origin and ask to change it / fallback to default
-    // Should retry if fails couple of times
-  }
+  // } catch (err: any) {
+  //   raiseError(`Failed to connect to given origin '${globals.origin}', please check your configuration. Error: ${err.message}`);
+  // }
 
   const statusBarItem = window.createStatusBarItem(StatusBarAlignment.Left, 25);
   statusBarItem.text = STATUS_BAR_TEXTS.DEFAULT;
@@ -118,11 +118,62 @@ export async function activate(context: ExtensionContext): Promise<any> {
         value: 'redacted', // Can include sensitive data.
       });
 
-      // @TODO
-      // If origin changes we should logout user too from previous one
-      // Also synchronizer and authenticator should be recreated from new origin
-      await runtimeContext.policyPuller.refresh();
-      await commands.executeCommand(COMMANDS.VALIDATE);
+      // When origin changes:
+      // 1. Logout user from previous session.
+      // 2. Create new authenticator and synchronizer with new origin.
+      // 3. Propagate them to global context via runtimeContext.
+      // 4. Run validation.
+      if ((await globals.getUser()).isAuthenticated) {
+        await commands.executeCommand(COMMANDS.LOGOUT);
+      }
+
+      try {
+        const newAuthenticator = await getAuthenticator(globals.origin);
+        const newSynchronizer = await getSynchronizer(globals.origin);
+        const newPolicyPuller = new PolicyPuller(newSynchronizer);
+
+        globals.setAuthenticator(newAuthenticator);
+        globals.setSynchronizer(newSynchronizer);
+        await runtimeContext.reconfigure(newPolicyPuller, newAuthenticator, newSynchronizer);
+
+        await runtimeContext.policyPuller.refresh();
+        await commands.executeCommand(COMMANDS.VALIDATE);
+
+        newAuthenticator.on('login', async (user) => {
+          logger.log('EVENT:login', user, isActivated);
+
+          if (!isActivated || !globals.enabled) {
+            return;
+          }
+
+          await runtimeContext.policyPuller.refresh();
+          await commands.executeCommand(COMMANDS.VALIDATE);
+        });
+
+        newAuthenticator.on('logout', async () => {
+          logger.log('EVENT:logout', isActivated);
+
+          if (!isActivated || !globals.enabled) {
+            return;
+          }
+
+          await runtimeContext.policyPuller.refresh();
+          await commands.executeCommand(COMMANDS.VALIDATE);
+        });
+
+        newSynchronizer.on('synchronize', async (policy) => {
+          logger.log('EVENT:synchronize', policy, isActivated);
+
+          if (!isActivated || !globals.enabled) {
+            return;
+          }
+
+          await runtimeContext.policyPuller.refresh();
+          await commands.executeCommand(COMMANDS.VALIDATE);
+        });
+      } catch (err: any) {
+        raiseError(`Failed to connect to given origin '${globals.origin}', please check your configuration. Error: ${err.message}`);
+      }
     }
 
     if (event.affectsConfiguration(SETTINGS.TELEMETRY_ENABLED_PATH)) {
