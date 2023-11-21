@@ -1,5 +1,7 @@
 import globals from './globals';
 
+export type Authenticator = Awaited<ReturnType<typeof getAuthenticator>>;
+
 export const AUTH_CLIENT_ID = 'mc-cli';
 
 export async function getAuthenticator(origin?: string) {
@@ -14,9 +16,7 @@ export async function getAuthenticator(origin?: string) {
   }
   /* DEV_ONLY_END */
 
-  const {createMonokleAuthenticatorFromOrigin, DEFAULT_ORIGIN} = await import('@monokle/synchronizer');
-
-  globals.defaultOrigin = DEFAULT_ORIGIN;
+  const {createMonokleAuthenticatorFromOrigin} = await import('@monokle/synchronizer');
 
   try {
     const authenticator = await createMonokleAuthenticatorFromOrigin(AUTH_CLIENT_ID, origin);

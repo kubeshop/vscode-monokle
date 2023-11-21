@@ -24,7 +24,7 @@ export function getInvalidConfigError(config: WorkspaceFolderConfig) {
   }
 
   if (config.type === 'remote') {
-    errorMsg = `Your remote configuration file from '${globals.remotePolicyUrl}' is invalid.`;
+    errorMsg = `Your remote configuration file from '${globals.origin}' is invalid.`;
   }
 
   return errorMsg;

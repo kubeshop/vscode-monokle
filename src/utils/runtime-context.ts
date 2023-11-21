@@ -1,8 +1,8 @@
 
 import { STATUS_BAR_TEXTS } from '../constants';
 import { getTooltipData } from './tooltip';
-import { getAuthenticator } from './authentication';
-import { getSynchronizer } from './synchronization';
+import type { Authenticator } from './authentication';
+import type { Synchronizer } from './synchronization';
 import type { Disposable, ExtensionContext, StatusBarItem } from 'vscode';
 import type { SarifWatcher } from './sarif-watcher';
 import type { PolicyPuller } from './policy-puller';
@@ -15,8 +15,8 @@ export class RuntimeContext {
     private _extensionContext: ExtensionContext,
     private _sarifWatcher: SarifWatcher,
     private _policyPuller: PolicyPuller,
-    private _authenticator: Awaited<ReturnType<typeof getAuthenticator>>,
-    private _synchronizer: Awaited<ReturnType<typeof getSynchronizer>>,
+    private _authenticator: Authenticator,
+    private _synchronizer: Synchronizer,
     private _statusBarItem: StatusBarItem
   ) {}
 
@@ -58,11 +58,19 @@ export class RuntimeContext {
 
   async reconfigure(
     policyPuller: PolicyPuller,
-    authenticator: Awaited<ReturnType<typeof getAuthenticator>>,
-    synchronizer: Awaited<ReturnType<typeof getSynchronizer>>,
+    authenticator: Authenticator,
+    synchronizer: Synchronizer,
   ) {
     if (this.policyPuller) {
       await this.policyPuller.dispose();
+    }
+
+    if (this.authenticator) {
+      this.authenticator.removeAllListeners();
+    }
+
+    if (this.synchronizer) {
+      this.synchronizer.removeAllListeners();
     }
 
     this._policyPuller = policyPuller;

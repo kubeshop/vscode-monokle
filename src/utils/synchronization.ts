@@ -1,5 +1,7 @@
 import globals from './globals';
 
+export type Synchronizer = Awaited<ReturnType<typeof getSynchronizer>>;
+
 export async function getSynchronizer(origin?: string) {
   /* DEV_ONLY_START */
   if (process.env.MONOKLE_VSC_ENV === 'TEST') {
@@ -23,9 +25,7 @@ export async function getSynchronizer(origin?: string) {
   }
   /* DEV_ONLY_END */
 
-  const {createMonokleSynchronizerFromOrigin, DEFAULT_ORIGIN} = await import('@monokle/synchronizer');
-
-  globals.defaultOrigin = DEFAULT_ORIGIN;
+  const {createMonokleSynchronizerFromOrigin} = await import('@monokle/synchronizer');
 
   try {
     const synchronizer = await createMonokleSynchronizerFromOrigin(origin);

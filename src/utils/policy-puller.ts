@@ -1,10 +1,10 @@
 import { rm } from 'fs/promises';
-import pRetry, {AbortError} from 'p-retry';
+import pRetry from 'p-retry';
 import { getWorkspaceFolders } from './workspace';
-import { getSynchronizer } from './synchronization';
 import { trackEvent } from './telemetry';
 import logger from './logger';
 import globals from './globals';
+import type { Synchronizer } from './synchronization';
 import type { Folder } from './workspace';
 
 const REFETCH_POLICY_INTERVAL_MS = 1000 * 30;
@@ -16,7 +16,7 @@ export class PolicyPuller {
   private _policyFetcherId: NodeJS.Timer | undefined;
 
   constructor(
-    private _synchronizer: Awaited<ReturnType<typeof getSynchronizer>>
+    private _synchronizer: Synchronizer
   ) {}
 
   async refresh() {

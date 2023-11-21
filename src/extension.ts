@@ -29,28 +29,23 @@ export async function activate(context: ExtensionContext): Promise<any> {
 
   logger.log('Activating extension...');
 
+  globals.isActivated = false;
+
+  await globals.setDefaultOrigin();
+
   // Pre-configure SARIF extension (workaround for #16).
   workspace.getConfiguration('sarif-viewer').update('connectToGithubCodeScanning', 'off');
   workspace.getConfiguration('sarif-viewer.explorer').update('openWhenNoResults', false);
-
-  let isActivated = false;
-
-  // TODO this will fail
-  const authenticator = await getAuthenticator(globals.origin);
-  const synchronizer = await getSynchronizer(globals.origin);
-
-  // try {
-    globals.setAuthenticator(authenticator);
-    globals.setSynchronizer(synchronizer);
-  // } catch (err: any) {
-  //   raiseError(`Failed to connect to given origin '${globals.origin}', please check your configuration. Error: ${err.message}`);
-  // }
 
   const statusBarItem = window.createStatusBarItem(StatusBarAlignment.Left, 25);
   statusBarItem.text = STATUS_BAR_TEXTS.DEFAULT;
   statusBarItem.tooltip = getTooltipContentDefault();
   statusBarItem.command = COMMANDS.SHOW_PANEL;
   statusBarItem.show();
+
+  // TODO this may fail due to invalid or unrechable origin.
+  const authenticator = await getAuthenticator(globals.origin);
+  const synchronizer = await getSynchronizer(globals.origin);
 
   runtimeContext = new RuntimeContext(
     context,
@@ -60,6 +55,8 @@ export async function activate(context: ExtensionContext): Promise<any> {
     synchronizer,
     statusBarItem,
   );
+
+  globals.setRuntimeContext(runtimeContext);
 
   const commandLogin = commands.registerCommand(COMMANDS.LOGIN, getLoginCommand(runtimeContext));
   const commandLogout = commands.registerCommand(COMMANDS.LOGOUT, getLogoutCommand(runtimeContext));
@@ -132,45 +129,12 @@ export async function activate(context: ExtensionContext): Promise<any> {
         const newSynchronizer = await getSynchronizer(globals.origin);
         const newPolicyPuller = new PolicyPuller(newSynchronizer);
 
-        globals.setAuthenticator(newAuthenticator);
-        globals.setSynchronizer(newSynchronizer);
         await runtimeContext.reconfigure(newPolicyPuller, newAuthenticator, newSynchronizer);
+
+        setupRemoteEventListeners(runtimeContext);
 
         await runtimeContext.policyPuller.refresh();
         await commands.executeCommand(COMMANDS.VALIDATE);
-
-        newAuthenticator.on('login', async (user) => {
-          logger.log('EVENT:login', user, isActivated);
-
-          if (!isActivated || !globals.enabled) {
-            return;
-          }
-
-          await runtimeContext.policyPuller.refresh();
-          await commands.executeCommand(COMMANDS.VALIDATE);
-        });
-
-        newAuthenticator.on('logout', async () => {
-          logger.log('EVENT:logout', isActivated);
-
-          if (!isActivated || !globals.enabled) {
-            return;
-          }
-
-          await runtimeContext.policyPuller.refresh();
-          await commands.executeCommand(COMMANDS.VALIDATE);
-        });
-
-        newSynchronizer.on('synchronize', async (policy) => {
-          logger.log('EVENT:synchronize', policy, isActivated);
-
-          if (!isActivated || !globals.enabled) {
-            return;
-          }
-
-          await runtimeContext.policyPuller.refresh();
-          await commands.executeCommand(COMMANDS.VALIDATE);
-        });
       } catch (err: any) {
         raiseError(`Failed to connect to given origin '${globals.origin}', please check your configuration. Error: ${err.message}`);
       }
@@ -202,38 +166,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
     await commands.executeCommand(COMMANDS.WATCH);
   });
 
-  authenticator.on('login', async (user) => {
-    logger.log('EVENT:login', user, isActivated);
-
-    if (!isActivated || !globals.enabled) {
-      return;
-    }
-
-    await runtimeContext.policyPuller.refresh();
-    await commands.executeCommand(COMMANDS.VALIDATE);
-  });
-
-  authenticator.on('logout', async () => {
-    logger.log('EVENT:logout', isActivated);
-
-    if (!isActivated || !globals.enabled) {
-      return;
-    }
-
-    await runtimeContext.policyPuller.refresh();
-    await commands.executeCommand(COMMANDS.VALIDATE);
-  });
-
-  synchronizer.on('synchronize', async (policy) => {
-    logger.log('EVENT:synchronize', policy, isActivated);
-
-    if (!isActivated || !globals.enabled) {
-      return;
-    }
-
-    await runtimeContext.policyPuller.refresh();
-    await commands.executeCommand(COMMANDS.VALIDATE);
-  });
+  setupRemoteEventListeners(runtimeContext);
 
   context.subscriptions.push(
     commandLogin,
@@ -257,7 +190,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
   await commands.executeCommand(COMMANDS.VALIDATE);
   await commands.executeCommand(COMMANDS.WATCH);
 
-  isActivated = true;
+  globals.isActivated = true;
 
   logger.log('Extension activated...', globals.asObject());
 }
@@ -272,4 +205,39 @@ export async function deactivate() {
     runtimeContext.authenticator.removeAllListeners();
     runtimeContext.synchronizer.removeAllListeners();
   }
+}
+
+function setupRemoteEventListeners(runtimeContext: RuntimeContext) {
+  runtimeContext.authenticator.on('login', async (user) => {
+    logger.log('EVENT:login', user, globals.isActivated);
+
+    if (!globals.isActivated || !globals.enabled) {
+      return;
+    }
+
+    await runtimeContext.policyPuller.refresh();
+    await commands.executeCommand(COMMANDS.VALIDATE);
+  });
+
+  runtimeContext.authenticator.on('logout', async () => {
+    logger.log('EVENT:logout', globals.isActivated);
+
+    if (!globals.isActivated || !globals.enabled) {
+      return;
+    }
+
+    await runtimeContext.policyPuller.refresh();
+    await commands.executeCommand(COMMANDS.VALIDATE);
+  });
+
+  runtimeContext.synchronizer.on('synchronize', async (policy) => {
+    logger.log('EVENT:synchronize', policy, globals.isActivated);
+
+    if (!globals.isActivated || !globals.enabled) {
+      return;
+    }
+
+    await runtimeContext.policyPuller.refresh();
+    await commands.executeCommand(COMMANDS.VALIDATE);
+  });
 }
