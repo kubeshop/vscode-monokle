@@ -12,7 +12,7 @@ export type LogoutOptions = {
 };
 
 export function getLogoutCommand(context: RuntimeContext) {
-  return async (options: LogoutOptions) => {
+  return async (options?: LogoutOptions) => {
     if (!canRun() || disabledForLocal(context, COMMAND_NAMES.LOGOUT)) {
       return;
     }
@@ -38,7 +38,7 @@ export function getLogoutCommand(context: RuntimeContext) {
     try {
         await authenticator.logout();
 
-        if (options.originChanged) {
+        if (options?.originChanged) {
           raiseInfo('Logged out due to origin configuration change.', [{
             title: 'Login to new origin',
             callback: async () => commands.executeCommand(COMMANDS.LOGIN),
