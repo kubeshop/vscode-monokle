@@ -144,6 +144,9 @@ This extension contributes the following settings:
 * `monokle.verbose` - Log runtime info to VSC Developer Console.
 * `monokle.origin` - Overwrite default Monokle Cloud URL (e.g. when running own Monokle Enterprise instance).
 * `monokle.telemetryEnabled` - Enable/disable anonymous telemetry.
+* `monokle.project` - Define remote project from which policy should be used for validation.
+
+> **IMPORTANT**: Project id used for `monokle.project` can be obtain on Project details page from current URL `https://app.monokle.com/dashboard/projects/<projectId>`.
 
 ## Dependencies
 

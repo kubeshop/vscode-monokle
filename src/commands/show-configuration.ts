@@ -5,6 +5,7 @@ import { createTemporaryConfigFile } from '../utils/validation';
 import { trackEvent } from '../utils/telemetry';
 import globals from '../utils/globals';
 import { getFixTip } from '../utils/get-fix-tip';
+import { COMMANDS } from '../constants';
 import type { Folder } from '../utils/workspace';
 
 type FolderItem = {
@@ -27,6 +28,8 @@ export function getShowConfigurationCommand() {
     if (!folders.length) {
       return null;
     }
+
+    await commands.executeCommand(COMMANDS.SYNCHRONIZE);
 
     const showConfig = async (folder: Folder) => {
       const config = await getWorkspaceConfig(folder);

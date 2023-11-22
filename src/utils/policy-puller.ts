@@ -112,7 +112,9 @@ export class PolicyPuller {
       }
 
       const user = await globals.getUser();
-      const policy = await this._synchronizer.synchronize(root.uri.fsPath, user.tokenInfo);
+      const policy = globals.project?.length ?
+        await this._synchronizer.synchronize({slug: globals.project}, user.tokenInfo) :
+        await this._synchronizer.synchronize(root.uri.fsPath, user.tokenInfo);
 
       return policy;
     }, {

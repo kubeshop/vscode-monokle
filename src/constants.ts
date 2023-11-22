@@ -15,11 +15,13 @@ export const SETTINGS = {
   VERBOSE: 'verbose',
   TELEMETRY_ENABLED: 'telemetryEnabled',
   ORIGIN: 'origin',
+  PROJECT: 'project',
   ENABLED_PATH: 'monokle.enabled',
   CONFIGURATION_PATH_PATH: 'monokle.configurationPath',
   VERBOSE_PATH: 'monokle.verbose',
   TELEMETRY_ENABLED_PATH: 'monokle.telemetryEnabled',
   ORIGIN_PATH: 'monokle.origin',
+  PROJECT_PATH: 'monokle.project',
 };
 
 export const COMMANDS = {
