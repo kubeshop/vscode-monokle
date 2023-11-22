@@ -112,13 +112,13 @@
           "default": false,
           "description": "Log runtime info to Developer Console."
         },
-        "monokle.projectId": {
+        "monokle.project": {
           "type": [
             "string",
             "null"
           ],
           "default": null,
-          "description": "Project ID which policy will be used for validation. If not set it will deducted based on git repository URL."
+          "description": "Project which policy will be used for validation. If not set it will deducted based on git repository URL."
         }
       }
     }

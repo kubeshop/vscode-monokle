@@ -146,11 +146,11 @@ export async function activate(context: ExtensionContext): Promise<any> {
       }
     }
 
-    if (event.affectsConfiguration(SETTINGS.PROJECT_ID_PATH)) {
+    if (event.affectsConfiguration(SETTINGS.PROJECT_PATH)) {
       trackEvent('config/change', {
         status: 'success',
-        name: SETTINGS.PROJECT_ID,
-        value: String(globals.projectId),
+        name: SETTINGS.PROJECT,
+        value: String(globals.project),
       });
 
       await commands.executeCommand(COMMANDS.VALIDATE);
