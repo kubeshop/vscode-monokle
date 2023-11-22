@@ -70,7 +70,7 @@ export async function getTooltipData(): Promise<TooltipData> {
 
   const user = await globals.getUser();
   if (user.isAuthenticated) {
-    activeUserText = `<hr><br>Logged in as **${user.email}**`;
+    activeUserText = `<hr><br>Logged in as **${user.email}** with **${globals.originFormatted}**`;
   }
 
   const content = new MarkdownString(`${folderList.join('<br>')}${activeUserText}<hr><br>Click to show validation panel`);

@@ -1,5 +1,5 @@
 import { commands } from 'vscode';
-import { canRun } from '../utils/commands';
+import { canRun, disabledForLocal } from '../utils/commands';
 import { COMMANDS, COMMAND_NAMES } from '../constants';
 import { raiseWarning } from '../utils/errors';
 import { trackEvent } from '../utils/telemetry';
@@ -8,7 +8,7 @@ import type { RuntimeContext } from '../utils/runtime-context';
 
 export function getSynchronizeCommand(context: RuntimeContext) {
   return async () => {
-    if (!canRun()) {
+    if (!canRun() || disabledForLocal(context, COMMAND_NAMES.SYNCHRONIZE)) {
       return null;
     }
 
@@ -29,7 +29,7 @@ export function getSynchronizeCommand(context: RuntimeContext) {
       return null;
     }
 
-    await context.policyPuller.refresh();
+    await context.refreshPolicyPuller();
 
     trackEvent('command/synchronize', {
       status: 'success'

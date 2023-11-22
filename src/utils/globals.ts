@@ -1,8 +1,9 @@
+import normalizeUrl from 'normalize-url';
 import { workspace } from 'vscode';
-import { DEFAULT_REMOTE_POLICY_URL, SETTINGS } from '../constants';
-import { getAuthenticator } from './authentication';
-import { getSynchronizer } from './synchronization';
+import { SETTINGS } from '../constants';
 import { Folder } from './workspace';
+import { RuntimeContext } from './runtime-context';
+import type { Authenticator } from './authentication';
 
 export type FolderStatus = {
   valid: boolean;
@@ -11,9 +12,10 @@ export type FolderStatus = {
 
 class Globals {
   private _storagePath: string = '';
-  private statuses: Record<string, FolderStatus> = {};
-  private _authenticator: Awaited<ReturnType<typeof getAuthenticator>> = null;
-  private _synchronizer: Awaited<ReturnType<typeof getSynchronizer>> = null;
+  private _isActivated: boolean = false;
+  private _defaultOrigin: string = '';
+  private _statuses: Record<string, FolderStatus> = {};
+  private _runtimeContext: RuntimeContext = null;
 
   get storagePath() {
     return this._storagePath;
@@ -23,16 +25,29 @@ class Globals {
     this._storagePath = value;
   }
 
+  get isActivated() {
+    return this._isActivated;
+  }
+
+  set isActivated(value) {
+    this._isActivated = value;
+  }
+
   get configurationPath() {
     return workspace.getConfiguration(SETTINGS.NAMESPACE).get<string>(SETTINGS.CONFIGURATION_PATH);
   }
 
-  get remotePolicyUrl() {
-    return process.env.MONOKLE_TEST_SERVER_URL ?? this.overwriteRemotePolicyUrl ?? DEFAULT_REMOTE_POLICY_URL;
+  get origin() {
+    return workspace.getConfiguration(SETTINGS.NAMESPACE).get<string>(SETTINGS.ORIGIN) || this._defaultOrigin;
   }
 
-  get overwriteRemotePolicyUrl() {
-    return workspace.getConfiguration(SETTINGS.NAMESPACE).get<string>(SETTINGS.OVERWRITE_REMOTE_POLICY_URL);
+  get originFormatted() {
+    return normalizeUrl(this.origin, {
+      stripHash: true,
+      stripProtocol: true,
+      stripWWW: true,
+      removeTrailingSlash: true,
+    });
   }
 
   get enabled() {
@@ -47,26 +62,41 @@ class Globals {
     return workspace.getConfiguration(SETTINGS.NAMESPACE).get<boolean>(SETTINGS.TELEMETRY_ENABLED);
   }
 
-  async getUser(): Promise<Awaited<ReturnType<typeof getAuthenticator>>['user']> {
-    if (!this._authenticator) {
+  async setDefaultOrigin() {
+    const {DEFAULT_ORIGIN} = await import('@monokle/synchronizer');
+    this._defaultOrigin = DEFAULT_ORIGIN;
+  }
+
+  async getUser(): Promise<Authenticator['user']> {
+    if (this._runtimeContext.isLocal) {
+      return {
+        isAuthenticated: false,
+      } as Authenticator['user'];
+    }
+
+    if (!this._runtimeContext?.authenticator) {
       throw new Error('Authenticator not initialized for globals.');
     }
 
-    return this._authenticator.getUser();
+    return this._runtimeContext.authenticator.getUser();
   }
 
   async getRemoteProjectName(path: string) {
-    if (!this._authenticator) {
+    if (this._runtimeContext.isLocal) {
+      return '';
+    }
+
+    if (!this._runtimeContext?.authenticator) {
       throw new Error('Authenticator not initialized for globals.');
     }
 
-    if (!this._synchronizer) {
+    if (!this._runtimeContext?.synchronizer) {
       throw new Error('Synchronizer not initialized for globals.');
     }
 
     try {
-      const user = await this._authenticator.getUser();
-      const projectInfo = await this._synchronizer.getProjectInfo(path, user.token);
+      const user = await this._runtimeContext.authenticator.getUser();
+      const projectInfo = await this._runtimeContext.synchronizer.getProjectInfo(path, user.tokenInfo);
       return projectInfo?.name ?? '';
     } catch (err) {
       return '';
@@ -74,12 +104,20 @@ class Globals {
   }
 
   async getRemotePolicy(path: string) {
-    if (!this._synchronizer) {
+    if (this._runtimeContext.isLocal) {
+      return {
+        valid: false,
+        path: '',
+        policy: {},
+      };
+    }
+
+    if (!this._runtimeContext?.synchronizer) {
       throw new Error('Synchronizer not initialized for globals.');
     }
 
     try {
-      const policy = await this._synchronizer.getPolicy(path);
+      const policy = await this._runtimeContext.synchronizer.getPolicy(path);
       return policy;
     } catch (err) {
       return {
@@ -91,40 +129,41 @@ class Globals {
   }
 
   getFolderStatus(folder: Folder) {
-    return this.statuses[folder.id];
+    return this._statuses[folder.id];
   }
 
   setFolderStatus(folder: Folder, error?: string) {
-    this.statuses[folder.id] = {
+    this._statuses[folder.id] = {
       valid: !error,
       error,
     };
   }
 
-  setAuthenticator(authenticator: Awaited<ReturnType<typeof getAuthenticator>>) {
-    this._authenticator = authenticator;
-  }
-
-  setSynchronizer(synchronizer: Awaited<ReturnType<typeof getSynchronizer>>) {
-    this._synchronizer = synchronizer;
-  }
-
   async forceRefreshToken() {
-    if (!this._authenticator) {
+    if (this._runtimeContext.isLocal) {
+      return;
+    }
+
+    if (!this._runtimeContext?.authenticator) {
       throw new Error('Authenticator not initialized for globals.');
     }
 
-    return this._authenticator.refreshToken(true);
+    return this._runtimeContext.authenticator.refreshToken(true);
+  }
+
+  setRuntimeContext(value: RuntimeContext) {
+    this._runtimeContext = value;
   }
 
   asObject() {
     return {
       storagePath: this.storagePath,
       configurationPath: this.configurationPath,
-      remotePolicyUrl: this.remotePolicyUrl,
-      overwriteRemotePolicyUrl: this.overwriteRemotePolicyUrl,
+      origin: this.origin,
+      defaultOrigin: this._defaultOrigin,
       enabled: this.enabled,
       verbose: this.verbose,
+      isActivated: this.isActivated,
     };
   }
 }

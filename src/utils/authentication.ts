@@ -1,4 +1,8 @@
-export async function getAuthenticator() {
+export type Authenticator = Awaited<ReturnType<typeof getAuthenticator>>;
+
+export const AUTH_CLIENT_ID = 'mc-cli';
+
+export async function getAuthenticator(origin?: string) {
   /* DEV_ONLY_START */
   if (process.env.MONOKLE_VSC_ENV === 'TEST') {
     const {Authenticator, StorageHandlerAuth, ApiHandler, DeviceFlowHandler} = await import('@monokle/synchronizer');
@@ -10,6 +14,13 @@ export async function getAuthenticator() {
   }
   /* DEV_ONLY_END */
 
-  const {createDefaultMonokleAuthenticator} = await import('@monokle/synchronizer');
-  return createDefaultMonokleAuthenticator();
+  const {createMonokleAuthenticatorFromOrigin} = await import('@monokle/synchronizer');
+
+  try {
+    const authenticator = await createMonokleAuthenticatorFromOrigin(AUTH_CLIENT_ID, origin);
+    return authenticator;
+  } catch (err: any) {
+    // Without this entire extension can run only in local mode. Needs to be obvious to users what went wrong and how to fix.
+    throw err;
+  }
 }
