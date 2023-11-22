@@ -56,11 +56,11 @@ With dedicated `Monokle: Bootstrap configuration` command, you can customize val
   <img src="assets/gifs/configuration.gif"/>
 </p>
 
-### Enforce policies with Monokle Cloud
+### Enforce policies with Monokle Cloud and Monokle Enterprise
 
-Quickly define and manage polices in Monokle Cloud which will be used for anyone working with the project in VSC.
+Quickly define and manage polices in Monokle Cloud or self-hosted Monokle Enterprise which will be used for anyone working with the project in VSC.
 
-#### Configure policies easily with Monokle Cloud
+#### Configure policies easily with Monokle
 
 <p align="center">
   <img src="assets/gifs/remote-policy-config.gif"/>
@@ -72,7 +72,7 @@ Quickly define and manage polices in Monokle Cloud which will be used for anyone
   <img src="assets/gifs/remote-policy-sync.gif"/>
 </p>
 
-See [**Monokle Cloud integration setup** section](#monokle-cloud-integration-setup) below on how to configure it.
+See [**Monokle Cloud/Enterprise integration setup** section](#monokle-cloudenterprise-integration-setup) below on how to configure it.
 
 
 ### Runs with commands
@@ -99,9 +99,11 @@ Read about these plugins and their individual validation rules in the [Core Plug
 
 To customize default configuration you can run `Monokle: Bootstrap validation` command to generate local `monokle.validation.yaml` configuration file in your project folder or connect with remote policy with Monokle Cloud.
 
-## Monokle Cloud integration setup
+## Monokle Cloud/Enterprise integration setup
 
 To use remote policy with Monokle extension you will need to create a project and configure policy for it in Monokle Cloud. Start by signing in to [Monokle Cloud](https://app.monokle.com).
+
+> **IMPORTANT**: The steps are the same for Monokle Enterprise. The main difference is that `monokle.origin` configuration needs to be changed to point to Enterprise instance (web app URL).
 
 > In case of doubts, refer to [Getting Started Guide](https://docs.monokle.com/tutorials/getting-started) or hit us directly on [Discord](https://discord.com/invite/6zupCZFQbe).
 
@@ -140,7 +142,7 @@ This extension contributes the following settings:
 * `monokle.enable` - Enable/disable this extension.
 * `monokle.configurationPath` - Set path to validation configuration file.
 * `monokle.verbose` - Log runtime info to VSC Developer Console.
-* `monokle.overwriteRemotePolicyUrl` - Overwrite default Monokle Cloud URL to fetch policies from.
+* `monokle.origin` - Overwrite default Monokle Cloud URL (e.g. when running own Monokle Enterprise instance).
 * `monokle.telemetryEnabled` - Enable/disable anonymous telemetry.
 
 ## Dependencies
