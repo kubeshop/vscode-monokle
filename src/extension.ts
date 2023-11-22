@@ -145,6 +145,16 @@ export async function activate(context: ExtensionContext): Promise<any> {
         await closeTelemetry();
       }
     }
+
+    if (event.affectsConfiguration(SETTINGS.PROJECT_ID_PATH)) {
+      trackEvent('config/change', {
+        status: 'success',
+        name: SETTINGS.PROJECT_ID,
+        value: String(globals.projectId),
+      });
+
+      await commands.executeCommand(COMMANDS.VALIDATE);
+    }
   });
 
   const workspaceWatcher = workspace.onDidChangeWorkspaceFolders(async () => {

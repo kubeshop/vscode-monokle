@@ -62,6 +62,10 @@ class Globals {
     return workspace.getConfiguration(SETTINGS.NAMESPACE).get<boolean>(SETTINGS.TELEMETRY_ENABLED);
   }
 
+  get projectId() {
+    return workspace.getConfiguration(SETTINGS.NAMESPACE).get<string>(SETTINGS.PROJECT_ID);
+  }
+
   async setDefaultOrigin() {
     const {DEFAULT_ORIGIN} = await import('@monokle/synchronizer');
     this._defaultOrigin = DEFAULT_ORIGIN;
@@ -96,7 +100,10 @@ class Globals {
 
     try {
       const user = await this._runtimeContext.authenticator.getUser();
-      const projectInfo = await this._runtimeContext.synchronizer.getProjectInfo(path, user.tokenInfo);
+      const projectInfo = this.projectId?.length ?
+        await this._runtimeContext.synchronizer.getProjectInfo({slug: this.projectId}, user.tokenInfo) :
+        await this._runtimeContext.synchronizer.getProjectInfo(path, user.tokenInfo);
+
       return projectInfo?.name ?? '';
     } catch (err) {
       return '';
@@ -117,7 +124,10 @@ class Globals {
     }
 
     try {
-      const policy = await this._runtimeContext.synchronizer.getPolicy(path);
+      const policy = this.projectId?.length ?
+        await this._runtimeContext.synchronizer.getPolicy({slug: this.projectId}) :
+        await this._runtimeContext.synchronizer.getPolicy(path);
+
       return policy;
     } catch (err) {
       return {
