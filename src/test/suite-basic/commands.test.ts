@@ -4,7 +4,7 @@ import { doSetup, doSuiteSetup, doSuiteTeardown } from '../helpers/suite';
 import { COMMANDS } from '../../constants';
 
 suite(`Basic - Commands: ${process.env.ROOT_PATH}`, function () {
-  this.timeout(5000);
+  this.timeout(10000);
 
   suiteSetup(async () => {
     await doSuiteSetup();

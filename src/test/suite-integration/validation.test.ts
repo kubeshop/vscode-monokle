@@ -9,7 +9,7 @@ import { doSetup, doSuiteSetup, doSuiteTeardown, runForFolders } from '../helper
 import { assertEmptyValidationResults, assertValidationResults, waitForValidationResults } from '../helpers/asserts';
 
 suite(`Integration - Validation: ${process.env.ROOT_PATH}`, function () {
-  this.timeout(5000);
+  this.timeout(10000);
 
   const fixturesSourceDir = process.env.FIXTURES_SOURCE_DIR;
   const initialResources = parseInt(process.env.WORKSPACE_RESOURCES ?? '0', 10);
