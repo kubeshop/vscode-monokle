@@ -164,8 +164,8 @@
   },
   "dependencies": {
     "@monokle/parser": "^0.2.0",
-    "@monokle/synchronizer": "^0.12.0",
-    "@monokle/validation": "^0.31.6",
+    "@monokle/synchronizer": "^0.12.1",
+    "@monokle/validation": "^0.31.7",
     "@segment/analytics-node": "^1.1.0",
     "normalize-url": "^4.5.1",
     "p-retry": "^4.6.2",
