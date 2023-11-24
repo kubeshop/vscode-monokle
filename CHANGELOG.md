@@ -1,5 +1,20 @@
 # Change Log
 
+## 0.5.0
+
+### New Features
+
+* Introduce `monokle.project` configuration option which allows to define remote project from which policy will be used.
+
+### Fixes
+
+* Fixed `monokle.eoverwriteRemotePolicyUrl` which did not have any effect before. Renamed as `monokle.origin`.
+* Fixed `Monokle: Show configuration` command when it failed for remote projects without policy defined.
+
+### Other updates
+
+* Improved when validation pane appears on initialization and if no violations found.
+
 ## 0.4.1
 
 ### Fixes
