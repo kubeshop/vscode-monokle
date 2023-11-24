@@ -255,15 +255,17 @@ export async function getDefaultConfig() {
 }
 
 async function getValidatorInstance() {
-  const {MonokleValidator, ResourceParser, SchemaLoader, RemotePluginLoader, DisabledFixer} = await import('@monokle/validation');
+  const {MonokleValidator, ResourceParser, SchemaLoader, RemotePluginLoader, DisabledFixer, AnnotationSuppressor, FingerprintSuppressor} = await import('@monokle/validation');
+  const {fetchOriginConfig} = await import('@monokle/synchronizer');
 
+  const originConfig = await fetchOriginConfig(globals.origin);
   const parser = new ResourceParser();
-  const loader = new SchemaLoader();
+  const loader = new SchemaLoader(originConfig.schemasOrigin || undefined);
   const validator = new MonokleValidator({
     loader: new RemotePluginLoader(),
     parser,
     schemaLoader: loader,
-    suppressors: [],
+    suppressors: [new AnnotationSuppressor(), new FingerprintSuppressor()],
     fixer: new DisabledFixer(),
   }, {
     plugins: DEFAULT_PLUGIN_MAP,
