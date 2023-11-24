@@ -1,3 +1,4 @@
+import pRetry from 'p-retry';
 import { join, normalize } from 'path';
 import { commands, workspace, window, StatusBarAlignment } from 'vscode';
 import { COMMANDS, SETTINGS, STATUS_BAR_TEXTS, STORAGE_DIR_NAME } from './constants';
@@ -18,12 +19,41 @@ import { getSynchronizer } from './utils/synchronization';
 import { trackEvent, initTelemetry, closeTelemetry } from './utils/telemetry';
 import logger from './utils/logger';
 import globals from './utils/globals';
-import type { ExtensionContext } from 'vscode';
 import { raiseError } from './utils/errors';
+import type { ExtensionContext } from 'vscode';
 
 let runtimeContext: RuntimeContext;
 
 export async function activate(context: ExtensionContext): Promise<any> {
+  return pRetry(async (attempt) => {
+    await runActivation(context);
+
+    if (!globals.isActivated) {
+      context.subscriptions.forEach((subscription) => subscription.dispose());
+      throw new Error(`Activation failed on ${attempt} attempt.`);
+    }
+  }, {
+    retries: 10,
+    factor: 1.2,
+    minTimeout: 1000,
+    maxTimeout: 5000,
+    onFailedAttempt: (err) => {
+      logger.error(`Error activating extension`, err);
+    },
+  });
+}
+
+export async function deactivate() {
+  logger.log('Deactivating extension...');
+
+  await closeTelemetry();
+
+  if (runtimeContext) {
+    runtimeContext.dispose();
+  }
+}
+
+async function runActivation(context: ExtensionContext) {
   globals.storagePath = normalize(join(context.extensionPath, STORAGE_DIR_NAME));
   logger.debug = globals.verbose;
 
@@ -42,6 +72,10 @@ export async function activate(context: ExtensionContext): Promise<any> {
   statusBarItem.tooltip = getTooltipContentDefault();
   statusBarItem.command = COMMANDS.SHOW_PANEL;
   statusBarItem.show();
+
+  context.subscriptions.push(
+    statusBarItem
+  );
 
   runtimeContext = new RuntimeContext(
     context,
@@ -64,6 +98,17 @@ export async function activate(context: ExtensionContext): Promise<any> {
   const commandBootstrapConfiguration = commands.registerCommand(COMMANDS.BOOTSTRAP_CONFIGURATION, getBootstrapConfigurationCommand());
   const commandDownloadPolicy = commands.registerCommand(COMMANDS.SYNCHRONIZE, getSynchronizeCommand(runtimeContext));
   const commandWatch = commands.registerCommand(COMMANDS.WATCH, getWatchCommand(runtimeContext));
+
+  context.subscriptions.push(
+    commandLogin,
+    commandLogout,
+    commandValidate,
+    commandWatch,
+    commandShowPanel,
+    commandShowConfiguration,
+    commandBootstrapConfiguration,
+    commandDownloadPolicy,
+  );
 
   const configurationWatcher = workspace.onDidChangeConfiguration(async (event) => {
     if (event.affectsConfiguration(SETTINGS.ENABLED_PATH)) {
@@ -171,17 +216,11 @@ export async function activate(context: ExtensionContext): Promise<any> {
   setupRemoteEventListeners(runtimeContext);
 
   context.subscriptions.push(
-    commandLogin,
-    commandLogout,
-    commandValidate,
-    commandWatch,
-    commandShowPanel,
-    commandShowConfiguration,
-    commandBootstrapConfiguration,
-    commandDownloadPolicy,
     configurationWatcher,
     workspaceWatcher
   );
+
+  globals.isActivated = true;
 
   if (!globals.enabled) {
     return;
@@ -192,19 +231,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
   await commands.executeCommand(COMMANDS.VALIDATE);
   await commands.executeCommand(COMMANDS.WATCH);
 
-  globals.isActivated = true;
-
   logger.log('Extension activated...', globals.asObject());
-}
-
-export async function deactivate() {
-  logger.log('Deactivating extension...');
-
-  await closeTelemetry();
-
-  if (runtimeContext) {
-    runtimeContext.dispose();
-  }
 }
 
 async function configureRuntimeContext(runtimeContext: RuntimeContext) {
