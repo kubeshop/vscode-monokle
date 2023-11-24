@@ -168,7 +168,7 @@ For contributing code see [CONTRIBUTING.md](https://github.com/kubeshop/vscode-m
 
 #### New Features
 
-* Introduce `monokle.project` configuration option which allows to define remote project from which policy will be used.
+* Introduced `monokle.project` configuration option which allows to define remote project from which policy will be used.
 
 #### Fixes
 
