@@ -40,6 +40,38 @@ And then using _Install from VSIX_ option in VSC.
 
 ## Releasing
 
+Most of the release process is done automatically through GitHub CI. However it requires few manual steps:
+
+1. Make sure you are on `main` branch and have latest changes and no local modifications:
+
+```bash
+git checkout main
+git fetch --all
+git reset --hard origin/main
+```
+
+2. Update `CHANGELOG.md` file with release info (if needed) and push to `main` branch.
+
+3. Run `npm version [patch|minor|major]` to bump package version and push (`main` and tag) to remote:
+
+```bash
+npm version patch
+git push origin main
+git push origin vA.B.C
+```
+
+Pushing a tag to remote triggers release process (see `release.yaml` workflow file), which publishes
+to VSC marketplace and creates GitHub release.
+
+You can verify the release by:
+
+* Looking on the [Marketplace page](https://marketplace.visualstudio.com/items?itemName=kubeshop.monokle) to see if latest release is there.
+* Looking on GitHub [release list](https://github.com/kubeshop/vscode-monokle/releases) to see if latest release is there.
+
+### Manual publication
+
+> If for any reason you need to release manually, see steps below.
+
 Releasing requires [`@vscode/vsce`](https://www.npmjs.com/package/@vscode/vsce) package installed.
 
 **IMPORTANT**: To keep telemetry working, before running any `vsce` command, please update `SEGMENT_API_KEY` in `src/config.ts` to correct value for a time of building the extension (DO NOT COMMIT THOUGH!).
