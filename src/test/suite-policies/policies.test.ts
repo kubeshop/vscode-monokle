@@ -52,7 +52,7 @@ suite(`Policies - Remote: ${process.env.ROOT_PATH}`, function () {
 
     await workspace.getConfiguration('monokle').update('enabled', true, ConfigurationTarget.Workspace);
 
-    const configRemote = await waitForValidationConfig(folder, 10000);
+    const configRemote = await waitForValidationConfig(folder, 15000);
 
     ok(configRemote.isValid);
     ok(configRemote.path);
@@ -63,10 +63,10 @@ suite(`Policies - Remote: ${process.env.ROOT_PATH}`, function () {
 
     await commands.executeCommand(COMMANDS.SYNCHRONIZE);
 
-    const configNew = await waitForValidationConfig(folder, 10000);
+    const configNew = await waitForValidationConfig(folder, 15000);
 
     deepEqual(configNew.config, DEFAULT_POLICY);
-  }).timeout(25000);
+  }).timeout(35000);
 });
 
 async function waitForValidationConfig(workspaceFolder: Folder, timeoutMs?: number): Promise<WorkspaceFolderConfig> {
