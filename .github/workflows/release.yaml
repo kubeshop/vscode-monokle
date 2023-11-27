@@ -9,6 +9,8 @@ on:
 jobs:
   release:
     runs-on: ubuntu-latest
+    env:
+      SEGMENT_API_KEY: ${{ secrets.TEST_SECRET }}
 
     steps:
       - uses: actions/checkout@v4
@@ -18,6 +20,9 @@ jobs:
           node-version: 18
 
       - run: npm i
+
+      - name: Propagate SEGMENT API key
+        run: printf "export const SEGMENT_API_KEY = '%s';\n" "$SEGMENT_API_KEY" > src/config.ts
 
       - name: Publish to marketplace
         id: publishPackage
