@@ -4,13 +4,12 @@ on:
   push:
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+'
-  pull_request:
 
 jobs:
   release:
     runs-on: ubuntu-latest
     env:
-      SEGMENT_API_KEY: ${{ secrets.TEST_SECRET }}
+      SEGMENT_API_KEY: ${{ secrets.SEGMENT_API_KEY }}
 
     steps:
       - uses: actions/checkout@v4
@@ -28,9 +27,8 @@ jobs:
         id: publishPackage
         uses: HaaLeo/publish-vscode-extension@v1
         with:
-          pat: TOKEN_STUB #${{ secrets.VS_MARKETPLACE_TOKEN }}
+          pat: ${{ secrets.VS_MARKETPLACE_TOKEN }}
           registryUrl: https://marketplace.visualstudio.com
-          dryRun: true
 
       - name: Create GitHub Release
         id: create_release
@@ -38,9 +36,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: 0.0.1 #${{ github.ref }}
-          release_name: Release 0.0.1 #Release ${{ github.ref }}
-          draft: true # false
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
           prerelease: false
 
       - name: Upload extension package
