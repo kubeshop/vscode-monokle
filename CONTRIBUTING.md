@@ -50,7 +50,7 @@ git fetch --all
 git reset --hard origin/main
 ```
 
-2. Update `CHANGELOG.md` file with release info (if needed) and push to `main` branch.
+2. Update `CHANGELOG.md` file and `Release Notes` section of `README.md` with release info (if needed) and push to `main` branch.
 
 3. Run `npm version [patch|minor|major]` to bump package version and push (`main` and tag) to remote:
 
