@@ -1,5 +1,12 @@
 # Change Log
 
+## 0.5.1
+
+### Other updates
+
+* Updated validation to use dynamic origin for Schemas Store to download resource schemas for validation with Kubernetes Schema plugin.
+* Improved extensions initialization process.
+
 ## 0.5.0
 
 ### New Features
