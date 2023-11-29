@@ -124,7 +124,7 @@
     }
   },
   "extensionDependencies": [
-    "ms-sarifvscode.sarif-viewer"
+    "kubeshop.monokle-sarif"
   ],
   "scripts": {
     "vscode:prepublish": "rimraf out && npm run esbuild-base -- --minify",

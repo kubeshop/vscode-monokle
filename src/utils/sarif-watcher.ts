@@ -47,7 +47,7 @@ export class SarifWatcher {
   }
 
   protected async getSarifApi() {
-    const sarifExtension = extensions.getExtension('MS-SarifVSCode.sarif-viewer');
+    const sarifExtension = extensions.getExtension('Kubeshop.monokle-sarif');
 
     if (!sarifExtension.isActive) {
       await sarifExtension.activate();
