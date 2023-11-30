@@ -1,5 +1,11 @@
 # Change Log
 
+## 0.6.1
+
+### Fixes
+
+* Fixed status bar icon action to open validation panel on click.
+
 ## 0.6.0
 
 ### Important updates

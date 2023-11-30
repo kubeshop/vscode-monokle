@@ -18,7 +18,7 @@ export function getShowPanelCommand() {
       await sarifExtension.activate();
     }
 
-    await commands.executeCommand('sarif.showPanel');
+    await commands.executeCommand('monokle-sarif.showPanel');
 
     trackEvent('command/show_panel', {
       status: 'success'
