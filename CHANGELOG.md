@@ -1,5 +1,15 @@
 # Change Log
 
+## 0.6.0
+
+### Important updates
+
+* Migrated from [Microsoft Sarif Viewer](https://marketplace.visualstudio.com/items?itemName=MS-SarifVSCode.sarif-viewer) to [Monokle Sarif](https://marketplace.visualstudio.com/items?itemName=kubeshop.monokle-sarif) extension:
+  * Fixed superfluous initialization prompts - [#16](https://github.com/kubeshop/vscode-monokle/issues/16).
+  * Improved validation panle UI - [#7](https://github.com/kubeshop/vscode-monokle/issues/7).
+
+> **IMPORTANT**: Since the SARIF dependency has changed, you may safely uninstall [Microsoft Sarif Viewer](https://marketplace.visualstudio.com/items?itemName=MS-SarifVSCode.sarif-viewer) if it is not used as standalone extension.
+
 ## 0.5.1
 
 ### Other updates
