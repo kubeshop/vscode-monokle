@@ -26,10 +26,15 @@ let runtimeContext: RuntimeContext;
 
 export async function activate(context: ExtensionContext): Promise<any> {
   return pRetry(async (attempt) => {
-    await runActivation(context);
+    try {
+      await runActivation(context);
+    } catch (err: any) {
+      // Rethrow any errors as generic ones so pRetry reacts to it, because it ignores some types of errors as mentioned in the docs:
+      // > It does not retry on most TypeError's, with the exception of network errors.
+      throw new Error(err);
+    }
 
     if (!globals.isActivated) {
-      context.subscriptions.forEach((subscription) => subscription.dispose());
       throw new Error(`Activation failed on ${attempt} attempt.`);
     }
   }, {
@@ -38,6 +43,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
     minTimeout: 1000,
     maxTimeout: 5000,
     onFailedAttempt: (err) => {
+      context.subscriptions.forEach((subscription) => subscription.dispose());
       logger.error(`Error activating extension`, err);
     },
   });
