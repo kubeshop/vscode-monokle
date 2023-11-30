@@ -1,5 +1,9 @@
 # Change Log
 
+## 0.6.2
+
+* Improved error handling.
+
 ## 0.6.1
 
 ### Fixes
