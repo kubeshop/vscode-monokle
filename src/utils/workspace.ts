@@ -7,7 +7,7 @@ import { SETTINGS, DEFAULT_CONFIG_FILE_NAME } from '../constants';
 import { extractK8sResources } from './parser';
 import logger from '../utils/logger';
 import globals from '../utils/globals';
-import type { WorkspaceFolder } from 'vscode';
+import type { WorkspaceFolder, Disposable } from 'vscode';
 import type { RuntimeContext } from './runtime-context';
 
 export type Folder = WorkspaceFolder & {id: string};
@@ -107,6 +107,76 @@ export async function getWorkspaceConfig(workspaceFolder: Folder): Promise<Works
 }
 
 export function initializeWorkspaceWatchers(workspaceFolders: Folder[], context: RuntimeContext) {
+  const watchers: Disposable[] = [];
+  const validators: Record<string, (filePath: string) => Promise<void>> = {};
+
+  for (const folder of workspaceFolders) {
+    const pattern = new RelativePattern(folder.uri.fsPath, '**/*.{yaml,yml}');
+    const watcher = workspace.createFileSystemWatcher(pattern);
+    const resultFile = getValidationResultPath(folder.id);
+
+    watchers.push(watcher);
+
+    const resetResourceCache = async (filePath: string) => {
+      const resourceId = await getResourceIdFromPath(folder, filePath);
+
+      if (!resourceId) {
+        return;
+      }
+
+      return clearResourceCache(folder, resourceId);
+    };
+
+    const revalidateFolder = async () => {
+      logger.log('revalidateFolder', folder);
+
+      context.isValidating = true;
+
+      const uri = await validateFolder(folder);
+      if (uri) {
+        await context.sarifWatcher.add(Uri.file(resultFile));
+      } else {
+        await context.sarifWatcher.remove(Uri.file(resultFile));
+      }
+
+      context.isValidating = false;
+    };
+
+    validators[folder.id] = async (filePath: string) => {
+      await resetResourceCache(filePath);
+      await revalidateFolder();
+    };
+
+    watcher.onDidChange(async (uri) => {
+      logger.log(`File ${uri.fsPath} has been changed`);
+      await resetResourceCache(uri.fsPath);
+      await revalidateFolder();
+    });
+
+    watcher.onDidCreate(async (uri) => {
+      logger.log(`File ${uri.fsPath} has been created`);
+      await revalidateFolder();
+    });
+
+    watcher.onDidDelete(async (uri) => {
+      logger.log(`File ${uri.fsPath} has been deleted`);
+      await revalidateFolder();
+    });
+  }
+
+  const documentWatcher = workspace.onDidChangeTextDocument(async (e) => {
+    const filePath = e.document.uri.fsPath;
+    const ownerWorkspace = workspaceFolders.find(folder => filePath.startsWith(folder.uri.fsPath));
+
+    if (validators[ownerWorkspace.id]) {
+      await validators[ownerWorkspace.id](filePath);
+    }
+  });
+
+  watchers.push(documentWatcher);
+
+  return watchers;
+
   // On change we don't want to run whole validate command again (unless this is very first run @TODO).
   // Because:
   // The sarif output file is already there, initiated with sarif..openLogs
@@ -166,6 +236,9 @@ export function initializeWorkspaceWatchers(workspaceFolders: Folder[], context:
 
     return watcher;
   });
+
+  // workspace validators
+  // onchange -> match to workspace, run workspace validation
 }
 
 async function findYamlFiles(folderPath: string): Promise<File[]> {

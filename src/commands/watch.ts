@@ -1,10 +1,10 @@
 import { getWorkspaceFolders, initializeWorkspaceWatchers } from '../utils/workspace';
 import { canRun } from '../utils/commands';
-import type { FileSystemWatcher } from 'vscode';
+import type { Disposable } from 'vscode';
 import type { RuntimeContext } from '../utils/runtime-context';
 
 export function getWatchCommand(context: RuntimeContext) {
-  const watchers: FileSystemWatcher[] = [];
+  const watchers: Disposable[] = [];
 
   return async () => {
     if (!canRun()) {
