@@ -152,7 +152,7 @@ This extension contributes the following settings:
 
 A core component of Monokle extension and dependency is [`@monokle/validation` library](https://github.com/kubeshop/monokle-core/tree/main/packages/validation).
 
-Monokle extension also uses [SARIF Viewer](https://marketplace.visualstudio.com/items?itemName=MS-SarifVSCode.sarif-viewer) extension as dependency. It should be installed automatically when installing Monokle extension.
+Monokle extension depends on [Monokle SARIF Viewer](https://marketplace.visualstudio.com/items?itemName=Kubeshop.monokle-sarif) extension. It should be installed automatically when installing Monokle extension.
 
 ## Questions and contributing
 

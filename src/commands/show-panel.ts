@@ -12,7 +12,7 @@ export function getShowPanelCommand() {
       status: 'started'
     });
 
-    const sarifExtension = extensions.getExtension('MS-SarifVSCode.sarif-viewer');
+    const sarifExtension = extensions.getExtension('Kubeshop.monokle-sarif');
 
     if (!sarifExtension.isActive) {
       await sarifExtension.activate();
