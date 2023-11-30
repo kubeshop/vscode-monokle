@@ -267,7 +267,9 @@ async function getValidatorInstance() {
     schemaLoader: loader,
     suppressors: [new AnnotationSuppressor(), new FingerprintSuppressor()],
     fixer: new DisabledFixer(),
-  }, {
+  });
+
+  await validator.preload({
     plugins: DEFAULT_PLUGIN_MAP,
     settings: DEFAULT_SETTINGS,
   });
