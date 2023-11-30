@@ -63,10 +63,6 @@ async function runActivation(context: ExtensionContext) {
 
   await globals.setDefaultOrigin();
 
-  // Pre-configure SARIF extension (workaround for #16).
-  workspace.getConfiguration('sarif-viewer').update('connectToGithubCodeScanning', 'off');
-  workspace.getConfiguration('sarif-viewer.explorer').update('openWhenNoResults', false);
-
   const statusBarItem = window.createStatusBarItem(StatusBarAlignment.Left, 25);
   statusBarItem.text = STATUS_BAR_TEXTS.DEFAULT;
   statusBarItem.tooltip = getTooltipContentDefault();
