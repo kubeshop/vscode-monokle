@@ -202,6 +202,16 @@ async function runActivation(context: ExtensionContext) {
 
       await commands.executeCommand(COMMANDS.VALIDATE);
     }
+
+    if (event.affectsConfiguration(SETTINGS.RUN_PATH)) {
+      trackEvent('config/change', {
+        status: 'success',
+        name: SETTINGS.RUN,
+        value: String(globals.run),
+      });
+
+      await commands.executeCommand(COMMANDS.WATCH);
+    }
   });
 
   const workspaceWatcher = workspace.onDidChangeWorkspaceFolders(async () => {

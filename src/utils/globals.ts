@@ -66,6 +66,10 @@ class Globals {
     return workspace.getConfiguration(SETTINGS.NAMESPACE).get<string>(SETTINGS.PROJECT);
   }
 
+  get run() {
+    return workspace.getConfiguration(SETTINGS.NAMESPACE).get<string>(SETTINGS.RUN);
+  }
+
   async setDefaultOrigin() {
     const {DEFAULT_ORIGIN} = await import('@monokle/synchronizer');
     this._defaultOrigin = DEFAULT_ORIGIN;
