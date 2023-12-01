@@ -1,9 +1,9 @@
 import { RelativePattern, Uri, workspace } from 'vscode';
 import { basename, join, normalize } from 'path';
 import { stat } from 'fs/promises';
-import { clearResourceCache, getDefaultConfig, getValidationResultPath, readConfig, validateFolder } from './validation';
+import { clearResourceCache, getDefaultConfig, readConfig, validateFolder } from './validation';
 import { generateId } from './helpers';
-import { SETTINGS, DEFAULT_CONFIG_FILE_NAME } from '../constants';
+import { SETTINGS, DEFAULT_CONFIG_FILE_NAME, RUN_OPTIONS } from '../constants';
 import { extractK8sResources } from './parser';
 import logger from '../utils/logger';
 import globals from '../utils/globals';
@@ -27,6 +27,8 @@ export type WorkspaceFolderConfig = {
   fileName?: string;
   remoteProjectName?: string;
 };
+
+type Resource = Awaited<ReturnType<typeof getResourceFromPath>>;
 
 export function getWorkspaceFolders(): Folder[] {
   return [...(workspace.workspaceFolders ?? [])]
@@ -108,137 +110,103 @@ export async function getWorkspaceConfig(workspaceFolder: Folder): Promise<Works
 
 export function initializeWorkspaceWatchers(workspaceFolders: Folder[], context: RuntimeContext) {
   const watchers: Disposable[] = [];
-  const validators: Record<string, (filePath: string) => Promise<void>> = {};
 
-  for (const folder of workspaceFolders) {
-    const pattern = new RelativePattern(folder.uri.fsPath, '**/*.{yaml,yml}');
-    const watcher = workspace.createFileSystemWatcher(pattern);
-    const resultFile = getValidationResultPath(folder.id);
-
-    watchers.push(watcher);
-
-    const resetResourceCache = async (filePath: string) => {
-      const resourceId = await getResourceIdFromPath(folder, filePath);
-
-      if (!resourceId) {
-        return;
-      }
-
-      return clearResourceCache(folder, resourceId);
-    };
-
-    const revalidateFolder = async () => {
-      logger.log('revalidateFolder', folder);
-
-      context.isValidating = true;
-
-      const uri = await validateFolder(folder);
-      if (uri) {
-        await context.sarifWatcher.add(Uri.file(resultFile));
-      } else {
-        await context.sarifWatcher.remove(Uri.file(resultFile));
-      }
-
-      context.isValidating = false;
-    };
-
-    validators[folder.id] = async (filePath: string) => {
-      await resetResourceCache(filePath);
-      await revalidateFolder();
-    };
-
-    watcher.onDidChange(async (uri) => {
-      logger.log(`File ${uri.fsPath} has been changed`);
-      await resetResourceCache(uri.fsPath);
-      await revalidateFolder();
+  if (globals.run === RUN_OPTIONS.onType) {
+    const documentWatcher = workspace.onDidChangeTextDocument(async (e) => {
+      logger.log('Validating: Document changed', e.document.uri.fsPath, e, e.document.getText());
+      // @TODO should be deobounced too
+      // @TODO this should run incremental validation with only changed file
+      await runFileWithContentValidation(e.document.uri, e.document.getText(), workspaceFolders, context);
     });
 
-    watcher.onDidCreate(async (uri) => {
-      logger.log(`File ${uri.fsPath} has been created`);
-      await revalidateFolder();
-    });
-
-    watcher.onDidDelete(async (uri) => {
-      logger.log(`File ${uri.fsPath} has been deleted`);
-      await revalidateFolder();
-    });
+    watchers.push(documentWatcher);
   }
 
-  const documentWatcher = workspace.onDidChangeTextDocument(async (e) => {
-    const filePath = e.document.uri.fsPath;
-    const ownerWorkspace = workspaceFolders.find(folder => filePath.startsWith(folder.uri.fsPath));
+  if (globals.run === RUN_OPTIONS.onSave) {
+    const documentSavedWatcher = workspace.onDidSaveTextDocument(async (e) => {
+      // @TODO
+      // There can be multiple events at once, for example I have save on focus plugin,
+      // this means I can edit multiple files and when VSC window loses focus it will save all
+      // which will trigger multiple events at once.
+      // I think we should group them and run validation only once with debounce/throttling.
+      // @TODO this should run incremental validation with only changed files
+      logger.log('Validating: Document saved', e.uri.fsPath);
+      await runFilesValidation([e.uri], workspaceFolders, context);
+    });
 
-    if (validators[ownerWorkspace.id]) {
-      await validators[ownerWorkspace.id](filePath);
-    }
-  });
+    const documentCreatedWatcher = workspace.onDidCreateFiles(async (e) => {
+      logger.log('Validating: Documents created', e.files.map(file => file.fsPath));
+      await runFilesValidation(e.files, workspaceFolders, context);
+    });
 
-  watchers.push(documentWatcher);
+    const documentDeletedWatcher = workspace.onDidDeleteFiles(async (e) => {
+      logger.log('Validating: Documents deleted', e.files.map(file => file.fsPath));
+      await runFilesValidation(e.files, workspaceFolders, context);
+    });
+
+    watchers.push(documentSavedWatcher, documentCreatedWatcher, documentDeletedWatcher);
+  }
+
+  // @TODO create / delete watchers should be always there
 
   return watchers;
+}
 
-  // On change we don't want to run whole validate command again (unless this is very first run @TODO).
-  // Because:
-  // The sarif output file is already there, initiated with sarif..openLogs
-  // This means sarif ext has a watcher on this file, whenever it changes it will update the sarif view.
-  // So we just need to update the sarif output file, based on new validation result.
-  // For that:
-  // - match changes with the workspace folder
-  // - get validator for each workspace folder
-  // - run validate command for each workspace folder (incremental?)
-  // - save validation results to sarif output file
-  // - sarif should reload automatically
-  return workspaceFolders.map((folder) => {
-    const pattern = new RelativePattern(folder.uri.fsPath, '**/*.{yaml,yml}');
-    const watcher = workspace.createFileSystemWatcher(pattern);
-    const resultFile = getValidationResultPath(folder.id);
+async function runFileWithContentValidation(file: Uri, content: string,  workspaceFolders: Folder[], context: RuntimeContext) {
+  context.isValidating = true;
 
-    const revalidateFolder = async () => {
-      logger.log('revalidateFolder', folder);
+  // @TODO filter out not yaml files
 
-      context.isValidating = true;
+  const resource = await getResourceFromPathAndContent(file.path, content);
+  const resultUris = await validateResources([resource], workspaceFolders);
 
-      const uri = await validateFolder(folder);
-      if (uri) {
-        await context.sarifWatcher.add(Uri.file(resultFile));
-      } else {
-        await context.sarifWatcher.remove(Uri.file(resultFile));
-      }
+  await context.sarifWatcher.replace(resultUris);
 
-      context.isValidating = false;
+  context.isValidating = false;
+}
+
+async function runFilesValidation(files: readonly Uri[], workspaceFolders: Folder[], context: RuntimeContext) {
+  context.isValidating = true;
+
+  // @TODO filter out not yaml files
+
+  const resources = (await Promise.all(files.map(file => getResourceFromPath(file.path)))).filter(Boolean);
+  const resultUris = await validateResources(resources, workspaceFolders);
+
+  await context.sarifWatcher.replace(resultUris);
+
+  context.isValidating = false;
+}
+
+// For each file
+// - map it to resource
+// - group by workspace folder
+// - clear its validation cache (it requires workspace folder and resource id)
+// - run workspace validation
+async function validateResources(resources: Resource[], workspaceFolders: Folder[]) {
+  const resourcesByWorkspace: Record<string, {workspace: Folder, resources: any}> = resources.reduce((acc, resource) => {
+    const ownerWorkspace = workspaceFolders.find(folder => resource.filePath.startsWith(folder.uri.fsPath));
+    if (!ownerWorkspace) {
+      return acc;
+    }
+
+    const workspaceData = acc[ownerWorkspace.id] ?? { workspace: ownerWorkspace, resources: [] };
+    workspaceData.resources.push(resource);
+
+    return {
+      ...acc,
+      [ownerWorkspace.id]: workspaceData,
     };
+  }, {});
 
-    const resetResourceCache = async (filePath: string) => {
-      const resourceId = await getResourceIdFromPath(folder, filePath);
+  const resultUris = await Promise.all(Object.values(resourcesByWorkspace).map(async workspaceData => {;
+    await clearResourceCache(workspaceData.workspace, resources.map(resource => resource.id));
+    return await validateFolder(workspaceData.workspace);
+  }));
 
-      if (!resourceId) {
-        return;
-      }
+  // TODO make sure we have uri for all existing workspaces?
 
-      return clearResourceCache(folder, resourceId);
-    };
-
-    watcher.onDidChange(async (uri) => {
-      logger.log(`File ${uri.fsPath} has been changed`);
-      await resetResourceCache(uri.fsPath);
-      await revalidateFolder();
-    });
-
-    watcher.onDidCreate(async (uri) => {
-      logger.log(`File ${uri.fsPath} has been created`);
-      await revalidateFolder();
-    });
-
-    watcher.onDidDelete(async (uri) => {
-      logger.log(`File ${uri.fsPath} has been deleted`);
-      await revalidateFolder();
-    });
-
-    return watcher;
-  });
-
-  // workspace validators
-  // onchange -> match to workspace, run workspace validation
+  return resultUris;
 }
 
 async function findYamlFiles(folderPath: string): Promise<File[]> {
@@ -250,7 +218,7 @@ async function findYamlFiles(folderPath: string): Promise<File[]> {
 
       return {
         id: generateId(fullPath),
-        name: basename(file.fsPath),
+        name: basename(fullPath),
         path: fullPath
       };
     });
@@ -286,10 +254,35 @@ async function getWorkspaceLocalConfig(workspaceFolder: Folder) {
   return readConfig(configPath);
 }
 
-async function getResourceIdFromPath(folder: Folder, path: string) {
-  const files = await findYamlFiles(folder.uri.fsPath);
-  const file = files.find(file => normalize(file.path) === normalize(path));
-  const resources = file ? await convertFilesToK8sResources([file]) : [];
+async function getResourceFromPath(path: string) {
+  const file = {
+    id: generateId(path),
+    name: basename(path),
+    path: path
+  };
 
-  return resources.pop()?.id ?? null;
+  // @TODO handle invalid (non-parsable) resources
+  // For now we return null which results in 0 validation files and then those are rmeove from sarfiwatcher via replace, we don't want this
+  // OTOH we should cleanup when workspaces list changes (folder added/removed) - but I guess only then?
+  const resources = file ? await convertFilesToK8sResources([file]) : [];
+  return resources.pop() ?? null;
+}
+
+async function getResourceFromPathAndContent(path: string, content: string) {
+  const file = {
+    id: generateId(path),
+    name: basename(path),
+    path: path
+  };
+
+  const resources = await extractK8sResources([{
+    id: file.id,
+    path: file.path,
+    content
+  }]);
+
+  // @TODO handle invalid (non-parsable) resources
+  // For now we return null which results in 0 validation files and then those are rmeove from sarfiwatcher via replace, we don't want this
+  // OTOH we should cleanup when workspaces list changes (folder added/removed) - but I guess only then?
+  return resources.pop() ?? null;
 }

@@ -69,11 +69,15 @@ export async function getValidator(validatorId: string, config?: any) {
 }
 
 export async function validateFolder(root: Folder): Promise<Uri | null> {
+  const resources = await getWorkspaceResources(root);
+  return validateResourcesFromFolder(resources, root);
+}
+
+export async function validateResourcesFromFolder(resources: any, root: Folder, incremental = false): Promise<Uri | null> {
   trackEvent('workspace/validate', {
     status: 'started',
+    // incremental,
   });
-
-  const resources = await getWorkspaceResources(root);
 
   if(!resources.length) {
     trackEvent('workspace/validate', {
@@ -111,6 +115,7 @@ export async function validateFolder(root: Folder): Promise<Uri | null> {
 
   const result = await validator.validate({
     resources: resources,
+    incremental,
   });
 
   logger.log(root.name, 'result', result);
@@ -234,14 +239,14 @@ export async function removeConfig(path: string, fileName: string) {
   }
 }
 
-export async function clearResourceCache(root: Folder, resourceId: string) {
+export async function clearResourceCache(root: Folder, resourceIds: string[]) {
   const validatorItem = VALIDATORS.get(root.id);
   const parser = validatorItem?.validator?.parser;
 
-  logger.log('clearResourceCache', !!parser, root.name, resourceId);
+  logger.log('clearResourceCache', !!parser, root.name, resourceIds);
 
   if (parser) {
-      parser.clear([resourceId]);
+      parser.clear(resourceIds);
   }
 }
 
