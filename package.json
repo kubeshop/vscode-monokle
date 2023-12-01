@@ -4,7 +4,7 @@
   "publisher": "Kubeshop",
   "displayName": "Monokle",
   "description": "Monokle Visual Studio Code extension for validating Kubernetes configuration.",
-  "version": "0.6.2",
+  "version": "0.6.3",
   "preview": true,
   "icon": "assets/icon.png",
   "repository": {
