@@ -1,6 +1,15 @@
 # Change Log
 
+## 0.6.3
+
+### Fixes
+
+* Fixed origin URL normalization to use `https` as default protocol.
+* Improved error messaging related to failed origin configuration fetch attempts.
+
 ## 0.6.2
+
+### Fixes
 
 * Improved error handling.
 
