@@ -14,6 +14,17 @@ export class SarifWatcher {
     }
   }
 
+  async addMany(uris: Uri[]) {
+    const sarifApi = await this.getSarifApi();
+    const added = uris.filter(u => !this._uris.find(u2 => u2.path === u.path));
+
+    this._uris = [...this._uris, ...added];
+
+    if (added.length) {
+      return sarifApi.openLogs(added);
+    }
+  }
+
   async remove(uri: Uri) {
     const index = this._uris.findIndex(u => u.path === uri.path);
 

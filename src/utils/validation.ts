@@ -76,7 +76,6 @@ export async function validateFolder(root: Folder): Promise<Uri | null> {
 export async function validateResourcesFromFolder(resources: any, root: Folder, incremental = false): Promise<Uri | null> {
   trackEvent('workspace/validate', {
     status: 'started',
-    // incremental,
   });
 
   if(!resources.length) {
