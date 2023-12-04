@@ -1,5 +1,11 @@
 # Change Log
 
+## 0.6.4
+
+### Fixes
+
+* Added request timeout to origin configuration request.
+
 ## 0.6.3
 
 ### Fixes
