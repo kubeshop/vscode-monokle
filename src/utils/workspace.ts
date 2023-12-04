@@ -1,4 +1,5 @@
-import { RelativePattern, Uri, workspace } from 'vscode';
+import pDebounce from 'p-debounce';
+import { RelativePattern, TextDocumentChangeEvent, Uri, workspace } from 'vscode';
 import { basename, join, normalize } from 'path';
 import { stat } from 'fs/promises';
 import { clearResourceCache, getDefaultConfig, readConfig, validateFolder, validateResourcesFromFolder } from './validation';
@@ -7,7 +8,7 @@ import { SETTINGS, DEFAULT_CONFIG_FILE_NAME, RUN_OPTIONS } from '../constants';
 import { extractK8sResources } from './parser';
 import logger from '../utils/logger';
 import globals from '../utils/globals';
-import type { WorkspaceFolder, Disposable } from 'vscode';
+import type { WorkspaceFolder, Disposable, TextDocument } from 'vscode';
 import type { RuntimeContext } from './runtime-context';
 
 export type Folder = WorkspaceFolder & {id: string};
@@ -29,6 +30,9 @@ export type WorkspaceFolderConfig = {
 };
 
 type Resource = Awaited<ReturnType<typeof getResourceFromPath>>;
+
+const ON_TYPE_DEBOUNCE_MS = 250;
+const ON_SAVE_DEBOUNCE_MS = 250;
 
 export function getWorkspaceFolders(): Folder[] {
   return [...(workspace.workspaceFolders ?? [])]
@@ -112,25 +116,37 @@ export function initializeWorkspaceWatchers(workspaceFolders: Folder[], context:
   const watchers: Disposable[] = [];
 
   if (globals.run === RUN_OPTIONS.onType) {
-    const documentWatcher = workspace.onDidChangeTextDocument(async (e) => {
+    const onDidChangeTextDocumentListener = async (e: TextDocumentChangeEvent) => {
       logger.log('Validating: Document changed', e.document.uri.fsPath, e, e.document.getText());
-      // @TODO should be deobounced too
       await runFileWithContentValidation(e.document.uri, e.document.getText(), workspaceFolders, context);
-    });
+    };
+    const debouncedListener = pDebounce(onDidChangeTextDocumentListener, ON_TYPE_DEBOUNCE_MS);
+
+    const documentWatcher = workspace.onDidChangeTextDocument(debouncedListener);
 
     watchers.push(documentWatcher);
   }
 
   if (globals.run === RUN_OPTIONS.onSave) {
-    const documentSavedWatcher = workspace.onDidSaveTextDocument(async (e) => {
-      // @TODO
-      // There can be multiple events at once, for example I have save on focus plugin,
-      // this means I can edit multiple files and when VSC window loses focus it will save all
-      // which will trigger multiple events at once.
-      // I think we should group them and run validation only once with debounce/throttling.
-      logger.log('Validating: Document saved', e.uri.fsPath);
-      await runFilesValidation([e.uri], workspaceFolders, context, true);
-    });
+    // There can be multiple save events at once - for example I have "save on blur" plugin which saves all the edited files
+    // when VSC window loses focus. For each file save event is triggered separately.
+    // So here we want to debounced a listener but also capture input (file) for each listener call.
+    const affectedFiles = new Map<string, Uri>();
+
+    const onDidSaveTextDocumentListener = async () => {
+      logger.log('Validating: Documents saved', affectedFiles);
+
+      const savedFiles = Array.from(affectedFiles.values());
+      affectedFiles.clear();
+      await runFilesValidation(savedFiles, workspaceFolders, context, true);
+    };
+    const debouncedListener = pDebounce(onDidSaveTextDocumentListener, ON_SAVE_DEBOUNCE_MS);
+    const groupingListener = async (e: TextDocument) => {
+      affectedFiles.set(e.uri.fsPath, e.uri);
+      await debouncedListener();
+    };
+
+    const documentSavedWatcher = workspace.onDidSaveTextDocument(groupingListener);
 
     watchers.push(documentSavedWatcher);
   }
@@ -185,7 +201,7 @@ async function runFilesValidation(files: readonly Uri[], workspaceFolders: Folde
 // - map it to resource
 // - group by workspace folder
 // - clear its validation cache (it requires workspace folder and resource id)
-// - run workspace validation
+// - run workspace validation or resource only validation
 async function validateResources(resources: Resource[], workspaceFolders: Folder[], incremental = false) {
   const resourcesByWorkspace: Record<string, {workspace: Folder, resources: any}> = resources.reduce((acc, resource) => {
     const ownerWorkspace = workspaceFolders.find(folder => resource.filePath.startsWith(folder.uri.fsPath));
