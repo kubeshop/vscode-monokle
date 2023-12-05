@@ -9,10 +9,16 @@ export type File = {
   path: string;
 };
 
+export type FileWithContent = {
+  id: string;
+  path: string;
+  content: string;
+};
+
 export type Resources = Awaited<ReturnType<typeof getResourcesFromFile>>;
 export type Resource = Resources[0];
 
-const ResourcePerFileCache = new Map<string, number>(); // <file path, resource count>
+const resourcePerFileCache = new Map<string, string>(); // <file path, resource ids>
 
 export async function getResourcesFromFolder(folderPath: string): Promise<Resource[]> {
   const resourceFiles = await findYamlFiles(folderPath);
@@ -37,17 +43,47 @@ export async function getResourcesFromFileAndContent(filePath: string, content: 
     path: filePath
   };
 
-  const resources = await extractK8sResources([{
+  return extractResources({
     id: file.id,
     path: file.path,
     content
-  }]);
-
-  return resources;
+  });
 }
 
 export function isYamlFile(path: string) {
   return path.endsWith('.yaml') || path.endsWith('.yml');
+}
+
+export function getFileCacheId(filePath: string) {
+  return resourcePerFileCache.get(filePath) ?? null;
+}
+
+export function getCachedResourceCount(filePath: string) {
+  return resourcePerFileCache.get(filePath) ?? null;
+}
+
+async function convertFilesToK8sResources(files: File[]) {
+  return (await Promise.all(files.map(async file => {
+    const contentRaw = await workspace.fs.readFile(Uri.file(file.path));
+    const content = Buffer.from(contentRaw.buffer).toString('utf8');
+
+    const fileWithContent = {
+      id: file.id,
+      path: file.path,
+      content
+    };
+
+    return extractResources(fileWithContent);
+  }))).flat();
+}
+
+async function extractResources(file: FileWithContent) {
+  const resources = await extractK8sResources([file]);
+  const ids = resources.map(resource => resource.id).sort().join(',');
+
+  resourcePerFileCache.set(file.path, ids);
+
+  return resources;
 }
 
 async function findYamlFiles(folderPath: string): Promise<File[]> {
@@ -64,23 +100,3 @@ async function findYamlFiles(folderPath: string): Promise<File[]> {
       };
     });
 }
-
-async function convertFilesToK8sResources(files: File[]): Promise<ReturnType<Awaited<typeof extractK8sResources>>> {
-  const filesWithContent = await Promise.all(files.map(async file => {
-    const contentRaw = await workspace.fs.readFile(Uri.file(file.path));
-    const content = Buffer.from(contentRaw.buffer).toString('utf8');
-
-    return {
-      id: file.id,
-      path: file.path,
-      content
-    };
-  }));
-
-  return extractK8sResources(filesWithContent);
-}
-
-
-
-
-

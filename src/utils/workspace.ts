@@ -5,7 +5,7 @@ import { stat } from 'fs/promises';
 import { clearResourceCache, getDefaultConfig, readConfig, validateFolder, validateResourcesFromFolder } from './validation';
 import { generateId } from './helpers';
 import { SETTINGS, DEFAULT_CONFIG_FILE_NAME, RUN_OPTIONS } from '../constants';
-import { getResourcesFromFile, getResourcesFromFileAndContent, getResourcesFromFolder, isYamlFile } from './file-parser';
+import { getFileCacheId, getResourcesFromFile, getResourcesFromFileAndContent, getResourcesFromFolder, isYamlFile } from './file-parser';
 import logger from '../utils/logger';
 import globals from '../utils/globals';
 import type { WorkspaceFolder, Disposable, TextDocument, TextDocumentChangeEvent } from 'vscode';
@@ -166,10 +166,17 @@ async function runFileWithContentValidation(file: Uri, content: string,  workspa
 
   context.isValidating = true;
 
+  const previousFileResourceId = getFileCacheId(file.fsPath);
   const resources = await getResourcesFromFileAndContent(file.path, content);
-  const resultUris = await validateResources(resources, workspaceFolders, true);
+  const currentFileResourceId = getFileCacheId(file.fsPath);
 
-  await context.sarifWatcher.addMany(resultUris);
+  logger.log(
+    `runFileWithContentValidation, path: ${file.fsPath}, incremental: ${previousFileResourceId === currentFileResourceId}, count: ${resources.length}`
+  );
+
+  // We use incremental validation only when there are same resources in the file (thus previousFileResourceId === currentFileResourceId).
+  // @TODO even if not incremental we need to pass dirty content to validation so it's not read from disk again (as it hasn't been saved yet)
+  await validateResources(resources, workspaceFolders, context, previousFileResourceId === currentFileResourceId);
 
   context.isValidating = false;
 }
@@ -182,10 +189,23 @@ async function runFilesValidation(files: readonly Uri[], workspaceFolders: Folde
 
   context.isValidating = true;
 
-  const resources = (await Promise.all(files.map(file => getResourcesFromFile(file.path)))).flat().filter(Boolean);
-  const resultUris = await validateResources(resources, workspaceFolders, incremental);
+  let useIncremental = incremental;
 
-  await context.sarifWatcher.addMany(resultUris);
+  const resources = (await Promise.all(files.map(file => {
+    const previousFileResourceId = getFileCacheId(file.fsPath);
+    const resources = getResourcesFromFile(file.path);
+    const currentFileResourceId = getFileCacheId(file.fsPath);
+
+    useIncremental = useIncremental && previousFileResourceId === currentFileResourceId;
+
+    return resources;
+  }))).flat().filter(Boolean);
+
+  logger.log(
+    `runFilesValidation, paths: ${files.map(f => f.path).join(';')}, incremental: ${useIncremental}, count: ${resources.length}`
+  );
+
+  await validateResources(resources, workspaceFolders, context, useIncremental);
 
   context.isValidating = false;
 }
@@ -195,7 +215,7 @@ async function runFilesValidation(files: readonly Uri[], workspaceFolders: Folde
 // - group by workspace folder
 // - clear its validation cache (it requires workspace folder and resource id)
 // - run workspace validation or resource only validation
-async function validateResources(resources: Resource[], workspaceFolders: Folder[], incremental = false) {
+async function validateResources(resources: Resource[], workspaceFolders: Folder[], context: RuntimeContext, incremental: boolean) {
   const resourcesByWorkspace: Record<string, {workspace: Folder, resources: any}> = resources.reduce((acc, resource) => {
     const ownerWorkspace = workspaceFolders.find(folder => resource.filePath.startsWith(folder.uri.fsPath));
     if (!ownerWorkspace) {
@@ -224,6 +244,10 @@ async function validateResources(resources: Resource[], workspaceFolders: Folder
       await clearResourceCache(workspaceData.workspace, resources.map(resource => resource.id));
       return await validateFolder(workspaceData.workspace);
     }));
+  }
+
+  if (resultUris.length > 0) {
+    await context.sarifWatcher.addMany(resultUris);
   }
 
   return resultUris;
