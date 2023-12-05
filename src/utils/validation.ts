@@ -8,10 +8,11 @@ import { VALIDATION_FILE_SUFFIX, DEFAULT_CONFIG_FILE_NAME, TMP_POLICY_FILE_SUFFI
 import { getInvalidConfigError } from './errors';
 import { trackEvent } from './telemetry';
 import { getResultCache } from './result-cache';
+import { getResourcesFromFolderWithDirty } from './file-parser';
 import logger from '../utils/logger';
 import globals from './globals';
 import type { Folder } from './workspace';
-import type { Resource } from './file-parser';
+import type { FileWithContent, Resource } from './file-parser';
 
 export type ConfigurableValidator = {
   parser: any;
@@ -71,6 +72,11 @@ export async function getValidator(validatorId: string, config?: any) {
 
 export async function validateFolder(root: Folder): Promise<Uri | null> {
   const resources = await getWorkspaceResources(root);
+  return validateResourcesFromFolder(resources, root);
+}
+
+export async function validateFolderWithDirtyFiles(root: Folder, dirtyFiles: FileWithContent[]): Promise<Uri | null> {
+  const resources = await getResourcesFromFolderWithDirty(root.uri.fsPath, dirtyFiles);
   return validateResourcesFromFolder(resources, root);
 }
 

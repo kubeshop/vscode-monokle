@@ -25,6 +25,16 @@ export async function getResourcesFromFolder(folderPath: string): Promise<Resour
   return convertFilesToK8sResources(resourceFiles);
 }
 
+export async function getResourcesFromFolderWithDirty(folderPath: string, dirtyFiles: FileWithContent[]): Promise<Resource[]> {
+  const resourceFiles = await findYamlFiles(folderPath);
+  const allCleanFiles = resourceFiles.filter(file => !dirtyFiles.find(dirtyFile => dirtyFile.path === file.path));
+
+  const cleanResources = await convertFilesToK8sResources(allCleanFiles);
+  const dirtyResources  = (await Promise.all(dirtyFiles.map(async file => getResourcesFromFileAndContent(file.path, file.content)))).flat();
+
+  return [...cleanResources, ...dirtyResources];
+}
+
 export async function getResourcesFromFile(filePath: string) {
   const file = {
     id: generateId(filePath),

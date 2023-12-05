@@ -176,7 +176,13 @@ async function runFileWithContentValidation(file: Uri, content: string,  workspa
 
   // We use incremental validation only when there are same resources in the file (thus previousFileResourceId === currentFileResourceId).
   // @TODO even if not incremental we need to pass dirty content to validation so it's not read from disk again (as it hasn't been saved yet)
-  await validateResources(resources, workspaceFolders, context, previousFileResourceId === currentFileResourceId);
+  const incremental = previousFileResourceId === currentFileResourceId;
+  if (incremental) {
+    await validateResources(resources, workspaceFolders, context, true);
+  } else {
+    await validateResources(resources, workspaceFolders, context, false); // @TODO pass file with content
+  }
+
 
   context.isValidating = false;
 }
