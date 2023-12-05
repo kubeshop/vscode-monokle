@@ -10,7 +10,8 @@ import { trackEvent } from './telemetry';
 import { getResultCache } from './result-cache';
 import logger from '../utils/logger';
 import globals from './globals';
-import type { Folder, Resource } from './workspace';
+import type { Folder } from './workspace';
+import type { Resource } from './file-parser';
 
 export type ConfigurableValidator = {
   parser: any;

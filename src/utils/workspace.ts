@@ -1,23 +1,18 @@
 import pDebounce from 'p-debounce';
-import { RelativePattern, TextDocumentChangeEvent, Uri, workspace } from 'vscode';
+import { Uri, workspace } from 'vscode';
 import { basename, join, normalize } from 'path';
 import { stat } from 'fs/promises';
 import { clearResourceCache, getDefaultConfig, readConfig, validateFolder, validateResourcesFromFolder } from './validation';
 import { generateId } from './helpers';
 import { SETTINGS, DEFAULT_CONFIG_FILE_NAME, RUN_OPTIONS } from '../constants';
-import { extractK8sResources } from './parser';
+import { getResourcesFromFile, getResourcesFromFileAndContent, getResourcesFromFolder, isYamlFile } from './file-parser';
 import logger from '../utils/logger';
 import globals from '../utils/globals';
-import type { WorkspaceFolder, Disposable, TextDocument } from 'vscode';
+import type { WorkspaceFolder, Disposable, TextDocument, TextDocumentChangeEvent } from 'vscode';
 import type { RuntimeContext } from './runtime-context';
+import type { Resource } from './file-parser';
 
 export type Folder = WorkspaceFolder & {id: string};
-
-export type File = {
-  id: string;
-  name: string;
-  path: string;
-};
 
 export type WorkspaceFolderConfig = {
   type: 'default' | 'file' | 'config' | 'remote';
@@ -29,9 +24,7 @@ export type WorkspaceFolderConfig = {
   remoteProjectName?: string;
 };
 
-export type Resource = Awaited<ReturnType<typeof getResourceFromPath>>;
-
-const ON_TYPE_DEBOUNCE_MS = 250;
+const ON_TYPE_DEBOUNCE_MS = 500;
 const ON_SAVE_DEBOUNCE_MS = 250;
 
 export function getWorkspaceFolders(): Folder[] {
@@ -43,8 +36,7 @@ export function getWorkspaceFolders(): Folder[] {
 }
 
 export async function getWorkspaceResources(workspaceFolder: Folder) {
-  const resourceFiles = await findYamlFiles(workspaceFolder.uri.fsPath);
-  return convertFilesToK8sResources(resourceFiles);
+  return getResourcesFromFolder(workspaceFolder.uri.fsPath);
 }
 
 // Config precedence:
@@ -174,8 +166,8 @@ async function runFileWithContentValidation(file: Uri, content: string,  workspa
 
   context.isValidating = true;
 
-  const resource = await getResourceFromPathAndContent(file.path, content);
-  const resultUris = await validateResources([resource], workspaceFolders, true);
+  const resources = await getResourcesFromFileAndContent(file.path, content);
+  const resultUris = await validateResources(resources, workspaceFolders, true);
 
   await context.sarifWatcher.addMany(resultUris);
 
@@ -190,7 +182,7 @@ async function runFilesValidation(files: readonly Uri[], workspaceFolders: Folde
 
   context.isValidating = true;
 
-  const resources = (await Promise.all(files.map(file => getResourceFromPath(file.path)))).filter(Boolean);
+  const resources = (await Promise.all(files.map(file => getResourcesFromFile(file.path)))).flat().filter(Boolean);
   const resultUris = await validateResources(resources, workspaceFolders, incremental);
 
   await context.sarifWatcher.addMany(resultUris);
@@ -237,36 +229,6 @@ async function validateResources(resources: Resource[], workspaceFolders: Folder
   return resultUris;
 }
 
-async function findYamlFiles(folderPath: string): Promise<File[]> {
-  const files = await workspace.findFiles(new RelativePattern(folderPath, '**/*.{yaml,yml}'));
-
-  return files
-    .map(file => {
-      const fullPath = file.fsPath;
-
-      return {
-        id: generateId(fullPath),
-        name: basename(fullPath),
-        path: fullPath
-      };
-    });
-}
-
-async function convertFilesToK8sResources(files: File[]): Promise<ReturnType<Awaited<typeof extractK8sResources>>> {
-  const filesWithContent = await Promise.all(files.map(async file => {
-    const contentRaw = await workspace.fs.readFile(Uri.file(file.path));
-    const content = Buffer.from(contentRaw.buffer).toString('utf8');
-
-    return {
-      id: file.id,
-      path: file.path,
-      content
-    };
-  }));
-
-  return extractK8sResources(filesWithContent);
-}
-
 async function hasLocalConfig(workspaceFolder: Folder) {
   const configPath = normalize(join(workspaceFolder.uri.fsPath, DEFAULT_CONFIG_FILE_NAME));
   try {
@@ -280,35 +242,4 @@ async function hasLocalConfig(workspaceFolder: Folder) {
 async function getWorkspaceLocalConfig(workspaceFolder: Folder) {
   const configPath = normalize(join(workspaceFolder.uri.fsPath, DEFAULT_CONFIG_FILE_NAME));
   return readConfig(configPath);
-}
-
-async function getResourceFromPath(path: string) {
-  const file = {
-    id: generateId(path),
-    name: basename(path),
-    path: path
-  };
-
-  const resources = file ? await convertFilesToK8sResources([file]) : [];
-  return resources.pop() ?? null;
-}
-
-async function getResourceFromPathAndContent(path: string, content: string) {
-  const file = {
-    id: generateId(path),
-    name: basename(path),
-    path: path
-  };
-
-  const resources = await extractK8sResources([{
-    id: file.id,
-    path: file.path,
-    content
-  }]);
-
-  return resources.pop() ?? null;
-}
-
-function isYamlFile(path: string) {
-  return path.endsWith('.yaml') || path.endsWith('.yml');
 }
