@@ -10,7 +10,7 @@ import { trackEvent } from './telemetry';
 import { getResultCache } from './result-cache';
 import logger from '../utils/logger';
 import globals from './globals';
-import type { Folder } from './workspace';
+import type { Folder, Resource } from './workspace';
 
 export type ConfigurableValidator = {
   parser: any;
@@ -73,7 +73,7 @@ export async function validateFolder(root: Folder): Promise<Uri | null> {
   return validateResourcesFromFolder(resources, root);
 }
 
-export async function validateResourcesFromFolder(resources: any, root: Folder, incremental = false): Promise<Uri | null> {
+export async function validateResourcesFromFolder(resources: Resource[], root: Folder, incremental = false): Promise<Uri | null> {
   trackEvent('workspace/validate', {
     status: 'started',
   });
@@ -112,9 +112,16 @@ export async function validateResourcesFromFolder(resources: any, root: Folder, 
 
   logger.log(root.name, 'validator', validator);
 
+  let incrementalParam: {resourceIds: string[]} | undefined = undefined;
+  if (incremental) {
+    incrementalParam = {
+      resourceIds: resources.map(resource => resource.id)
+    };
+  }
+
   const result = await validator.validate({
     resources: resources,
-    incremental,
+    incremental: incrementalParam
   });
 
   logger.log(root.name, 'result', result);

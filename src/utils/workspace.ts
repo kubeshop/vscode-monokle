@@ -29,7 +29,7 @@ export type WorkspaceFolderConfig = {
   remoteProjectName?: string;
 };
 
-type Resource = Awaited<ReturnType<typeof getResourceFromPath>>;
+export type Resource = Awaited<ReturnType<typeof getResourceFromPath>>;
 
 const ON_TYPE_DEBOUNCE_MS = 250;
 const ON_SAVE_DEBOUNCE_MS = 250;
@@ -134,9 +134,10 @@ export function initializeWorkspaceWatchers(workspaceFolders: Folder[], context:
     const affectedFiles = new Map<string, Uri>();
 
     const onDidSaveTextDocumentListener = async () => {
-      logger.log('Validating: Documents saved', affectedFiles);
-
       const savedFiles = Array.from(affectedFiles.values());
+
+      logger.log('Validating: Documents saved', savedFiles);
+
       affectedFiles.clear();
       await runFilesValidation(savedFiles, workspaceFolders, context, true);
     };
