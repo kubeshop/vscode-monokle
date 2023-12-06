@@ -1,5 +1,11 @@
 # Change Log
 
+## 0.6.5
+
+### Fixes
+
+* Fixed `Monokle: Login` command to react correctly on canceling login request ([#66](https://github.com/kubeshop/vscode-monokle/issues/66)).
+
 ## 0.6.4
 
 ### Fixes
