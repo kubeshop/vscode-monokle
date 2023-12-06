@@ -97,11 +97,6 @@ suite(`Integration - Validation (${RUN_ON}): ${process.env.ROOT_PATH}`, async fu
   });
 
   test('Validates resources on change (modification)', async function() {
-    // // Ignore for now on GHA Windows runner since the test fails for unknown reason.
-    // if (process.env.RUNNER_OS === 'Windows') {
-    //   this.skip();
-    // }
-
     if (initialResources === 0 || RUN_ON === 'onSave') {
       this.skip();
     }
@@ -126,8 +121,6 @@ suite(`Integration - Validation (${RUN_ON}): ${process.env.ROOT_PATH}`, async fu
       edit.replace(uri, range, stringify(asYaml));
       const editResult = await workspace.applyEdit(edit);
 
-      console.warn('Edit result', editResult);
-
       if (!editResult) {
         fail('Failed to modify file');
       }
@@ -138,11 +131,6 @@ suite(`Integration - Validation (${RUN_ON}): ${process.env.ROOT_PATH}`, async fu
   });
 
   test('Validates resources on change (addition)', async function () {
-    // // Ignore for now on GHA Windows runner since the test fails for unknown reason.
-    // if (process.env.RUNNER_OS === 'Windows') {
-    //   this.skip();
-    // }
-
     const folders = getWorkspaceFolders();
 
     await runForFolders(folders, async (folder) => {
