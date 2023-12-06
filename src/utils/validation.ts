@@ -3,16 +3,16 @@ import { join, normalize } from 'path';
 import { platform } from 'os';
 import { Uri } from 'vscode';
 import { Document } from 'yaml';
-import { getWorkspaceConfig, getWorkspaceResources, WorkspaceFolderConfig } from './workspace';
+import { getWorkspaceConfig, WorkspaceFolderConfig } from './workspace';
 import { VALIDATION_FILE_SUFFIX, DEFAULT_CONFIG_FILE_NAME, TMP_POLICY_FILE_SUFFIX } from '../constants';
 import { getInvalidConfigError } from './errors';
 import { trackEvent } from './telemetry';
 import { getResultCache } from './result-cache';
-import { getResourcesFromFolderWithDirty } from './file-parser';
+import { getResourcesFromFolder } from './file-parser';
 import logger from '../utils/logger';
 import globals from './globals';
 import type { Folder } from './workspace';
-import type { FileWithContent, Resource } from './file-parser';
+import type { Resource } from './file-parser';
 
 export type ConfigurableValidator = {
   parser: any;
@@ -71,13 +71,17 @@ export async function getValidator(validatorId: string, config?: any) {
 }
 
 export async function validateFolder(root: Folder): Promise<Uri | null> {
-  const resources = await getWorkspaceResources(root);
+  const resources = await getResourcesFromFolder(root.uri.fsPath);
   return validateResourcesFromFolder(resources, root);
 }
 
-export async function validateFolderWithDirtyFiles(root: Folder, dirtyFiles: FileWithContent[]): Promise<Uri | null> {
-  const resources = await getResourcesFromFolderWithDirty(root.uri.fsPath, dirtyFiles);
-  return validateResourcesFromFolder(resources, root);
+export async function validateFolderWithDirtyFiles(root: Folder, dirtyResources: Resource[], dirtyFiles: string[]): Promise<Uri | null> {
+  const resources = await getResourcesFromFolder(root.uri.fsPath);
+  const unchangedResources = resources.filter(resource => {
+    return !dirtyFiles.includes(resource.filePath);
+  });
+
+  return validateResourcesFromFolder([...unchangedResources, ...dirtyResources], root);
 }
 
 export async function validateResourcesFromFolder(resources: Resource[], root: Folder, incremental = false): Promise<Uri | null> {

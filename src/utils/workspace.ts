@@ -2,7 +2,7 @@ import pDebounce from 'p-debounce';
 import { Uri, workspace } from 'vscode';
 import { basename, join, normalize } from 'path';
 import { stat } from 'fs/promises';
-import { clearResourceCache, getDefaultConfig, readConfig, validateFolder, validateResourcesFromFolder } from './validation';
+import { clearResourceCache, getDefaultConfig, readConfig, validateFolder, validateFolderWithDirtyFiles, validateResourcesFromFolder } from './validation';
 import { generateId } from './helpers';
 import { SETTINGS, DEFAULT_CONFIG_FILE_NAME, RUN_OPTIONS } from '../constants';
 import { getFileCacheId, getResourcesFromFile, getResourcesFromFileAndContent, getResourcesFromFolder, isYamlFile } from './file-parser';
@@ -33,10 +33,6 @@ export function getWorkspaceFolders(): Folder[] {
       id: generateId(folder.uri.fsPath),
       ...folder,
     }));
-}
-
-export async function getWorkspaceResources(workspaceFolder: Folder) {
-  return getResourcesFromFolder(workspaceFolder.uri.fsPath);
 }
 
 // Config precedence:
@@ -164,6 +160,8 @@ async function runFileWithContentValidation(file: Uri, content: string,  workspa
     return;
   }
 
+  // @TODO check if validation config dirty - if yes validate entire workspace
+
   context.isValidating = true;
 
   const previousFileResourceId = getFileCacheId(file.fsPath);
@@ -175,12 +173,12 @@ async function runFileWithContentValidation(file: Uri, content: string,  workspa
   );
 
   // We use incremental validation only when there are same resources in the file (thus previousFileResourceId === currentFileResourceId).
-  // @TODO even if not incremental we need to pass dirty content to validation so it's not read from disk again (as it hasn't been saved yet)
+  // Even if not incremental we need to pass dirty content to validation so it's not read from disk again for dirty file.
   const incremental = previousFileResourceId === currentFileResourceId;
   if (incremental) {
-    await validateResources(resources, workspaceFolders, context, true);
+    await validateResources(resources, workspaceFolders, context, { incremental: true });
   } else {
-    await validateResources(resources, workspaceFolders, context, false); // @TODO pass file with content
+    await validateResources(resources, workspaceFolders, context, { incremental: false, dirtyFiles: [file.fsPath] });
   }
 
 
@@ -192,6 +190,8 @@ async function runFilesValidation(files: readonly Uri[], workspaceFolders: Folde
   if (yamlFiles.length === 0) {
     return;
   }
+
+    // @TODO check if validation config dirty - if yes validate entire workspace
 
   context.isValidating = true;
 
@@ -211,7 +211,7 @@ async function runFilesValidation(files: readonly Uri[], workspaceFolders: Folde
     `runFilesValidation, paths: ${files.map(f => f.path).join(';')}, incremental: ${useIncremental}, count: ${resources.length}`
   );
 
-  await validateResources(resources, workspaceFolders, context, useIncremental);
+  await validateResources(resources, workspaceFolders, context, { incremental: useIncremental });
 
   context.isValidating = false;
 }
@@ -221,7 +221,12 @@ async function runFilesValidation(files: readonly Uri[], workspaceFolders: Folde
 // - group by workspace folder
 // - clear its validation cache (it requires workspace folder and resource id)
 // - run workspace validation or resource only validation
-async function validateResources(resources: Resource[], workspaceFolders: Folder[], context: RuntimeContext, incremental: boolean) {
+async function validateResources(
+  resources: Resource[],
+  workspaceFolders: Folder[],
+  context: RuntimeContext,
+  options: { incremental: boolean, dirtyFiles?: string[] } = { incremental: false }
+) {
   const resourcesByWorkspace: Record<string, {workspace: Folder, resources: any}> = resources.reduce((acc, resource) => {
     const ownerWorkspace = workspaceFolders.find(folder => resource.filePath.startsWith(folder.uri.fsPath));
     if (!ownerWorkspace) {
@@ -237,13 +242,33 @@ async function validateResources(resources: Resource[], workspaceFolders: Folder
     };
   }, {});
 
-  let resultUris: Uri[] = [];
+  const isDirty = options.dirtyFiles?.length > 0;
+  if (isDirty) {
+    // This is a special case when you remove content of entire file. In this case we don't have
+    // any resources from this file, but we still need to run validation for owner workspace (since number of resources
+    // and its' content changed) so we use dirty file paths to find modified workspaces.
+    options.dirtyFiles.forEach(dirtyFile => {
+      const ownerWorkspace = workspaceFolders.find(folder => dirtyFile.startsWith(folder.uri.fsPath));
 
-  // If incremental, validate only changed files, else run validation on the entire folder.
-  if (incremental) {
+      if (ownerWorkspace) {
+        resourcesByWorkspace[ownerWorkspace.id] = resourcesByWorkspace[ownerWorkspace.id] ?? { workspace: ownerWorkspace, resources: [] };
+      }
+    });
+  }
+
+  let resultUris: Uri[] = [];
+  // 1. If incremental, validate only changed files.
+  // 2. If not incremental but has dirty resources (modified but not saved files) validate folder passing dirty resources.
+  // 3. Else run validation on the entire folder (files read from disk).
+  if (options.incremental) {
     resultUris = await Promise.all(Object.values(resourcesByWorkspace).map(async workspaceData => {
       await clearResourceCache(workspaceData.workspace, resources.map(resource => resource.id));
       return await validateResourcesFromFolder(workspaceData.resources, workspaceData.workspace, true);
+    }));
+  } else if (!options.incremental && isDirty) {
+    resultUris = await Promise.all(Object.values(resourcesByWorkspace).map(async workspaceData => {
+      await clearResourceCache(workspaceData.workspace, resources.map(resource => resource.id));
+      return await validateFolderWithDirtyFiles(workspaceData.workspace, workspaceData.resources, options.dirtyFiles);
     }));
   } else {
     resultUris = await Promise.all(Object.values(resourcesByWorkspace).map(async workspaceData => {;
