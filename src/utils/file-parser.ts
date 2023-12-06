@@ -58,10 +58,6 @@ export function getFileCacheId(filePath: string) {
   return resourcePerFileCache.get(filePath) ?? null;
 }
 
-export function getCachedResourceCount(filePath: string) {
-  return resourcePerFileCache.get(filePath) ?? null;
-}
-
 export function isSubpath(path: Uri, subpath: string) {
   const subpathUri = Uri.file(subpath);
 

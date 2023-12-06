@@ -197,9 +197,9 @@ async function runFilesValidation(files: readonly Uri[], workspaceFolders: Folde
 
   let useIncremental = incremental;
 
-  const resources = (await Promise.all(files.map(file => {
+  const resources = (await Promise.all(files.map(async (file) => {
     const previousFileResourceId = getFileCacheId(file.fsPath);
-    const resources = getResourcesFromFile(file.path);
+    const resources = await getResourcesFromFile(file.path);
     const currentFileResourceId = getFileCacheId(file.fsPath);
 
     useIncremental = useIncremental && previousFileResourceId === currentFileResourceId;
@@ -211,7 +211,11 @@ async function runFilesValidation(files: readonly Uri[], workspaceFolders: Folde
     `runFilesValidation, paths: ${files.map(f => f.path).join(';')}, incremental: ${useIncremental}, count: ${resources.length}`
   );
 
-  await validateResources(resources, workspaceFolders, context, { incremental: useIncremental });
+  if (useIncremental) {
+    await validateResources(resources, workspaceFolders, context, { incremental: useIncremental });
+  } else {
+    await validateResources(resources, workspaceFolders, context, { incremental: useIncremental, dirtyFiles: yamlFiles });
+  }
 
   context.isValidating = false;
 }
