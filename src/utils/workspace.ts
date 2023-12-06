@@ -5,7 +5,7 @@ import { stat } from 'fs/promises';
 import { clearResourceCache, getDefaultConfig, readConfig, validateFolder, validateFolderWithDirtyFiles, validateResourcesFromFolder } from './validation';
 import { generateId } from './helpers';
 import { SETTINGS, DEFAULT_CONFIG_FILE_NAME, RUN_OPTIONS } from '../constants';
-import { getFileCacheId, getResourcesFromFile, getResourcesFromFileAndContent, getResourcesFromFolder, isYamlFile } from './file-parser';
+import { getFileCacheId, getResourcesFromFile, getResourcesFromFileAndContent, isYamlFile } from './file-parser';
 import logger from '../utils/logger';
 import globals from '../utils/globals';
 import type { WorkspaceFolder, Disposable, TextDocument, TextDocumentChangeEvent } from 'vscode';
@@ -147,7 +147,7 @@ export function initializeWorkspaceWatchers(workspaceFolders: Folder[], context:
 
   const documentDeletedWatcher = workspace.onDidDeleteFiles(async (e) => {
     logger.log('Validating: Documents deleted', e.files.map(file => file.fsPath));
-    await runFilesValidation(e.files, workspaceFolders, context, false);
+    await validateResources([], workspaceFolders, context, { incremental: false, dirtyFiles: e.files.map(file => file.fsPath) });
   });
 
   watchers.push(documentCreatedWatcher, documentDeletedWatcher);
