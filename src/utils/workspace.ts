@@ -5,7 +5,7 @@ import { stat } from 'fs/promises';
 import { clearResourceCache, getDefaultConfig, readConfig, validateFolder, validateFolderWithDirtyFiles, validateResourcesFromFolder } from './validation';
 import { generateId } from './helpers';
 import { SETTINGS, DEFAULT_CONFIG_FILE_NAME, RUN_OPTIONS } from '../constants';
-import { getFileCacheId, getResourcesFromFile, getResourcesFromFileAndContent, isYamlFile } from './file-parser';
+import { getFileCacheId, getResourcesFromFile, getResourcesFromFileAndContent, isSubpath, isYamlFile } from './file-parser';
 import logger from '../utils/logger';
 import globals from '../utils/globals';
 import type { WorkspaceFolder, Disposable, TextDocument, TextDocumentChangeEvent } from 'vscode';
@@ -147,7 +147,7 @@ export function initializeWorkspaceWatchers(workspaceFolders: Folder[], context:
 
   const documentDeletedWatcher = workspace.onDidDeleteFiles(async (e) => {
     logger.log('Validating: Documents deleted', e.files.map(file => file.fsPath));
-    await validateResources([], workspaceFolders, context, { incremental: false, dirtyFiles: e.files.map(file => file.fsPath) });
+    await validateResources([], workspaceFolders, context, { incremental: false, dirtyFiles: e.files });
   });
 
   watchers.push(documentCreatedWatcher, documentDeletedWatcher);
@@ -178,7 +178,7 @@ async function runFileWithContentValidation(file: Uri, content: string,  workspa
   if (incremental) {
     await validateResources(resources, workspaceFolders, context, { incremental: true });
   } else {
-    await validateResources(resources, workspaceFolders, context, { incremental: false, dirtyFiles: [file.fsPath] });
+    await validateResources(resources, workspaceFolders, context, { incremental: false, dirtyFiles: [file] });
   }
 
 
@@ -225,10 +225,10 @@ async function validateResources(
   resources: Resource[],
   workspaceFolders: Folder[],
   context: RuntimeContext,
-  options: { incremental: boolean, dirtyFiles?: string[] } = { incremental: false }
+  options: { incremental: boolean, dirtyFiles?:readonly  Uri[] } = { incremental: false }
 ) {
   const resourcesByWorkspace: Record<string, {workspace: Folder, resources: any}> = resources.reduce((acc, resource) => {
-    const ownerWorkspace = workspaceFolders.find(folder => resource.filePath.startsWith(folder.uri.fsPath));
+    const ownerWorkspace = workspaceFolders.find(folder => isSubpath(folder.uri, resource.filePath));
     if (!ownerWorkspace) {
       return acc;
     }
@@ -248,7 +248,7 @@ async function validateResources(
     // any resources from this file, but we still need to run validation for owner workspace (since number of resources
     // and its' content changed) so we use dirty file paths to find modified workspaces.
     options.dirtyFiles.forEach(dirtyFile => {
-      const ownerWorkspace = workspaceFolders.find(folder => dirtyFile.startsWith(folder.uri.fsPath));
+      const ownerWorkspace = workspaceFolders.find(folder => isSubpath(folder.uri, dirtyFile.fsPath));
 
       if (ownerWorkspace) {
         resourcesByWorkspace[ownerWorkspace.id] = resourcesByWorkspace[ownerWorkspace.id] ?? { workspace: ownerWorkspace, resources: [] };

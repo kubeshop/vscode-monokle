@@ -62,6 +62,12 @@ export function getCachedResourceCount(filePath: string) {
   return resourcePerFileCache.get(filePath) ?? null;
 }
 
+export function isSubpath(path: Uri, subpath: string) {
+  const subpathUri = Uri.file(subpath);
+
+  return subpathUri.toString().startsWith(path.toString());
+}
+
 async function convertFilesToK8sResources(files: File[]) {
   return (await Promise.all(files.map(async file => {
     const contentRaw = await workspace.fs.readFile(Uri.file(file.path));
