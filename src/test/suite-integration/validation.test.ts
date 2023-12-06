@@ -8,13 +8,14 @@ import { COMMANDS } from '../../constants';
 import { doSetup, doSuiteSetup, doSuiteTeardown, runForFolders, runForFoldersInSequence } from '../helpers/suite';
 import { assertEmptyValidationResults, assertValidationResults, waitForValidationResults } from '../helpers/asserts';
 
-suite(`Integration - Validation: ${process.env.ROOT_PATH}`, async function () {
+const RUN_ON = process.env.MONOKLE_TEST_VALIDATE_ON_SAVE === 'Y' ? 'onSave' : 'onType';
+
+suite(`Integration - Validation (${RUN_ON}): ${process.env.ROOT_PATH}`, async function () {
   this.timeout(20000);
 
   const fixturesSourceDir = process.env.FIXTURES_SOURCE_DIR;
   const initialResources = parseInt(process.env.WORKSPACE_RESOURCES ?? '0', 10);
   const isDisabled = process.env.WORKSPACE_DISABLED === 'true';
-  const runOn = process.env.MONOKLE_TEST_VALIDATE_ON_SAVE === 'Y' ? 'onSave' : undefined;
 
   suiteSetup(async function () {
     await doSuiteSetup();
@@ -28,10 +29,7 @@ suite(`Integration - Validation: ${process.env.ROOT_PATH}`, async function () {
       const configFile = resolve(join(__dirname, '..', 'tmp', 'fixtures', workspace.getConfiguration('monokle').get('configurationPath')));
       console.log('Setting config file to', configFile);
       await workspace.getConfiguration('monokle').update('configurationPath', configFile, ConfigurationTarget.Workspace);
-
-      if (runOn) {
-        await workspace.getConfiguration('monokle').update('run', runOn, ConfigurationTarget.Workspace);
-      }
+      await workspace.getConfiguration('monokle').update('run', RUN_ON, ConfigurationTarget.Workspace);
     }
   });
 
@@ -99,7 +97,7 @@ suite(`Integration - Validation: ${process.env.ROOT_PATH}`, async function () {
   });
 
   test('Validates resources on change (modification)', async function() {
-    if (initialResources === 0 || runOn === 'onSave') {
+    if (initialResources === 0 || RUN_ON === 'onSave') {
       this.skip();
     }
 
