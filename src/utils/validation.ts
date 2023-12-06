@@ -173,6 +173,7 @@ export async function getValidationResult(fileName: string) {
     const resultsAsString = await readFile(filePath, 'utf8');
     return JSON.parse(resultsAsString);
   } catch (e) {
+    console.error('Error in getValidationResult', e);
     return null;
   }
 }

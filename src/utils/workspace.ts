@@ -105,7 +105,7 @@ export function initializeWorkspaceWatchers(workspaceFolders: Folder[], context:
 
   if (globals.run === RUN_OPTIONS.onType) {
     const onDidChangeTextDocumentListener = async (e: TextDocumentChangeEvent) => {
-      logger.log('Validating: Document changed', e.document.uri.fsPath, e, e.document.getText());
+      console.warn('Validating: Document changed', e.document.uri.fsPath, e, e.document.getText());
       await runFileWithContentValidation(e.document.uri, e.document.getText(), workspaceFolders, context);
     };
     const debouncedListener = pDebounce(onDidChangeTextDocumentListener, ON_TYPE_DEBOUNCE_MS);
@@ -168,7 +168,7 @@ async function runFileWithContentValidation(file: Uri, content: string,  workspa
   const resources = await getResourcesFromFileAndContent(file.path, content);
   const currentFileResourceId = getFileCacheId(file.fsPath);
 
-  logger.log(
+  console.log(
     `runFileWithContentValidation, path: ${file.fsPath}, incremental: ${previousFileResourceId === currentFileResourceId}, count: ${resources.length}`
   );
 
@@ -255,6 +255,8 @@ async function validateResources(
       }
     });
   }
+
+  console.log('validateResources', resources, workspaceFolders, resourcesByWorkspace, options);
 
   let resultUris: Uri[] = [];
   // 1. If incremental, validate only changed files.
