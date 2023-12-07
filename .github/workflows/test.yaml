@@ -11,8 +11,10 @@ concurrency: ${{ github.workflow }}-${{ github.ref }}
 jobs:
   test:
     strategy:
+      fail-fast: false
       matrix:
         os: [macos-latest, ubuntu-latest, windows-latest]
+
 
     runs-on: ${{ matrix.os }}
 

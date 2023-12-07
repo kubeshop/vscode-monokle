@@ -16,12 +16,14 @@ export const SETTINGS = {
   TELEMETRY_ENABLED: 'telemetryEnabled',
   ORIGIN: 'origin',
   PROJECT: 'project',
+  RUN: 'run',
   ENABLED_PATH: 'monokle.enabled',
   CONFIGURATION_PATH_PATH: 'monokle.configurationPath',
   VERBOSE_PATH: 'monokle.verbose',
   TELEMETRY_ENABLED_PATH: 'monokle.telemetryEnabled',
   ORIGIN_PATH: 'monokle.origin',
   PROJECT_PATH: 'monokle.project',
+  RUN_PATH: 'monokle.run',
 };
 
 export const COMMANDS = {
@@ -49,4 +51,9 @@ export const COMMAND_NAMES = {
 export const STATUS_BAR_TEXTS = {
   DEFAULT: '$(circle-outline) Monokle',
   ERROR: '$(warning) Monokle',
+};
+
+export enum RUN_OPTIONS {
+  onSave = 'onSave',
+  onType = 'onType',
 };

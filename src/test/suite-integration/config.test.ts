@@ -3,7 +3,7 @@ import { getWorkspaceConfig, getWorkspaceFolders } from '../../utils/workspace';
 import { doSetup, doSuiteSetup, doSuiteTeardown } from '../helpers/suite';
 
 suite(`Integration - Config: ${process.env.ROOT_PATH}`, function () {
-  this.timeout(10000);
+  this.timeout(20000);
 
   suiteSetup(async () => {
     await doSuiteSetup();

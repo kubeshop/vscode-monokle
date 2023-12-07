@@ -3,14 +3,16 @@ import { join, normalize } from 'path';
 import { platform } from 'os';
 import { Uri } from 'vscode';
 import { Document } from 'yaml';
-import { getWorkspaceConfig, getWorkspaceResources, WorkspaceFolderConfig } from './workspace';
+import { getWorkspaceConfig, WorkspaceFolderConfig } from './workspace';
 import { VALIDATION_FILE_SUFFIX, DEFAULT_CONFIG_FILE_NAME, TMP_POLICY_FILE_SUFFIX } from '../constants';
 import { getInvalidConfigError } from './errors';
 import { trackEvent } from './telemetry';
 import { getResultCache } from './result-cache';
+import { getResourcesFromFolder } from './file-parser';
 import logger from '../utils/logger';
 import globals from './globals';
 import type { Folder } from './workspace';
+import type { Resource } from './file-parser';
 
 export type ConfigurableValidator = {
   parser: any;
@@ -69,11 +71,28 @@ export async function getValidator(validatorId: string, config?: any) {
 }
 
 export async function validateFolder(root: Folder): Promise<Uri | null> {
+  const resources = await getResourcesFromFolder(root.uri.fsPath);
+  return validateResourcesFromFolder(resources, root);
+}
+
+export async function validateFolderWithDirtyFiles(root: Folder, dirtyResources: Resource[], dirtyFiles: readonly Uri[]): Promise<Uri | null> {
+  const resources = await getResourcesFromFolder(root.uri.fsPath);
+  const dirtyFilesPaths = dirtyFiles.map(file => file.toString());
+
+  if (dirtyFilesPaths.length === 0) {
+    return validateResourcesFromFolder(resources, root);
+  }
+
+  const unchangedResources = resources.filter(resource => {
+    return !dirtyFilesPaths.includes(Uri.file(resource.filePath).toString());
+  });
+  return validateResourcesFromFolder([...unchangedResources, ...dirtyResources], root);
+}
+
+export async function validateResourcesFromFolder(resources: Resource[], root: Folder, incremental = false): Promise<Uri | null> {
   trackEvent('workspace/validate', {
     status: 'started',
   });
-
-  const resources = await getWorkspaceResources(root);
 
   if(!resources.length) {
     trackEvent('workspace/validate', {
@@ -109,8 +128,16 @@ export async function validateFolder(root: Folder): Promise<Uri | null> {
 
   logger.log(root.name, 'validator', validator);
 
+  let incrementalParam: {resourceIds: string[]} | undefined = undefined;
+  if (incremental) {
+    incrementalParam = {
+      resourceIds: resources.map(resource => resource.id)
+    };
+  }
+
   const result = await validator.validate({
     resources: resources,
+    incremental: incrementalParam
   });
 
   logger.log(root.name, 'result', result);
@@ -234,14 +261,14 @@ export async function removeConfig(path: string, fileName: string) {
   }
 }
 
-export async function clearResourceCache(root: Folder, resourceId: string) {
+export async function clearResourceCache(root: Folder, resourceIds: string[]) {
   const validatorItem = VALIDATORS.get(root.id);
   const parser = validatorItem?.validator?.parser;
 
-  logger.log('clearResourceCache', !!parser, root.name, resourceId);
+  logger.log('clearResourceCache', !!parser, root.name, resourceIds);
 
   if (parser) {
-      parser.clear([resourceId]);
+      parser.clear(resourceIds);
   }
 }
 

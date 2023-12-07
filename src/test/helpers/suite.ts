@@ -26,6 +26,12 @@ export async function runForFolders(folders: Folder[], fn: (folder: Folder) => P
   }));
 }
 
+export async function runForFoldersInSequence(folders: Folder[], fn: (folder: Folder) => Promise<void>) {
+  for (const folder of folders) {
+    await fn(folder);
+  }
+}
+
 async function clearStorageDir() {
   return rm(getStorageDir(), { recursive: true, force: true, maxRetries: 3 });
 }

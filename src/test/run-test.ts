@@ -22,12 +22,13 @@ type TestWorkspace = {
 type TestFlags = {
   setupRemoteEnv?: boolean;
   skipResultCache?: boolean;
+  validateOnSave?: boolean;
 };
 
 async function runSuite(
   testFile: string,
   workspaces: TestWorkspace[],
-  flags: TestFlags = { setupRemoteEnv: false, skipResultCache: false }
+  flags: TestFlags = { setupRemoteEnv: false, skipResultCache: false, validateOnSave: false }
 ) {
   let currentWorkspace: TestWorkspace | undefined;
 
@@ -95,6 +96,8 @@ async function runSuite(
           MONOKLE_VSC_ENV: 'TEST',
           // eslint-disable-next-line @typescript-eslint/naming-convention
           MONOKLE_TEST_SKIP_RESULT_CACHE: flags.skipResultCache ? 'Y' : undefined,
+          // eslint-disable-next-line @typescript-eslint/naming-convention
+          MONOKLE_TEST_VALIDATE_ON_SAVE: flags.validateOnSave ? 'Y' : undefined,
         }
       });
     }
@@ -147,6 +150,7 @@ async function main() {
 
   // Run integration-like tests on multiple, different workspaces (local config).
   await runSuite('./suite-integration/index', workspaces.slice(0, -1), { skipResultCache: true });
+  await runSuite('./suite-integration/index', workspaces.slice(0, -1), { skipResultCache: true, validateOnSave: true });
 
   // Run integration-like tests for remote config separately as it needs different setup.
   await runSuite('./suite-integration/index', [workspaces[3]], { setupRemoteEnv: true });

@@ -119,6 +119,15 @@
           ],
           "default": null,
           "description": "Project which policy will be used for validation. If not set it will deducted based on git repository URL."
+        },
+        "monokle.run": {
+          "type": "string",
+          "enum": [
+            "onSave",
+            "onType"
+          ],
+          "default": "onType",
+          "description": "Run validation on save (onSave) or on type (onType)"
         }
       }
     }
@@ -168,6 +177,7 @@
     "@monokle/validation": "^0.31.7",
     "@segment/analytics-node": "^1.1.0",
     "normalize-url": "^4.5.1",
+    "p-debounce": "^2.1.0",
     "p-retry": "^4.6.2",
     "uuid": "^9.0.0",
     "yaml": "^2.3.1"
