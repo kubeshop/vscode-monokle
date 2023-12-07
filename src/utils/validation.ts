@@ -285,9 +285,15 @@ async function getValidatorInstance() {
   const {MonokleValidator, ResourceParser, SchemaLoader, RemotePluginLoader, DisabledFixer, AnnotationSuppressor, FingerprintSuppressor} = await import('@monokle/validation');
   const {fetchOriginConfig} = await import('@monokle/synchronizer');
 
-  const originConfig = await fetchOriginConfig(globals.origin);
+  let originConfig = undefined;
+  try {
+    originConfig = await fetchOriginConfig(globals.origin);
+  } catch (err) {
+    logger.error('Failed to fetch origin config during validator creation', err);
+  }
+
   const parser = new ResourceParser();
-  const loader = new SchemaLoader(originConfig.schemasOrigin || undefined);
+  const loader = new SchemaLoader(originConfig?.schemasOrigin || undefined);
   const validator = new MonokleValidator({
     loader: new RemotePluginLoader(),
     parser,
