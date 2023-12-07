@@ -78,10 +78,14 @@ export async function validateFolder(root: Folder): Promise<Uri | null> {
 export async function validateFolderWithDirtyFiles(root: Folder, dirtyResources: Resource[], dirtyFiles: readonly Uri[]): Promise<Uri | null> {
   const resources = await getResourcesFromFolder(root.uri.fsPath);
   const dirtyFilesPaths = dirtyFiles.map(file => file.toString());
+
+  if (dirtyFilesPaths.length === 0) {
+    return validateResourcesFromFolder(resources, root);
+  }
+
   const unchangedResources = resources.filter(resource => {
     return !dirtyFilesPaths.includes(Uri.file(resource.filePath).toString());
   });
-
   return validateResourcesFromFolder([...unchangedResources, ...dirtyResources], root);
 }
 

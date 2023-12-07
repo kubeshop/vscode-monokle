@@ -127,7 +127,7 @@ export function initializeWorkspaceWatchers(workspaceFolders: Folder[], context:
       logger.log('Validating: Documents saved', savedFiles);
 
       affectedFiles.clear();
-      await runFilesValidation(savedFiles, workspaceFolders, context, true);
+      await runFilesValidation(savedFiles, workspaceFolders, context);
     };
     const debouncedListener = pDebounce(onDidSaveTextDocumentListener, ON_SAVE_DEBOUNCE_MS);
     const groupingListener = async (e: TextDocument) => {
@@ -142,7 +142,7 @@ export function initializeWorkspaceWatchers(workspaceFolders: Folder[], context:
 
   const documentCreatedWatcher = workspace.onDidCreateFiles(async (e) => {
     logger.log('Validating: Documents created', e.files.map(file => file.fsPath));
-    await runFilesValidation(e.files, workspaceFolders, context, true);
+    await runFilesValidation(e.files, workspaceFolders, context);
   });
 
   const documentDeletedWatcher = workspace.onDidDeleteFiles(async (e) => {
@@ -160,9 +160,9 @@ async function runFileWithContentValidation(file: Uri, content: string,  workspa
     return;
   }
 
-  // @TODO check if validation config dirty - if yes validate entire workspace
-
   context.isValidating = true;
+
+  const configChanged = await isConfigFileAffected(workspaceFolders, [file]);
 
   const previousFileResourceId = getFileCacheId(file.fsPath);
   const resources = await getResourcesFromFileAndContent(file.path, content);
@@ -174,28 +174,28 @@ async function runFileWithContentValidation(file: Uri, content: string,  workspa
 
   // We use incremental validation only when there are same resources in the file (thus previousFileResourceId === currentFileResourceId).
   // Even if not incremental we need to pass dirty content to validation so it's not read from disk again for dirty file.
-  const incremental = previousFileResourceId === currentFileResourceId;
+  const incremental = previousFileResourceId === currentFileResourceId && !configChanged;
   if (incremental) {
     await validateResources(resources, workspaceFolders, context, { incremental: true });
   } else {
-    await validateResources(resources, workspaceFolders, context, { incremental: false, dirtyFiles: [file] });
+    await validateResources(resources, workspaceFolders, context, { incremental: false, dirtyFiles: [file], configChanged });
   }
 
 
   context.isValidating = false;
 }
 
-async function runFilesValidation(files: readonly Uri[], workspaceFolders: Folder[], context: RuntimeContext, incremental: boolean) {
+async function runFilesValidation(files: readonly Uri[], workspaceFolders: Folder[], context: RuntimeContext) {
   const yamlFiles = files.filter(file => isYamlFile(file.fsPath));
   if (yamlFiles.length === 0) {
     return;
   }
 
-    // @TODO check if validation config dirty - if yes validate entire workspace
-
   context.isValidating = true;
 
-  let useIncremental = incremental;
+  const configChanged = await isConfigFileAffected(workspaceFolders, files);
+
+  let useIncremental = !configChanged;
 
   const resources = (await Promise.all(files.map(async (file) => {
     const previousFileResourceId = getFileCacheId(file.fsPath);
@@ -214,7 +214,7 @@ async function runFilesValidation(files: readonly Uri[], workspaceFolders: Folde
   if (useIncremental) {
     await validateResources(resources, workspaceFolders, context, { incremental: useIncremental });
   } else {
-    await validateResources(resources, workspaceFolders, context, { incremental: useIncremental, dirtyFiles: yamlFiles });
+    await validateResources(resources, workspaceFolders, context, { incremental: useIncremental, dirtyFiles: yamlFiles, configChanged });
   }
 
   context.isValidating = false;
@@ -229,7 +229,7 @@ async function validateResources(
   resources: Resource[],
   workspaceFolders: Folder[],
   context: RuntimeContext,
-  options: { incremental: boolean, dirtyFiles?:readonly  Uri[] } = { incremental: false }
+  options: { incremental: boolean, dirtyFiles?: readonly Uri[], configChanged?: boolean } = { incremental: false }
 ) {
   const resourcesByWorkspace: Record<string, {workspace: Folder, resources: any}> = resources.reduce((acc, resource) => {
     const ownerWorkspace = workspaceFolders.find(folder => isSubpath(folder.uri, resource.filePath));
@@ -264,22 +264,16 @@ async function validateResources(
 
   let resultUris: Uri[] = [];
   // 1. If incremental, validate only changed files.
-  // 2. If not incremental but has dirty resources (modified but not saved files) validate folder passing dirty resources.
-  // 3. Else run validation on the entire folder (files read from disk).
-  if (options.incremental) {
+  // 2. Else run validation on the entire folder (dirty resources + rest of workspace files read from disk).
+  if (options.incremental && !isDirty && !options.configChanged) {
     resultUris = await Promise.all(Object.values(resourcesByWorkspace).map(async workspaceData => {
       await clearResourceCache(workspaceData.workspace, resources.map(resource => resource.id));
       return await validateResourcesFromFolder(workspaceData.resources, workspaceData.workspace, true);
     }));
-  } else if (!options.incremental && isDirty) {
+  } else {
     resultUris = await Promise.all(Object.values(resourcesByWorkspace).map(async workspaceData => {
       await clearResourceCache(workspaceData.workspace, resources.map(resource => resource.id));
-      return await validateFolderWithDirtyFiles(workspaceData.workspace, workspaceData.resources, options.dirtyFiles);
-    }));
-  } else {
-    resultUris = await Promise.all(Object.values(resourcesByWorkspace).map(async workspaceData => {;
-      await clearResourceCache(workspaceData.workspace, resources.map(resource => resource.id));
-      return await validateFolder(workspaceData.workspace);
+      return await validateFolderWithDirtyFiles(workspaceData.workspace, workspaceData.resources, options.dirtyFiles ?? []);
     }));
   }
 
@@ -303,4 +297,20 @@ async function hasLocalConfig(workspaceFolder: Folder) {
 async function getWorkspaceLocalConfig(workspaceFolder: Folder) {
   const configPath = normalize(join(workspaceFolder.uri.fsPath, DEFAULT_CONFIG_FILE_NAME));
   return readConfig(configPath);
+}
+
+async function isConfigFileAffected(workspaces: Folder[], files: readonly Uri[]) {
+  const results = await Promise.all(workspaces.map(async workspace => {
+    const currentConfig = await getWorkspaceConfig(workspace);
+    if (currentConfig.isValid && (currentConfig.type === 'file' || currentConfig.type === 'config')) {
+      const configPath = Uri.file(currentConfig.path).toString();
+      const configChanged = files.find(file => file.toString() === configPath);
+
+      return Boolean(configChanged);
+    }
+
+    return false;
+  }));
+
+  return results.reduce((prev, cur) => prev || cur, false);
 }
