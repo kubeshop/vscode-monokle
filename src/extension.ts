@@ -239,11 +239,15 @@ async function runActivation(context: ExtensionContext) {
   }
 
   await initTelemetry();
-  await runtimeContext.refreshPolicyPuller();
-  await commands.executeCommand(COMMANDS.VALIDATE);
-  await commands.executeCommand(COMMANDS.WATCH);
 
   logger.log('Extension activated...', globals.asObject());
+
+  // Defer initial validation so it doesn't block the activation.
+  setTimeout(async () => {
+    await runtimeContext.refreshPolicyPuller();
+    await commands.executeCommand(COMMANDS.VALIDATE);
+    await commands.executeCommand(COMMANDS.WATCH);
+  }, 10);
 }
 
 async function configureRuntimeContext(runtimeContext: RuntimeContext) {
