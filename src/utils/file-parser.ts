@@ -2,6 +2,7 @@ import { RelativePattern, TextDocument, Uri, workspace } from 'vscode';
 import { generateId } from './helpers';
 import { basename } from 'path';
 import { extractK8sResources } from './parser';
+import logger from './logger';
 
 export type File = {
   id: string;
@@ -23,6 +24,8 @@ const resourcePerFileCache = new Map<string, string>(); // <file path, resource 
 export async function getResourcesFromFolder(folderPath: string): Promise<Resource[]> {
   const resourceFiles = await findYamlFiles(folderPath);
   const dirtyFiles = workspace.textDocuments.filter(document => document.isDirty);
+
+  logger.log('getResourcesFromFolder - resources; dirtyFiles:', resourceFiles, dirtyFiles);
 
   return convertFilesToK8sResources(resourceFiles, dirtyFiles);
 }
