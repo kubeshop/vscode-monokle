@@ -89,7 +89,10 @@ async function extractResources(file: FileWithContent) {
 }
 
 async function findYamlFiles(folderPath: string): Promise<File[]> {
-  const files = await workspace.findFiles(new RelativePattern(folderPath, '**/*.{yaml,yml}'));
+  const files = await workspace.findFiles(
+    new RelativePattern(folderPath, '**/*.{yaml,yml}'),
+    new RelativePattern(folderPath, '**/node_modules/**')
+  );
 
   return files
     .map(file => {
