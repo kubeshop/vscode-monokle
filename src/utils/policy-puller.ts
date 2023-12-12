@@ -107,7 +107,7 @@ export class PolicyPuller {
 
   private getPolicyData(root: Folder) {
     return pRetry(async (attempt) => {
-      if (attempt === 3) {
+      if (attempt === 2) {
         await globals.forceRefreshToken();
       }
 
@@ -118,7 +118,7 @@ export class PolicyPuller {
 
       return policy;
     }, {
-      retries: 3,
+      retries: 1,
       factor: 1.2,
       minTimeout: 100,
       maxTimeout: 250,

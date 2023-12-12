@@ -1,7 +1,8 @@
-import { RelativePattern, Uri, workspace } from 'vscode';
+import { RelativePattern, TextDocument, Uri, workspace } from 'vscode';
 import { generateId } from './helpers';
 import { basename } from 'path';
 import { extractK8sResources } from './parser';
+import logger from './logger';
 
 export type File = {
   id: string;
@@ -22,7 +23,11 @@ const resourcePerFileCache = new Map<string, string>(); // <file path, resource 
 
 export async function getResourcesFromFolder(folderPath: string): Promise<Resource[]> {
   const resourceFiles = await findYamlFiles(folderPath);
-  return convertFilesToK8sResources(resourceFiles);
+  const dirtyFiles = workspace.textDocuments.filter(document => document.isDirty);
+
+  logger.log('getResourcesFromFolder - resources; dirtyFiles:', resourceFiles, dirtyFiles);
+
+  return convertFilesToK8sResources(resourceFiles, dirtyFiles);
 }
 
 export async function getResourcesFromFile(filePath: string) {
@@ -64,15 +69,27 @@ export function isSubpath(path: Uri, subpath: string) {
   return subpathUri.toString().startsWith(path.toString());
 }
 
-async function convertFilesToK8sResources(files: File[]) {
+async function convertFilesToK8sResources(files: File[], dirtyFiles?: TextDocument[]) {
   return (await Promise.all(files.map(async file => {
-    const contentRaw = await workspace.fs.readFile(Uri.file(file.path));
-    const content = Buffer.from(contentRaw.buffer).toString('utf8');
+    let contentFull = '';
+    let isFileDirty = false;
+    if (dirtyFiles?.length) {
+      const dirtyFile = dirtyFiles.find(dirtyFile => dirtyFile.uri.toString() === Uri.file(file.path).toString());
+      if (dirtyFile) {
+        isFileDirty = true;
+        contentFull = dirtyFile.getText();
+      }
+    }
+
+    if (!isFileDirty) {
+      const contentRaw = await workspace.fs.readFile(Uri.file(file.path));
+      contentFull = Buffer.from(contentRaw.buffer).toString('utf8');
+    }
 
     const fileWithContent = {
       id: file.id,
       path: file.path,
-      content
+      content: contentFull
     };
 
     return extractResources(fileWithContent);

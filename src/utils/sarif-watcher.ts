@@ -5,7 +5,7 @@ export class SarifWatcher {
   private _uris: Uri[] = [];
 
   async add(uri: Uri) {
-    const index = this._uris.findIndex(u => u.path === uri.path);
+    const index = this._uris.findIndex(u => u.toString() === uri.toString());
 
     if (index === -1) {
       const sarifApi = await this.getSarifApi();
@@ -16,7 +16,7 @@ export class SarifWatcher {
 
   async addMany(uris: Uri[]) {
     const sarifApi = await this.getSarifApi();
-    const added = uris.filter(u => !this._uris.find(u2 => u2.path === u.path));
+    const added = uris.filter(u => !this._uris.find(u2 => u2.toString() === u.toString()));
 
     this._uris = [...this._uris, ...added];
 
@@ -26,7 +26,7 @@ export class SarifWatcher {
   }
 
   async remove(uri: Uri) {
-    const index = this._uris.findIndex(u => u.path === uri.path);
+    const index = this._uris.findIndex(u => u.toString() === uri.toString());
 
     if (index !== -1) {
       const sarifApi = await this.getSarifApi();
@@ -36,8 +36,8 @@ export class SarifWatcher {
   }
 
   async replace(uris: Uri[]) {
-    const removed = this._uris.filter(u => !uris.find(u2 => u2.path === u.path));
-    const added = uris.filter(u => !this._uris.find(u2 => u2.path === u.path));
+    const removed = this._uris.filter(u => !uris.find(u2 => u2.toString() === u.toString()));
+    const added = uris.filter(u => !this._uris.find(u2 => u2.toString() === u.toString()));
     const sarifApi = await this.getSarifApi();
 
     this._uris = [...uris];
