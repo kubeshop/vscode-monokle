@@ -1,5 +1,16 @@
 # Change Log
 
+## 0.7.0
+
+### Features
+
+* Introduced `monokle.run` configuration which allows to define when yaml manifests should be revalidated - `onType` (default) or `onSave`.
+
+### Fixes
+
+* Added various performance improvements.
+* Improved error handling and stability.
+
 ## 0.6.5
 
 ### Fixes
