@@ -142,11 +142,26 @@ export async function validateResourcesFromFolder(resources: Resource[], root: F
     };
   }
 
-  const result = await validator.validate({
-    resources: resourcesRelative,
-    incremental: incrementalParam,
-    srcroot: root.uri.toString(),
-  });
+  let result = null;
+  try {
+    result = await validator.validate({
+      resources: resourcesRelative,
+      incremental: incrementalParam,
+      srcroot: root.uri.toString(),
+    });
+  } catch (err: any) {
+    logger.error('Validation failed', err);
+
+    trackEvent('workspace/validate', {
+      status: 'failure',
+      resourceCount: resourcesRelative.length,
+      configurationType: workspaceConfig.type,
+      isValidConfiguration: workspaceConfig.isValid,
+      error: err.message,
+    });
+
+    return null;
+  }
 
   logger.log(root.name, 'result', result);
 
