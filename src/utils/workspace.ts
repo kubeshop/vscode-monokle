@@ -165,7 +165,7 @@ async function runFileWithContentValidation(file: Uri, content: string,  workspa
   const configChanged = await isConfigFileAffected(workspaceFolders, [file]);
 
   const previousFileResourceId = getFileCacheId(file.fsPath);
-  const resources = await getResourcesFromFileAndContent(file.path, content);
+  const resources = await getResourcesFromFileAndContent(file.fsPath, content);
   const currentFileResourceId = getFileCacheId(file.fsPath);
 
   logger.log(
@@ -199,7 +199,7 @@ async function runFilesValidation(files: readonly Uri[], workspaceFolders: Folde
 
   const resources = (await Promise.all(files.map(async (file) => {
     const previousFileResourceId = getFileCacheId(file.fsPath);
-    const resources = await getResourcesFromFile(file.path);
+    const resources = await getResourcesFromFile(file.fsPath);
     const currentFileResourceId = getFileCacheId(file.fsPath);
 
     useIncremental = useIncremental && previousFileResourceId === currentFileResourceId;

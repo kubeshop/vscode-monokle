@@ -1,5 +1,5 @@
 import { mkdir, readFile, unlink, writeFile } from 'fs/promises';
-import { join, normalize } from 'path';
+import { join, normalize, relative } from 'path';
 import { platform } from 'os';
 import { Uri } from 'vscode';
 import { Document } from 'yaml';
@@ -122,23 +122,47 @@ export async function validateResourcesFromFolder(resources: Resource[], root: F
     return null;
   }
 
+  const resourcesRelative = resources.map(resource => {
+    return {
+      ...resource,
+      filePath: relative(root.uri.fsPath, resource.filePath),
+    };
+  });
+
   logger.log(root.name, 'workspaceConfig', workspaceConfig);
 
   const validator = await getValidator(root.id, workspaceConfig.config);
 
   logger.log(root.name, 'validator', validator);
+  logger.log(root, resources, resourcesRelative);
 
   let incrementalParam: {resourceIds: string[]} | undefined = undefined;
   if (incremental) {
     incrementalParam = {
-      resourceIds: resources.map(resource => resource.id)
+      resourceIds: resourcesRelative.map(resource => resource.id)
     };
   }
 
-  const result = await validator.validate({
-    resources: resources,
-    incremental: incrementalParam
-  });
+  let result = null;
+  try {
+    result = await validator.validate({
+      resources: resourcesRelative,
+      incremental: incrementalParam,
+      srcroot: root.uri.toString(),
+    });
+  } catch (err: any) {
+    logger.error('Validation failed', err);
+
+    trackEvent('workspace/validate', {
+      status: 'failure',
+      resourceCount: resourcesRelative.length,
+      configurationType: workspaceConfig.type,
+      isValidConfiguration: workspaceConfig.isValid,
+      error: err.message,
+    });
+
+    return null;
+  }
 
   logger.log(root.name, 'result', result);
 
@@ -166,7 +190,7 @@ export async function validateResourcesFromFolder(resources: Resource[], root: F
 
   logger.log(root.name, 'resultFilePath', resultFilePath, 'resultUnchanged', resultUnchanged);
 
-  sendSuccessValidationTelemetry(resources.length, workspaceConfig, result);
+  sendSuccessValidationTelemetry(resourcesRelative.length, workspaceConfig, result);
 
   return Uri.file(resultFilePath);
 }
