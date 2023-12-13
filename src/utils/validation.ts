@@ -134,6 +134,7 @@ export async function validateResourcesFromFolder(resources: Resource[], root: F
   const validator = await getValidator(root.id, workspaceConfig.config);
 
   logger.log(root.name, 'validator', validator);
+  logger.log(root, resources, resourcesRelative);
 
   let incrementalParam: {resourceIds: string[]} | undefined = undefined;
   if (incremental) {
