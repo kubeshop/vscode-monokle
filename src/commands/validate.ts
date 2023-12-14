@@ -8,7 +8,7 @@ import type { RuntimeContext } from '../utils/runtime-context';
 
 export function getValidateCommand(context: RuntimeContext) {
   return async () => {
-    if (!canRun()) {
+    if (!canRun() || context.isValidating) {
       return;
     }
 
