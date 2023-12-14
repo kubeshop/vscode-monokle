@@ -14,7 +14,7 @@ export function getWatchCommand(context: RuntimeContext) {
     watchers.forEach(watcher => watcher.dispose());
     watchers.splice(0, watchers.length);
 
-    const newWatchers = initializeWorkspaceWatchers(getWorkspaceFolders(), context);
+    const newWatchers = await initializeWorkspaceWatchers(getWorkspaceFolders(), context);
 
     context.registerDisposables(newWatchers);
     watchers.push(...newWatchers);

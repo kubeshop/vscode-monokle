@@ -1,11 +1,12 @@
 import pDebounce from 'p-debounce';
 import { Uri, workspace } from 'vscode';
 import { basename, join, normalize } from 'path';
-import { stat } from 'fs/promises';
+import { access, constants, stat } from 'fs/promises';
 import { clearResourceCache, getDefaultConfig, readConfig, validateFolder, validateFolderWithDirtyFiles, validateResourcesFromFolder } from './validation';
 import { generateId } from './helpers';
 import { SETTINGS, DEFAULT_CONFIG_FILE_NAME, RUN_OPTIONS } from '../constants';
 import { getFileCacheId, getResourcesFromFile, getResourcesFromFileAndContent, isSubpath, isYamlFile } from './file-parser';
+import { watch } from 'fs';
 import logger from '../utils/logger';
 import globals from '../utils/globals';
 import type { WorkspaceFolder, Disposable, TextDocument, TextDocumentChangeEvent } from 'vscode';
@@ -24,8 +25,9 @@ export type WorkspaceFolderConfig = {
   remoteProjectName?: string;
 };
 
-const ON_TYPE_DEBOUNCE_MS = 500;
+const ON_TYPE_DEBOUNCE_MS = 250;
 const ON_SAVE_DEBOUNCE_MS = 250;
+const ON_GITCHANGE_DEBOUNCE_MS = 500;
 
 export function getWorkspaceFolders(): Folder[] {
   return [...(workspace.workspaceFolders ?? [])]
@@ -100,7 +102,7 @@ export async function getWorkspaceConfig(workspaceFolder: Folder): Promise<Works
   };
 }
 
-export function initializeWorkspaceWatchers(workspaceFolders: Folder[], context: RuntimeContext) {
+export async function initializeWorkspaceWatchers(workspaceFolders: Folder[], context: RuntimeContext) {
   const watchers: Disposable[] = [];
 
   if (globals.run === RUN_OPTIONS.onType) {
@@ -152,6 +154,33 @@ export function initializeWorkspaceWatchers(workspaceFolders: Folder[], context:
 
   watchers.push(documentCreatedWatcher, documentDeletedWatcher);
 
+  for (const workspaceFolder of workspaceFolders) {
+    const gitHeadFileUri = Uri.file(join(workspaceFolder.uri.fsPath, '.git', 'HEAD'));
+    try {
+      await access(gitHeadFileUri.fsPath, constants.F_OK);
+    } catch (e) {
+      continue;
+    }
+
+    // Since VSC API build-in watchers ignores `.git` folder we use native nodejs watcher here.
+    const onGitBranchChange = async () => {
+      logger.log('Validating: Git branch changed');
+
+      const resultUri = await validateFolder(workspaceFolder);
+      if (resultUri) {
+        await context.sarifWatcher.add(resultUri);
+      }
+    };
+    const debouncedListener = pDebounce(onGitBranchChange, ON_GITCHANGE_DEBOUNCE_MS);
+    const gitWatcher = watch(gitHeadFileUri.fsPath, debouncedListener);
+
+    watchers.push({
+      dispose: () => {
+        gitWatcher.close();
+      }
+    });
+  }
+
   return watchers;
 }
 
@@ -180,7 +209,6 @@ async function runFileWithContentValidation(file: Uri, content: string,  workspa
   } else {
     await validateResources(resources, workspaceFolders, context, { incremental: false, dirtyFiles: [file], configChanged });
   }
-
 
   context.isValidating = false;
 }
