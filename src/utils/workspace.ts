@@ -25,7 +25,7 @@ export type WorkspaceFolderConfig = {
   remoteProjectName?: string;
 };
 
-const ON_TYPE_DEBOUNCE_MS = 500;
+const ON_TYPE_DEBOUNCE_MS = 250;
 const ON_SAVE_DEBOUNCE_MS = 250;
 const ON_GITCHANGE_DEBOUNCE_MS = 500;
 
@@ -209,7 +209,6 @@ async function runFileWithContentValidation(file: Uri, content: string,  workspa
   } else {
     await validateResources(resources, workspaceFolders, context, { incremental: false, dirtyFiles: [file], configChanged });
   }
-
 
   context.isValidating = false;
 }
