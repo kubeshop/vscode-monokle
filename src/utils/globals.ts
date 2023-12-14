@@ -3,6 +3,7 @@ import { workspace } from 'vscode';
 import { SETTINGS } from '../constants';
 import { Folder } from './workspace';
 import { RuntimeContext } from './runtime-context';
+import logger from './logger';
 import type { Authenticator } from './authentication';
 
 export type FolderStatus = {
@@ -139,6 +140,27 @@ class Globals {
         path: '',
         policy: {},
       };
+    }
+  }
+
+  async getSuppressions(path: string, token: any) {
+    if (this._runtimeContext.isLocal) {
+      return [];
+    }
+
+    if (!this._runtimeContext?.synchronizer) {
+      throw new Error('Synchronizer not initialized for globals.');
+    }
+
+    try {
+      const suppressions = this.project?.length ?
+        await this._runtimeContext.synchronizer.getSuppressions({slug: this.project}, token) :
+        await this._runtimeContext.synchronizer.getSuppressions(path, token);
+
+      return suppressions;
+    } catch (err) {
+      logger.error('getSuppressions', err);
+      return [];
     }
   }
 
