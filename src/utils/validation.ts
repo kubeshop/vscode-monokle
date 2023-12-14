@@ -65,7 +65,7 @@ export async function getValidator(validatorId: string, config?: any) {
     validator: validatorObj,
   });
 
-  return validator;
+  return validatorObj;
 }
 
 export async function validateFolder(root: Folder): Promise<Uri | null> {
@@ -129,9 +129,9 @@ export async function validateResourcesFromFolder(resources: Resource[], root: F
 
   logger.log(root.name, 'workspaceConfig', workspaceConfig);
 
-  const validator = await getValidator(root.id, workspaceConfig.config);
+  const validatorObj = await getValidator(root.id, workspaceConfig.config);
 
-  logger.log(root.name, 'validator', validator);
+  logger.log(root.name, 'validator', validatorObj.validator.config);
   logger.log(root, resources, resourcesRelative);
 
   let incrementalParam: {resourceIds: string[]} | undefined = undefined;
@@ -145,15 +145,15 @@ export async function validateResourcesFromFolder(resources: Resource[], root: F
 
   let result: ValidationResponse = null;
   try {
-    result = await validator.validate({
+    if (suppressions?.suppressions?.length) {
+      await validatorObj.fingerprintSuppressor.preload(suppressions.suppressions);
+    }
+
+    result = await validatorObj.validator.validate({
       resources: resourcesRelative,
       incremental: incrementalParam,
       srcroot: root.uri.toString(),
     });
-
-    if (suppressions?.suppressions?.length) {
-      result = await validator.applySuppressions(result, resourcesRelative, suppressions.suppressions);
-    }
   } catch (err: any) {
     logger.error('Validation failed', err);
 
@@ -322,11 +322,12 @@ async function getValidatorInstance() {
 
   const parser = new ResourceParser();
   const loader = new SchemaLoader(originConfig?.schemasOrigin || undefined);
+  const fingerprintSuppressor = new FingerprintSuppressor();
   const validator = new MonokleValidator({
     loader: new RemotePluginLoader(),
     parser,
     schemaLoader: loader,
-    suppressors: [new AnnotationSuppressor(), new FingerprintSuppressor()],
+    suppressors: [new AnnotationSuppressor(), fingerprintSuppressor],
     fixer: new DisabledFixer(),
   });
 
@@ -339,6 +340,7 @@ async function getValidatorInstance() {
     parser,
     loader,
     validator,
+    fingerprintSuppressor,
   };
 }
 
