@@ -1,5 +1,21 @@
 # Change Log
 
+## 0.8.0
+
+### Features
+
+* Introduced support for suppressions (synchronized from Monokle Cloud/Enterprise).
+
+### Fixes
+
+* Fixed **Resource links** plugin mappings processing. Related rules and violations are now visible.
+
+## 0.7.1
+
+### Fixes
+
+* Fixed helm directories recognition on Windows.
+
 ## 0.7.0
 
 ### Features
