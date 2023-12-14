@@ -149,6 +149,8 @@ export async function validateResourcesFromFolder(resources: Resource[], root: F
       await validatorObj.fingerprintSuppressor.preload(suppressions.suppressions);
     }
 
+    validatorObj.processRefs(resourcesRelative, incrementalParam);
+
     result = await validatorObj.validator.validate({
       resources: resourcesRelative,
       incremental: incrementalParam,
@@ -310,7 +312,7 @@ export async function getDefaultConfig() {
 }
 
 async function getValidatorInstance() {
-  const {MonokleValidator, ResourceParser, SchemaLoader, RemotePluginLoader, DisabledFixer, AnnotationSuppressor, FingerprintSuppressor} = await import('@monokle/validation');
+  const {MonokleValidator, ResourceParser, SchemaLoader, RemotePluginLoader, DisabledFixer, AnnotationSuppressor, FingerprintSuppressor, processRefs} = await import('@monokle/validation');
   const {fetchOriginConfig} = await import('@monokle/synchronizer');
 
   let originConfig = undefined;
@@ -341,6 +343,7 @@ async function getValidatorInstance() {
     loader,
     validator,
     fingerprintSuppressor,
+    processRefs: (resources, incremental) => processRefs(resources, parser, incremental),
   };
 }
 
