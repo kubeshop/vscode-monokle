@@ -1,5 +1,11 @@
 # Change Log
 
+## 0.8.1
+
+### Fixes
+
+* Fixed extension to react on git branch changes and validate manifests automatically ([#70](https://github.com/kubeshop/vscode-monokle/issues/70)).
+
 ## 0.8.0
 
 ### Features
