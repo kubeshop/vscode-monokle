@@ -1,3 +1,5 @@
+import { getClientConfig } from '../client-config';
+
 export type Synchronizer = Awaited<ReturnType<typeof getSynchronizer>>;
 
 export async function getSynchronizer(origin?: string) {
@@ -26,7 +28,7 @@ export async function getSynchronizer(origin?: string) {
   const {createMonokleSynchronizerFromOrigin} = await import('@monokle/synchronizer');
 
   try {
-    const synchronizer = await createMonokleSynchronizerFromOrigin(origin);
+    const synchronizer = await createMonokleSynchronizerFromOrigin(getClientConfig(), origin);
     return synchronizer;
   } catch (err: any) {
     // Without this entire extension can run only in local mode. Needs to be obvious to users what went wrong and how to fix.
