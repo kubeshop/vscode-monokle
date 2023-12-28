@@ -2,7 +2,7 @@ import { type, release } from 'os';
 import { readFileSync } from 'fs';
 import { env } from 'vscode';
 
-const CLIENT_NAME = 'Monokle CLI';
+const CLIENT_NAME = 'Monokle VSCode';
 
 export function getClientConfig() {
 	const pkg = JSON.parse(readFileSync(`${__dirname}/../package.json`, 'utf8'));
