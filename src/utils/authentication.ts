@@ -1,3 +1,5 @@
+import { getClientConfig } from '../client-config';
+
 export type Authenticator = Awaited<ReturnType<typeof getAuthenticator>>;
 
 export const AUTH_CLIENT_ID = 'mc-cli';
@@ -17,7 +19,7 @@ export async function getAuthenticator(origin?: string) {
   const {createMonokleAuthenticatorFromOrigin} = await import('@monokle/synchronizer');
 
   try {
-    const authenticator = await createMonokleAuthenticatorFromOrigin(AUTH_CLIENT_ID, origin);
+    const authenticator = await createMonokleAuthenticatorFromOrigin(AUTH_CLIENT_ID, getClientConfig(), origin);
     return authenticator;
   } catch (err: any) {
     // Without this entire extension can run only in local mode. Needs to be obvious to users what went wrong and how to fix.
