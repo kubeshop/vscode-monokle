@@ -1,5 +1,11 @@
 # Change Log
 
+## 0.8.2
+
+### Fixes
+
+* Added `User-Agent` header for every Monokle API request sent.
+
 ## 0.8.1
 
 ### Fixes
