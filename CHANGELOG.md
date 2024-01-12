@@ -1,5 +1,11 @@
 # Change Log
 
+## 0.8.3
+
+### Fixes
+
+* Fixed [custom plugins](https://docs.monokle.com/tutorials/custom-policy-validate-memory-consumption/) fetching mechanism. Custom plugins are now working correctly.
+
 ## 0.8.2
 
 ### Fixes
