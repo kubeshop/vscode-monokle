@@ -312,7 +312,7 @@ export async function getDefaultConfig() {
 }
 
 async function getValidatorInstance() {
-  const {MonokleValidator, ResourceParser, SchemaLoader, RemotePluginLoader, DisabledFixer, AnnotationSuppressor, FingerprintSuppressor, processRefs} = await import('@monokle/validation');
+  const {MonokleValidator, ResourceParser, SchemaLoader, RemotePluginLoader, requireFromStringCustomPluginLoader, DisabledFixer, AnnotationSuppressor, FingerprintSuppressor, processRefs} = await import('@monokle/validation');
   const {fetchOriginConfig} = await import('@monokle/synchronizer');
 
   let originConfig = undefined;
@@ -326,7 +326,7 @@ async function getValidatorInstance() {
   const loader = new SchemaLoader(originConfig?.schemasOrigin || undefined);
   const fingerprintSuppressor = new FingerprintSuppressor();
   const validator = new MonokleValidator({
-    loader: new RemotePluginLoader(),
+    loader: new RemotePluginLoader(requireFromStringCustomPluginLoader),
     parser,
     schemaLoader: loader,
     suppressors: [new AnnotationSuppressor(), fingerprintSuppressor],
