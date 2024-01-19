@@ -201,6 +201,10 @@ export async function validateResourcesFromFolder(resources: Resource[], root: F
   return Uri.file(resultFilePath);
 }
 
+export async function getValidationResultForRoot(root: Folder) {
+  return getValidationResult(root.id);
+}
+
 export async function getValidationResult(fileName: string) {
   const filePath = getValidationResultPath(fileName);
 
