@@ -20,7 +20,7 @@ import { trackEvent, initTelemetry, closeTelemetry } from './utils/telemetry';
 import logger from './utils/logger';
 import globals from './utils/globals';
 import { raiseError } from './utils/errors';
-import { MonokleCodeActions } from './utils/code-actions';
+import { registerAnnotationSuppressionsCodeActionsProvider } from './core';
 import type { ExtensionContext } from 'vscode';
 
 let runtimeContext: RuntimeContext;
@@ -113,11 +113,7 @@ async function runActivation(context: ExtensionContext) {
     commandDownloadPolicy,
   );
 
-  context.subscriptions.push(
-    languages.registerCodeActionsProvider('yaml', new MonokleCodeActions(), {
-      providedCodeActionKinds: MonokleCodeActions.providedCodeActionKinds
-    })
-  );
+  context.subscriptions.push(registerAnnotationSuppressionsCodeActionsProvider());
 
   const configurationWatcher = workspace.onDidChangeConfiguration(async (event) => {
     if (event.affectsConfiguration(SETTINGS.ENABLED_PATH)) {

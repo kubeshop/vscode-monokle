@@ -1,48 +1,37 @@
 import { parseAllDocuments, stringify } from 'yaml';
 import { diffLines } from 'diff';
 import { CodeAction, CodeActionContext, CodeActionKind, CodeActionProvider, TextDocument, Range, Diagnostic, WorkspaceEdit, Position, Uri } from 'vscode';
-import { ValidationResult, ValidationRule } from './validation';
+import { ValidationResult, ValidationRule } from './../../utils/validation';
 
-type ValidationResultExtended = ValidationResult & {
+export type ValidationResultExtended = ValidationResult & {
   _rule: ValidationRule;
 };
 
-type DiagnosticExtended = Diagnostic & {
+export type DiagnosticExtended = Diagnostic & {
   result: ValidationResultExtended;
 };
 
-interface CodeActionContextExtended extends CodeActionContext {
+export interface CodeActionContextExtended extends CodeActionContext {
   diagnostics: DiagnosticExtended[];
 };
 
-const MONOKLE_FINGERPRINT_FIELD = 'monokleHash/v1';
+export const MONOKLE_FINGERPRINT_FIELD = 'monokleHash/v1';
 
-export class MonokleCodeActions implements CodeActionProvider {
+export abstract class BaseCodeActionsProvider<T_ACTION extends CodeAction> implements CodeActionProvider<T_ACTION> {
 
   public static readonly providedCodeActionKinds = [
     CodeActionKind.QuickFix
   ];
 
-  public async provideCodeActions(document: TextDocument, _range: Range, context: CodeActionContextExtended): Promise<CodeAction[]> {
-    // Filter out diagnostic objects without Monokle fingerprint, because this it's not Monokle related diagnostics.
+  public abstract provideCodeActions(document: TextDocument, _range: Range, context: CodeActionContextExtended): Promise<T_ACTION[]>;
+
+  public abstract resolveCodeAction(codeAction: T_ACTION);
+
+  protected getMonokleDiagnostics(context: CodeActionContextExtended) {
+    // Filter out diagnostic objects without Monokle fingerprint, because this is not Monokle related diagnostics.
     const monokleDiagnostics = context.diagnostics.filter(diagnostic => diagnostic?.result?.fingerprints?.[MONOKLE_FINGERPRINT_FIELD]);
 
-    return this.getUniqueDiagnosticsByRule(monokleDiagnostics).map((diagnostic: DiagnosticExtended) => {
-      return new AnnotationBasedSuppressionCodeAction(document, diagnostic);
-    });
-  }
-
-  public async resolveCodeAction(codeAction: AnnotationBasedSuppressionCodeAction) {
-    const parsedDocument = this.getParsedDocument(codeAction.document, codeAction.result);
-    if (!parsedDocument) {
-      return codeAction;
-    }
-
-    parsedDocument.activeResource.setIn(['metadata', 'annotations', `monokle.io/suppress.${codeAction.result.ruleId}`], 'suppress');
-
-    codeAction.edit = this.generateWorkspaceEdit(parsedDocument.documents, parsedDocument.initialContent, codeAction.document.uri);
-
-    return codeAction;
+    return this.getUniqueDiagnosticsByRule(monokleDiagnostics);
   }
 
   protected getParsedDocument(document: TextDocument, result: ValidationResult) {
@@ -87,15 +76,19 @@ export class MonokleCodeActions implements CodeActionProvider {
     let chars = 0;
     changes.forEach((change) => {
       if (change.added) {
-        // We can select new content with https://code.visualstudio.com/api/references/vscode-api#TextEditor
         edit.insert(documentUri, new Position(lines, chars), change.value);
       }
 
       if (change.removed) {
         // @TODO
+        // Not needed for annotation based suppressions (because we only adding here).
+        // Will be needed for other edits which can remove content too.
       }
 
-      // Calculate current position
+      // @TODO
+      // To consider: we can select new content with https://code.visualstudio.com/api/references/vscode-api#TextEditor
+
+      // Calculate current position.
       const linesChange = change.value.split('\n');
       const linesNr = linesChange.length - 1;
 
@@ -106,33 +99,12 @@ export class MonokleCodeActions implements CodeActionProvider {
     return edit;
   }
 
-  protected getUniqueDiagnosticsByRule(diagnostics: DiagnosticExtended[]) {
+  protected getUniqueDiagnosticsByRule(diagnostics: DiagnosticExtended[]): DiagnosticExtended[] {
     return Object.values(
       diagnostics.reduce((acc, diagnostic) => {
         acc[diagnostic.result.ruleId] = diagnostic;
         return acc;
       }, {})
     );
-  }
-}
-
-class AnnotationBasedSuppressionCodeAction extends CodeAction {
-  private readonly _document: TextDocument;
-  private readonly _result: ValidationResult;
-
-  constructor(document: TextDocument, diagnostic: DiagnosticExtended) {
-    super(`Suppress "${diagnostic.result._rule.name} (${diagnostic.result._rule.id})" rule for this resource`, CodeActionKind.QuickFix);
-
-    this.diagnostics = [diagnostic];
-    this._document = document;
-    this._result = diagnostic.result;
-  }
-
-  get document() {
-    return this._document;
-  }
-
-  get result() {
-    return this._result;
   }
 }
