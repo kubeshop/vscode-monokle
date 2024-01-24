@@ -18,6 +18,7 @@ import type { Resource } from './file-parser';
 export type ConfigurableValidator = Awaited<ReturnType<typeof getValidatorInstance>>;
 export type ValidationResponse = Awaited<ReturnType<ConfigurableValidator['validator']['validate']>>;
 export type ValidationResult = ValidationResponse['runs'][0]['results'][0];
+export type ValidationRule = ValidationResponse['runs'][0]['tool']['driver']['rules'][0];
 
 export type ConfigFileOptions = {
   commentBefore?: string;

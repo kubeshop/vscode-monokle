@@ -1,10 +1,18 @@
 import { parseAllDocuments, stringify } from 'yaml';
 import { diffLines } from 'diff';
 import { CodeAction, CodeActionContext, CodeActionKind, CodeActionProvider, TextDocument, Range, Diagnostic, WorkspaceEdit, Position, Uri } from 'vscode';
-import { ValidationResult } from './validation';
+import { ValidationResult, ValidationRule } from './validation';
+
+type ValidationResultExtended = ValidationResult & {
+  _rule: ValidationRule;
+};
 
 type DiagnosticExtended = Diagnostic & {
-  result: ValidationResult;
+  result: ValidationResultExtended;
+};
+
+interface CodeActionContextExtended extends CodeActionContext {
+  diagnostics: DiagnosticExtended[];
 };
 
 const MONOKLE_FINGERPRINT_FIELD = 'monokleHash/v1';
@@ -15,12 +23,11 @@ export class MonokleCodeActions implements CodeActionProvider {
     CodeActionKind.QuickFix
   ];
 
-  public async provideCodeActions(document: TextDocument, _range: Range, context: CodeActionContext): Promise<CodeAction[]> {
+  public async provideCodeActions(document: TextDocument, _range: Range, context: CodeActionContextExtended): Promise<CodeAction[]> {
     // Filter out diagnostic objects without Monokle fingerprint, because this it's not Monokle related diagnostics.
-    const monokleDiagnostics = context.diagnostics.filter((diagnostic: DiagnosticExtended) => diagnostic?.result?.fingerprints?.[MONOKLE_FINGERPRINT_FIELD]);
+    const monokleDiagnostics = context.diagnostics.filter(diagnostic => diagnostic?.result?.fingerprints?.[MONOKLE_FINGERPRINT_FIELD]);
 
-    // @ TODO create only single fix for same rule even if there are multiple diagnostics for it
-    return monokleDiagnostics.map((diagnostic: DiagnosticExtended) => {
+    return this.getUniqueDiagnosticsByRule(monokleDiagnostics).map((diagnostic: DiagnosticExtended) => {
       return new AnnotationBasedSuppressionCodeAction(document, diagnostic);
     });
   }
@@ -98,6 +105,15 @@ export class MonokleCodeActions implements CodeActionProvider {
 
     return edit;
   }
+
+  protected getUniqueDiagnosticsByRule(diagnostics: DiagnosticExtended[]) {
+    return Object.values(
+      diagnostics.reduce((acc, diagnostic) => {
+        acc[diagnostic.result.ruleId] = diagnostic;
+        return acc;
+      }, {})
+    );
+  }
 }
 
 class AnnotationBasedSuppressionCodeAction extends CodeAction {
@@ -105,7 +121,7 @@ class AnnotationBasedSuppressionCodeAction extends CodeAction {
   private readonly _result: ValidationResult;
 
   constructor(document: TextDocument, diagnostic: DiagnosticExtended) {
-    super(`Suppress "${diagnostic.message}" rule for this file`, CodeActionKind.QuickFix);
+    super(`Suppress "${diagnostic.result._rule.name} (${diagnostic.result._rule.id})" rule for this resource`, CodeActionKind.QuickFix);
 
     this.diagnostics = [diagnostic];
     this._document = document;
