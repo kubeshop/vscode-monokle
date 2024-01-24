@@ -20,7 +20,6 @@ import { trackEvent, initTelemetry, closeTelemetry } from './utils/telemetry';
 import logger from './utils/logger';
 import globals from './utils/globals';
 import { raiseError } from './utils/errors';
-import { getAutofixCommand } from './commands/autofix';
 import { MonokleCodeActions } from './utils/code-actions';
 import type { ExtensionContext } from 'vscode';
 
@@ -103,8 +102,6 @@ async function runActivation(context: ExtensionContext) {
   const commandDownloadPolicy = commands.registerCommand(COMMANDS.SYNCHRONIZE, getSynchronizeCommand(runtimeContext));
   const commandWatch = commands.registerCommand(COMMANDS.WATCH, getWatchCommand(runtimeContext));
 
-  const commandAutofix = commands.registerCommand('monokle.autofix', getAutofixCommand(runtimeContext));
-
   context.subscriptions.push(
     commandLogin,
     commandLogout,
@@ -114,7 +111,6 @@ async function runActivation(context: ExtensionContext) {
     commandShowConfiguration,
     commandBootstrapConfiguration,
     commandDownloadPolicy,
-    commandAutofix,
   );
 
   context.subscriptions.push(

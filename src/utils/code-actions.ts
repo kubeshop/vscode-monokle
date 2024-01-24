@@ -19,6 +19,7 @@ export class MonokleCodeActions implements CodeActionProvider {
     // Filter out diagnostic objects without Monokle fingerprint, because this it's not Monokle related diagnostics.
     const monokleDiagnostics = context.diagnostics.filter((diagnostic: DiagnosticExtended) => diagnostic?.result?.fingerprints?.[MONOKLE_FINGERPRINT_FIELD]);
 
+    // @ TODO create only single fix for same rule even if there are multiple diagnostics for it
     return monokleDiagnostics.map((diagnostic: DiagnosticExtended) => {
       return new AnnotationBasedSuppressionCodeAction(document, diagnostic);
     });
