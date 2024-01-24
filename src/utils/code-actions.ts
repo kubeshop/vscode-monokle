@@ -1,147 +1,121 @@
-import { CodeAction, CodeActionContext, CodeActionKind, CodeActionProvider, TextDocument, Range, Diagnostic, DiagnosticSeverity } from 'vscode';
-import { getWorkspaceFolders } from './workspace';
-import { isSubpath } from './file-parser';
-import { getValidationResultForRoot } from './validation';
-import { relative } from 'path';
+import { parseAllDocuments, stringify } from 'yaml';
+import { diffLines } from 'diff';
+import { CodeAction, CodeActionContext, CodeActionKind, CodeActionProvider, TextDocument, Range, Diagnostic, WorkspaceEdit, Position, Uri } from 'vscode';
+import { ValidationResult } from './validation';
 
-type Region = {
-  startLine: number
-  startColumn: number
-  endLine: number
-  endColumn: number;
+type DiagnosticExtended = Diagnostic & {
+  result: ValidationResult;
 };
 
-// Maybe we should have separate provider for each action type, so they can be easily enabled/disabled.
+const MONOKLE_FINGERPRINT_FIELD = 'monokleHash/v1';
+
 export class MonokleCodeActions implements CodeActionProvider {
 
   public static readonly providedCodeActionKinds = [
     CodeActionKind.QuickFix
   ];
 
-  // This is run on file open (when it has problems), on problem click, on problem hover, on action panel show
-  // It provides document and range of the problem (entire highlighted area + user selection)
-  // It also provides context with all diagnostics for the document
-  // Diagnostic is an object holding problem data - severity, message (which is rule message in our case) and range
-  //
-  // For Monokle we need to:
-  // for each diagnostics item try to find it in sarif results by
-  //   - filtering by file path (remember that SARIF stores paths relative to the workspace root)
-  //   - filtering by severity
-  //   - filtering by message
-  //   - filtering by overlapping start/end of selection
-  //
-  // With this we know which exact result it is in SARIF output.
-  public async provideCodeActions(document: TextDocument, range: Range, context: CodeActionContext): Promise<CodeAction[]> {
-    console.log('provideCodeActions', document, range, context);
+  public async provideCodeActions(document: TextDocument, _range: Range, context: CodeActionContext): Promise<CodeAction[]> {
+    // Filter out diagnostic objects without Monokle fingerprint, because this it's not Monokle related diagnostics.
+    const monokleDiagnostics = context.diagnostics.filter((diagnostic: DiagnosticExtended) => diagnostic?.result?.fingerprints?.[MONOKLE_FINGERPRINT_FIELD]);
 
-    const matchingRules = await this.findMatchingRules(document, context.diagnostics);
-
-    console.log('matchingRules', matchingRules);
-
-    // Based on matching rules we can create CodeAction objects for result x action
-    return matchingRules.map(rule => {
-      return new AutofixCodeAction(document, context.diagnostics[0], rule);
+    return monokleDiagnostics.map((diagnostic: DiagnosticExtended) => {
+      return new AnnotationBasedSuppressionCodeAction(document, diagnostic);
     });
   }
 
-  // This is run when:
-  // - user hovers code action (in quickfix panel)
-  // - user clicks (applies) code action
-  // See https://github.com/microsoft/vscode/issues/156978#issuecomment-1204118433
-  //
-  // This means the action resolution should be implemented either as codeAction.command or codeAction.edit (or both).
-  // This is the function to precalculate additional data needed for an action. Also WorkspaceEdit can be created here.
-  //
-  // If CodeAction already has an edit (e.g. initiated in provideCodeActions) then it will not be run:
-  // > Given a code action fill in its edit-property. Changes to all other properties, like title, are ignored.
-  // > A code action that has an edit will not be resolved.
-  //
-  // This is executed less frequently than provideCodeActions so it's better place for calculations to not waste resources if the CodeAction will never be applied.
-  // Still, looks like every user actions (hover, click) will trigger this function each time so either it should be fast or cached.
-  public async resolveCodeAction(codeAction: AutofixCodeAction) {
-    console.log('resolveCodeAction', codeAction);
+  public async resolveCodeAction(codeAction: AnnotationBasedSuppressionCodeAction) {
+    const parsedDocument = this.getParsedDocument(codeAction.document, codeAction.result);
+    if (!parsedDocument) {
+      return codeAction;
+    }
+
+    parsedDocument.activeResource.setIn(['metadata', 'annotations', `monokle.io/${codeAction.result.ruleId}`], true);
+
+    codeAction.edit = this.generateWorkspaceEdit(parsedDocument.documents, parsedDocument.initialContent, codeAction.document.uri);
 
     return codeAction;
   }
 
-  // This is how we can map diagnostics object to SARIF results
-  private async findMatchingRules(document: TextDocument, diagnostics: readonly Diagnostic[]): Promise<any[]> {
-    const workspaceFolders = getWorkspaceFolders();
-    const ownerWorkspace = workspaceFolders.find(folder => isSubpath(folder.uri, document.uri.fsPath));
+  protected getParsedDocument(document: TextDocument, result: ValidationResult) {
+    const initialContent = document.getText();
+    const documents = parseAllDocuments(initialContent);
 
-    if (!ownerWorkspace) {
-      return [];
+    if (documents.length === 0) {
+      return undefined;
     }
 
-    const result = await getValidationResultForRoot(ownerWorkspace);
+    let activeDocumentIndex = -1;
+    if (documents.length === 1) {
+      activeDocumentIndex = 0;
+    } else {
+      const resultLocation = result.locations[1].logicalLocations?.[0]?.fullyQualifiedName;
+      const [name, kind] = resultLocation.split('@').shift().split('.');
 
-    if (!result) {
-      return [];
-    }
-
-    const documentLocationRootRelative = relative(ownerWorkspace.uri.fsPath, document.uri.fsPath);
-
-    console.log('documentLocationRootRelative', documentLocationRootRelative);
-
-    const matchingRules = [];
-    for (const run of result.runs) {
-      const filteredResults = run.results.filter(violation => {
-        return violation.locations[0].physicalLocation.artifactLocation.uri === documentLocationRootRelative;
+      activeDocumentIndex = documents.findIndex((document) => {
+        return (document.getIn(['metadata', 'name']) as string || '') === name &&
+          (document.get('kind') as string || '').toLowerCase() === kind;
       });
-
-      for (const diagnostic of diagnostics) {
-        let diagnosticSeverity = undefined;
-        if (diagnostic.severity === DiagnosticSeverity.Error) {
-          diagnosticSeverity = 'error';
-        } else if (diagnostic.severity === DiagnosticSeverity.Warning) {
-          diagnosticSeverity = 'warning';
-        }
-
-        // We are interested only in errors and warnings
-        if (!diagnosticSeverity) {
-          continue;
-        }
-
-        const matchingResults = filteredResults.filter(result => {
-          return result.level === diagnosticSeverity &&
-            result.message.text === diagnostic.message &&
-            this.areLocationsIntersecting(result.locations[0].physicalLocation.region, diagnostic.range);
-        });
-
-        if (matchingResults.length) {
-          matchingRules.push(...matchingResults);
-        }
-      }
     }
 
-    return matchingRules;
+    if (activeDocumentIndex === -1) {
+      return undefined;
+    }
+
+    return {
+      initialContent,
+      documents,
+      activeResource: documents[activeDocumentIndex],
+    };
   }
 
-  private areLocationsIntersecting(_region: Region, _range: Range) {
-    // @TODO
-    return true;
+  protected generateWorkspaceEdit(allDocuments: ReturnType<typeof parseAllDocuments>, initialContent: string, documentUri: Uri) {
+    const newContent = allDocuments.map((document) => stringify(document)).join('---\n');
+
+    const edit = new WorkspaceEdit();
+    const changes = diffLines(initialContent, newContent);
+
+    let lines = 0;
+    let chars = 0;
+    changes.forEach((change) => {
+      if (change.added) {
+        // We can select new content with https://code.visualstudio.com/api/references/vscode-api#TextEditor
+        edit.insert(documentUri, new Position(lines, chars), change.value);
+      }
+
+      if (change.removed) {
+        // @TODO
+      }
+
+      // Calculate current position
+      const linesChange = change.value.split('\n');
+      const linesNr = linesChange.length - 1;
+
+      lines += linesNr;
+      chars = linesChange[linesNr].length;
+    });
+
+    return edit;
   }
 }
 
-// Sample code action.
-class AutofixCodeAction extends CodeAction {
-  constructor(_document: TextDocument, diagnostic: Diagnostic, violation: any) {
-    super(`Autofix "${violation.message.text}"`, CodeActionKind.QuickFix);
+class AnnotationBasedSuppressionCodeAction extends CodeAction {
+  private readonly _document: TextDocument;
+  private readonly _result: ValidationResult;
+
+  constructor(document: TextDocument, diagnostic: DiagnosticExtended) {
+    super(`Suppress "${diagnostic.message}" rule for this file`, CodeActionKind.QuickFix);
+
     this.diagnostics = [diagnostic];
+    this._document = document;
+    this._result = diagnostic.result;
+  }
 
-    // If action provides both command and edit, edit will be run first and then command.
-    // Sample command
-    // this.command = {
-    //   command: 'monokle.autofix',
-    //   title: 'Autofix this issue',
-    //   tooltip: 'Command tooltip',
-    //   arguments: [diagnostic],
-    // };
+  get document() {
+    return this._document;
+  }
 
-    // Sample edit
-    // this.edit = new WorkspaceEdit();
-    // this.edit.replace(document.uri, diagnostic.range, 'replacement text');
-
-    console.log('ResultQuickFix', this);
+  get result() {
+    return this._result;
   }
 }
