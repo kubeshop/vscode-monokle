@@ -30,7 +30,7 @@ export class MonokleCodeActions implements CodeActionProvider {
       return codeAction;
     }
 
-    parsedDocument.activeResource.setIn(['metadata', 'annotations', `monokle.io/${codeAction.result.ruleId}`], true);
+    parsedDocument.activeResource.setIn(['metadata', 'annotations', `monokle.io/suppress.${codeAction.result.ruleId}`], 'suppress');
 
     codeAction.edit = this.generateWorkspaceEdit(parsedDocument.documents, parsedDocument.initialContent, codeAction.document.uri);
 
