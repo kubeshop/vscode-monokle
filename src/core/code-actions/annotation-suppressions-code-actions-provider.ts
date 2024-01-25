@@ -1,6 +1,5 @@
 import { CodeAction, CodeActionKind, TextDocument, Range, languages } from 'vscode';
-import { ValidationResult } from './../../utils/validation';
-import { BaseCodeActionsProvider, CodeActionContextExtended, DiagnosticExtended } from './base-code-actions-provider';
+import { BaseCodeActionsProvider, CodeActionContextExtended, DiagnosticExtended, ValidationResultExtended } from './base-code-actions-provider';
 
 class AnnotationSuppressionsCodeActionsProvider extends BaseCodeActionsProvider<AnnotationSuppressionsCodeAction> {
   public async provideCodeActions(document: TextDocument, _range: Range, context: CodeActionContextExtended) {
@@ -15,7 +14,8 @@ class AnnotationSuppressionsCodeActionsProvider extends BaseCodeActionsProvider<
       return codeAction;
     }
 
-    parsedDocument.activeResource.setIn(['metadata', 'annotations', `monokle.io/suppress.${codeAction.result.ruleId}`], 'suppress');
+    const ruleFullName = `${codeAction.result._rule.id.substring(0,3).toLowerCase()}.${codeAction.result._rule.name}`;
+    parsedDocument.activeResource.setIn(['metadata', 'annotations', `monokle.io/suppress.${ruleFullName}`], 'suppress');
 
     codeAction.edit = this.generateWorkspaceEdit(parsedDocument.documents, parsedDocument.initialContent, codeAction.document.uri);
 
@@ -25,7 +25,7 @@ class AnnotationSuppressionsCodeActionsProvider extends BaseCodeActionsProvider<
 
 class AnnotationSuppressionsCodeAction extends CodeAction {
   private readonly _document: TextDocument;
-  private readonly _result: ValidationResult;
+  private readonly _result: ValidationResultExtended;
 
   constructor(document: TextDocument, diagnostic: DiagnosticExtended) {
     super(`Suppress "${diagnostic.result._rule.name} (${diagnostic.result._rule.id})" rule for this resource`, CodeActionKind.QuickFix);
