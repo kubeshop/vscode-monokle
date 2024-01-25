@@ -104,6 +104,7 @@ export type EventMap = {
   'policy/synchronize': BaseEvent & {errorCode?: string};
   // Code actions tracking.
   'code_action/annotation_suppression': BaseEvent & {[key: string]: string | number | boolean};
+  'code_action/fix': BaseEvent & {[key: string]: string | number | boolean};
 };
 
 function getAppVersion(): string {

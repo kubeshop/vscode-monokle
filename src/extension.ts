@@ -21,7 +21,7 @@ import { trackEvent, initTelemetry, closeTelemetry } from './utils/telemetry';
 import logger from './utils/logger';
 import globals from './utils/globals';
 import { raiseError } from './utils/errors';
-import { registerAnnotationSuppressionsCodeActionsProvider } from './core';
+import { registerAnnotationSuppressionsCodeActionsProvider, registerFixCodeActionsProvider } from './core';
 import type { ExtensionContext } from 'vscode';
 
 let runtimeContext: RuntimeContext;
@@ -117,6 +117,7 @@ async function runActivation(context: ExtensionContext) {
   );
 
   context.subscriptions.push(registerAnnotationSuppressionsCodeActionsProvider());
+  context.subscriptions.push(registerFixCodeActionsProvider());
 
   const configurationWatcher = workspace.onDidChangeConfiguration(async (event) => {
     if (event.affectsConfiguration(SETTINGS.ENABLED_PATH)) {
