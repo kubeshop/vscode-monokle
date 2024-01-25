@@ -1,4 +1,3 @@
-
 import { canRun } from '../utils/commands';
 import { BaseEvent, Event, trackEvent } from '../utils/telemetry';
 import type { RuntimeContext } from '../utils/runtime-context';
