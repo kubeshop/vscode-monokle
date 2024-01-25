@@ -9,11 +9,12 @@ import { getShowPanelCommand } from './commands/show-panel';
 import { getShowConfigurationCommand } from './commands/show-configuration';
 import { getBootstrapConfigurationCommand } from './commands/bootstrap-configuration';
 import { getSynchronizeCommand } from './commands/synchronize';
+import { getLogoutCommand } from './commands/logout';
+import { getTrackCommand } from './commands/track';
 import { RuntimeContext } from './utils/runtime-context';
 import { SarifWatcher } from './utils/sarif-watcher';
 import { PolicyPuller } from './utils/policy-puller';
 import { getTooltipContentDefault } from './utils/tooltip';
-import { getLogoutCommand } from './commands/logout';
 import { getAuthenticator } from './utils/authentication';
 import { getSynchronizer } from './utils/synchronization';
 import { trackEvent, initTelemetry, closeTelemetry } from './utils/telemetry';
@@ -101,6 +102,7 @@ async function runActivation(context: ExtensionContext) {
   const commandBootstrapConfiguration = commands.registerCommand(COMMANDS.BOOTSTRAP_CONFIGURATION, getBootstrapConfigurationCommand());
   const commandDownloadPolicy = commands.registerCommand(COMMANDS.SYNCHRONIZE, getSynchronizeCommand(runtimeContext));
   const commandWatch = commands.registerCommand(COMMANDS.WATCH, getWatchCommand(runtimeContext));
+  const commandTrack = commands.registerCommand(COMMANDS.TRACK, getTrackCommand(runtimeContext));
 
   context.subscriptions.push(
     commandLogin,
@@ -111,6 +113,7 @@ async function runActivation(context: ExtensionContext) {
     commandShowConfiguration,
     commandBootstrapConfiguration,
     commandDownloadPolicy,
+    commandTrack
   );
 
   context.subscriptions.push(registerAnnotationSuppressionsCodeActionsProvider());

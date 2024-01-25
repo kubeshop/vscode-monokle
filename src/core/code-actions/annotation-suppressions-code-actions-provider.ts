@@ -1,5 +1,6 @@
 import { CodeAction, CodeActionKind, TextDocument, Range, languages } from 'vscode';
 import { BaseCodeActionsProvider, CodeActionContextExtended, DiagnosticExtended, ValidationResultExtended } from './base-code-actions-provider';
+import { COMMANDS } from '../../constants';
 
 class AnnotationSuppressionsCodeActionsProvider extends BaseCodeActionsProvider<AnnotationSuppressionsCodeAction> {
   public async provideCodeActions(document: TextDocument, _range: Range, context: CodeActionContextExtended) {
@@ -18,6 +19,12 @@ class AnnotationSuppressionsCodeActionsProvider extends BaseCodeActionsProvider<
     parsedDocument.activeResource.setIn(['metadata', 'annotations', `monokle.io/suppress.${ruleFullName}`], 'suppress');
 
     codeAction.edit = this.generateWorkspaceEdit(parsedDocument.documents, parsedDocument.initialContent, codeAction.document.uri);
+
+    codeAction.command = {
+      command: COMMANDS.TRACK,
+      title: 'Track',
+      arguments: ['code_action/annotation_suppression', {status: 'success', ruleId: codeAction.result.ruleId}]
+    };
 
     return codeAction;
   }
