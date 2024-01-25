@@ -45,7 +45,7 @@ class AnnotationSuppressionsCodeAction extends CodeAction {
 }
 
 export function registerAnnotationSuppressionsCodeActionsProvider() {
-  return languages.registerCodeActionsProvider('yaml', new AnnotationSuppressionsCodeActionsProvider(), {
+  return languages.registerCodeActionsProvider({language: 'yaml'}, new AnnotationSuppressionsCodeActionsProvider(), {
     providedCodeActionKinds: AnnotationSuppressionsCodeActionsProvider.providedCodeActionKinds
   });
 }
