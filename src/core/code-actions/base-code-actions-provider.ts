@@ -85,9 +85,6 @@ export abstract class BaseCodeActionsProvider<T_ACTION extends CodeAction> imple
         // Will be needed for other edits which can remove content too.
       }
 
-      // @TODO
-      // To consider: we can select new content with https://code.visualstudio.com/api/references/vscode-api#TextEditor
-
       // Calculate current position.
       const linesChange = change.value.split('\n');
       const linesNr = linesChange.length - 1;
