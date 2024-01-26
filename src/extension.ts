@@ -1,6 +1,6 @@
 import pRetry from 'p-retry';
 import { join, normalize } from 'path';
-import { commands, workspace, window, StatusBarAlignment } from 'vscode';
+import { commands, workspace, window, StatusBarAlignment, languages } from 'vscode';
 import { COMMANDS, SETTINGS, STATUS_BAR_TEXTS, STORAGE_DIR_NAME } from './constants';
 import { getLoginCommand } from './commands/login';
 import { getValidateCommand } from './commands/validate';
@@ -9,17 +9,19 @@ import { getShowPanelCommand } from './commands/show-panel';
 import { getShowConfigurationCommand } from './commands/show-configuration';
 import { getBootstrapConfigurationCommand } from './commands/bootstrap-configuration';
 import { getSynchronizeCommand } from './commands/synchronize';
+import { getLogoutCommand } from './commands/logout';
+import { getTrackCommand } from './commands/track';
 import { RuntimeContext } from './utils/runtime-context';
 import { SarifWatcher } from './utils/sarif-watcher';
 import { PolicyPuller } from './utils/policy-puller';
 import { getTooltipContentDefault } from './utils/tooltip';
-import { getLogoutCommand } from './commands/logout';
 import { getAuthenticator } from './utils/authentication';
 import { getSynchronizer } from './utils/synchronization';
 import { trackEvent, initTelemetry, closeTelemetry } from './utils/telemetry';
 import logger from './utils/logger';
 import globals from './utils/globals';
 import { raiseError } from './utils/errors';
+import { registerAnnotationSuppressionsCodeActionsProvider } from './core';
 import type { ExtensionContext } from 'vscode';
 
 let runtimeContext: RuntimeContext;
@@ -100,6 +102,7 @@ async function runActivation(context: ExtensionContext) {
   const commandBootstrapConfiguration = commands.registerCommand(COMMANDS.BOOTSTRAP_CONFIGURATION, getBootstrapConfigurationCommand());
   const commandDownloadPolicy = commands.registerCommand(COMMANDS.SYNCHRONIZE, getSynchronizeCommand(runtimeContext));
   const commandWatch = commands.registerCommand(COMMANDS.WATCH, getWatchCommand(runtimeContext));
+  const commandTrack = commands.registerCommand(COMMANDS.TRACK, getTrackCommand(runtimeContext));
 
   context.subscriptions.push(
     commandLogin,
@@ -110,7 +113,10 @@ async function runActivation(context: ExtensionContext) {
     commandShowConfiguration,
     commandBootstrapConfiguration,
     commandDownloadPolicy,
+    commandTrack
   );
+
+  context.subscriptions.push(registerAnnotationSuppressionsCodeActionsProvider());
 
   const configurationWatcher = workspace.onDidChangeConfiguration(async (event) => {
     if (event.affectsConfiguration(SETTINGS.ENABLED_PATH)) {

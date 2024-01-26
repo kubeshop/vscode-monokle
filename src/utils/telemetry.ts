@@ -102,6 +102,8 @@ export type EventMap = {
   };
   // When policy is synced from Monokle Cloud.
   'policy/synchronize': BaseEvent & {errorCode?: string};
+  // Code actions tracking.
+  'code_action/annotation_suppression': BaseEvent & {[key: string]: string | number | boolean};
 };
 
 function getAppVersion(): string {

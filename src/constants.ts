@@ -35,6 +35,7 @@ export const COMMANDS = {
   BOOTSTRAP_CONFIGURATION: 'monokle.bootstrapConfiguration',
   SYNCHRONIZE: 'monokle.synchronize',
   WATCH: 'monokle.watch',
+  TRACK: 'monokle.track',
 };
 
 export const COMMAND_NAMES = {

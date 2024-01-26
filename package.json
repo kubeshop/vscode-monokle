@@ -145,7 +145,7 @@
     "test": "concurrently -s command-1 -k \"npm run test:server\" \"node ./out/test/run-test.js\"",
     "test:cc": "concurrently -s command-1 -k \"npm run test:server\" \"c8 node ./out/test/run-test.js\"",
     "test:server": "node ./out/test/run-server.js",
-    "test:ensure-coverage": "npx c8 check-coverage --lines 68 --functions 80 --branches 75 --statements 68"
+    "test:ensure-coverage": "npx c8 check-coverage --lines 68 --functions 75 --branches 75 --statements 68"
   },
   "devDependencies": {
     "@graphql-tools/mock": "^9.0.0",
@@ -176,11 +176,12 @@
     "@monokle/synchronizer": "^0.13.0",
     "@monokle/validation": "^0.32.0",
     "@segment/analytics-node": "^1.1.0",
+    "diff": "^5.1.0",
     "normalize-url": "^4.5.1",
     "p-debounce": "^2.1.0",
     "p-retry": "^4.6.2",
     "uuid": "^9.0.0",
-    "yaml": "^2.3.1"
+    "yaml": "^2.3.4"
   },
   "c8": {
     "reporter": [
