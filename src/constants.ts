@@ -17,6 +17,7 @@ export const SETTINGS = {
   ORIGIN: 'origin',
   PROJECT: 'project',
   RUN: 'run',
+  AUTOMATICALLY_OPEN_PANEL: 'automaticallyOpenPanel',
   ENABLED_PATH: 'monokle.enabled',
   CONFIGURATION_PATH_PATH: 'monokle.configurationPath',
   VERBOSE_PATH: 'monokle.verbose',
@@ -24,6 +25,7 @@ export const SETTINGS = {
   ORIGIN_PATH: 'monokle.origin',
   PROJECT_PATH: 'monokle.project',
   RUN_PATH: 'monokle.run',
+  AUTOMATICALLY_OPEN_PANEL_PATH: 'monokle.automaticallyOpenPanel',
 };
 
 export const COMMANDS = {

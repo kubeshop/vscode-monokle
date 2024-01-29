@@ -1,8 +1,10 @@
 import { extensions } from 'vscode';
 import type { Uri } from 'vscode';
+import globals from './globals';
 
 export class SarifWatcher {
   private _uris: Uri[] = [];
+  private _loadsCount = 0;
 
   async add(uri: Uri) {
     const index = this._uris.findIndex(u => u.toString() === uri.toString());
@@ -10,7 +12,7 @@ export class SarifWatcher {
     if (index === -1) {
       const sarifApi = await this.getSarifApi();
       this._uris.push(uri);
-      return sarifApi.openLogs([uri]);
+      return sarifApi.loadLogs([uri]);
     }
   }
 
@@ -21,7 +23,7 @@ export class SarifWatcher {
     this._uris = [...this._uris, ...added];
 
     if (added.length) {
-      return sarifApi.openLogs(added);
+      return sarifApi.loadLogs(added);
     }
   }
 
@@ -47,7 +49,7 @@ export class SarifWatcher {
     }
 
     if (added.length) {
-      return sarifApi.openLogs(added);
+      return sarifApi.loadLogs(added);
     }
   }
 
@@ -65,5 +67,16 @@ export class SarifWatcher {
     }
 
     return sarifExtension.exports;
+  }
+
+  protected async loadLogs(uris: Uri[]) {
+    this._loadsCount++;
+
+    const sarifApi = await this.getSarifApi();
+    const shouldOpenPanel = globals.automaticallyOpenPanel === 'onProjectOpen' ? this._loadsCount === 1 : false;
+
+    return sarifApi.loadLogs(uris, {
+      openPanel: shouldOpenPanel,
+    });
   }
 }

@@ -128,6 +128,15 @@
           ],
           "default": "onType",
           "description": "Run validation on save (onSave) or on type (onType)"
+        },
+        "monokle.automaticallyOpenPanel": {
+          "type": "string",
+          "enum": [
+            "never",
+            "onProjectOpen"
+          ],
+          "default": "never",
+          "description": "Show 'Violations' panel automatically on project open (`onProjectOpen`) or `never` (default, requires user action to show panel)."
         }
       }
     }
