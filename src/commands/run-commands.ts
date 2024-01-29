@@ -4,13 +4,17 @@ import type { RuntimeContext } from '../utils/runtime-context';
 
 // This is internal command (not exposed via 'package.json') to run multiple commands at once from code actions.
 export function getRunCommandsCommand(_context: RuntimeContext) {
-  return async (allCommands: Command[]) => {
+  return async (allCommands: Command[], after: () => Promise<void>) => {
     if (!canRun()) {
       return;
     }
 
     for (const command of allCommands) {
         await commands.executeCommand(command.command, ...(command.arguments || []));
+    }
+
+    if (after) {
+      await after();
     }
   };
 }

@@ -1,4 +1,4 @@
-import { CodeAction, CodeActionKind, TextDocument, Range, languages } from 'vscode';
+import { CodeAction, CodeActionKind, TextDocument, Selection, Range, languages, window } from 'vscode';
 import { BaseCodeActionsProvider, CodeActionContextExtended, DiagnosticExtended } from './base-code-actions-provider';
 import { COMMANDS } from '../../constants';
 
@@ -27,10 +27,20 @@ class ShowDetailsCodeActionsProvider extends BaseCodeActionsProvider<ShowDetails
       arguments: ['code_action/show_details', {status: 'success'}]
     }];
 
+    const afterFn = async () => {
+      const textEditor = window.activeTextEditor;
+      setTimeout(() => {
+        textEditor.selection = new Selection(
+          codeAction.diagnostics[0].range.start,
+          codeAction.diagnostics[codeAction.diagnostics.length - 1].range.end
+        );
+      }, 500);
+    };
+
     codeAction.command = {
       command: COMMANDS.RUN_COMMANDS,
       title: 'Run commands',
-      arguments: commands
+      arguments: [commands, afterFn]
     };
 
     return codeAction;
@@ -49,7 +59,7 @@ class ShowSingleDetailsCodeAction extends ShowDetailsCodeAction {
 
 class ShowAllDetailsCodeAction extends ShowDetailsCodeAction {
   constructor(diagnostics: DiagnosticExtended[]) {
-    super(`Show details for all ${diagnostics.length} violations`, CodeActionKind.QuickFix);
+    super(`Show details for these violations`, CodeActionKind.QuickFix);
 
     this.diagnostics = diagnostics;
   }
