@@ -52,7 +52,7 @@ async function runSuite(
     // Use cp.spawn / cp.exec for custom setup
     spawnSync(
       cliPath,
-      [...args, '--install-extension', 'kubeshop.monokle-sarif@0.1.0'],
+      [...args, '--install-extension', 'kubeshop.monokle-sarif'],
       {
         encoding: 'utf-8',
         stdio: 'inherit'
