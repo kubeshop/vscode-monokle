@@ -315,51 +315,6 @@ export async function getDefaultConfig() {
   return (await getValidatorInstance()).validator.config;
 }
 
-async function getValidatorInstance() {
-  const {MonokleValidator, ResourceParser, SchemaLoader, RemotePluginLoader, requireFromStringCustomPluginLoader,  DisabledFixer, AnnotationSuppressor, FingerprintSuppressor, processRefs} = await import('@monokle/validation');
-  const {fetchOriginConfig} = await import('@monokle/synchronizer');
-
-
-const fixer = {
-  createFix(resource: any, fixedContent: any, fixMetadata: any) {
-      const oldText = stringify(resource.content);
-      const newText = stringify(fixedContent);
-      const changes = diffLines(oldText, newText);
-      const replacements: Replacement[] = [];
-
-      let lineCursor = +(resource.fileOffset ?? 0);
-      for (let i = 0; i < changes.length; i++) {
-        const change = changes[i];
-        
-      if (change.added) {
-          replacements.push({
-            deletedRegion: {
-              startLine: lineCursor,
-            },
-            insertedContent: {
-              text: change.value,
-            },
-          });
-          lineCursor += change.count ?? 0;
-        } else if (change.removed) {
-          replacements.push({
-            deletedRegion: {
-              startLine: lineCursor,
-              endLine: lineCursor + (change.count ?? 0),
-            },
-          });
-        } else {
-          lineCursor += change.count ?? 0;
-        }
-      }
-
-      return createSarifFix({
-        path: resource.filePath,
-        description: fixMetadata?.description,
-        replacements,
-      });
-  }
-};
 
 function createSarifFix(params: {
   path: string;
@@ -386,6 +341,54 @@ function createSarifFix(params: {
   return [fix];
 }
 
+export function createFixer() {
+  return {
+    createFix(resource: any, fixedContent: any, fixMetadata: any) {
+      const oldText = stringify(resource.content);
+      const newText = stringify(fixedContent);
+      const changes = diffLines(oldText, newText);
+      const replacements: Replacement[] = [];
+
+      let lineCursor = +(resource.fileOffset ?? 0);
+      for (let i = 0; i < changes.length; i++) {
+        const change = changes[i];
+
+        if (change.added) {
+          replacements.push({
+            deletedRegion: {
+              startLine: lineCursor,
+            },
+            insertedContent: {
+              text: change.value,
+            },
+          });
+          lineCursor += change.count ?? 0;
+        } else if (change.removed) {
+          replacements.push({
+            deletedRegion: {
+              startLine: lineCursor,
+              endLine: lineCursor + (change.count ?? 0),
+            },
+          });
+        } else {
+          lineCursor += change.count ?? 0;
+        }
+      }
+
+      return createSarifFix({
+        path: resource.filePath,
+        description: fixMetadata?.description,
+        replacements,
+      });
+    }
+  };
+}
+
+async function getValidatorInstance() {
+  const { MonokleValidator, ResourceParser, SchemaLoader, RemotePluginLoader, requireFromStringCustomPluginLoader, DisabledFixer, AnnotationSuppressor, FingerprintSuppressor, processRefs } = await import('@monokle/validation');
+  const { fetchOriginConfig } = await import('@monokle/synchronizer');
+
+  const fixer = createFixer();
   let originConfig = undefined;
   try {
     originConfig = await fetchOriginConfig(globals.origin);
