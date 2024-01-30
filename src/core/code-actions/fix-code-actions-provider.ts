@@ -19,7 +19,7 @@ class FixCodeActionsProvider extends BaseCodeActionsProvider<FixCodeAction> {
       codeAction.command = {
         command: COMMANDS.RAISE_AUTHENTICATION_ERROR,
         title: 'Raise Authentication Error',
-        arguments: ['Fix requires authentication.', {
+        arguments: ['Applying a fix requires authentication.', {
           event: 'code_action/fix',
           data: {
             status: 'cancelled',
