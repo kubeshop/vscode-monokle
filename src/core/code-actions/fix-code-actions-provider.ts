@@ -3,12 +3,8 @@ import { BaseCodeActionsProvider, CodeActionContextExtended, DiagnosticExtended,
 import { Fix, Replacement } from 'sarif';
 import { COMMANDS } from '../../constants';
 import globals from '../../utils/globals';
-import { raiseWarning } from '../../utils/errors';
-import { trackEvent } from '../../utils/telemetry';
-
 
 class FixCodeActionsProvider extends BaseCodeActionsProvider<FixCodeAction> {
-  private _warning: Promise<unknown> | null;
 
   public async provideCodeActions(document: TextDocument, _range: Range, context: CodeActionContextExtended) {
     return this.getMonokleDiagnostics(context).filter((diagnostic: DiagnosticExtended) => diagnostic.result?.fixes?.length > 0).map((diagnostic: DiagnosticExtended) => {
@@ -20,20 +16,18 @@ class FixCodeActionsProvider extends BaseCodeActionsProvider<FixCodeAction> {
     const user = await globals.getUser();
 
     if (!user.isAuthenticated) {
-      if (!this._warning) {
-        this._warning = raiseWarning(`Fix requires authentication.`, [{
-          title: 'Login',
-          callback() {
-            commands.executeCommand(COMMANDS.LOGIN);
-          },
-        }]).then(() => this._warning = null);
-
-        trackEvent('code_action/fix', {
-          status: 'cancelled',
-          error: 'Unauthenticated'
-        });
-      }
-
+      codeAction.command = {
+        command: COMMANDS.RAISE_AUTHENTICATION_ERROR,
+        title: 'Raise Authentication Error',
+        arguments: ['Fix requires authentication.', {
+          event: 'code_action/fix',
+          data: {
+            status: 'cancelled',
+            ruleId: codeAction.result.ruleId,
+            error: 'Unauthenticated',
+          }
+        }]
+      };
     } else {
       codeAction.edit = createCodeActionEdit(codeAction.result.fixes, codeAction.document);
       codeAction.command = {

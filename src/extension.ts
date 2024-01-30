@@ -11,6 +11,7 @@ import { getBootstrapConfigurationCommand } from './commands/bootstrap-configura
 import { getSynchronizeCommand } from './commands/synchronize';
 import { getLogoutCommand } from './commands/logout';
 import { getTrackCommand } from './commands/track';
+import { getRaiseAuthenticationErrorCommand } from './commands/raiseAuthenticationError';
 import { RuntimeContext } from './utils/runtime-context';
 import { SarifWatcher } from './utils/sarif-watcher';
 import { PolicyPuller } from './utils/policy-puller';
@@ -103,6 +104,7 @@ async function runActivation(context: ExtensionContext) {
   const commandDownloadPolicy = commands.registerCommand(COMMANDS.SYNCHRONIZE, getSynchronizeCommand(runtimeContext));
   const commandWatch = commands.registerCommand(COMMANDS.WATCH, getWatchCommand(runtimeContext));
   const commandTrack = commands.registerCommand(COMMANDS.TRACK, getTrackCommand(runtimeContext));
+  const commandRaiseAuthenticationError = commands.registerCommand(COMMANDS.RAISE_AUTHENTICATION_ERROR, getRaiseAuthenticationErrorCommand(runtimeContext));
 
   context.subscriptions.push(
     commandLogin,
@@ -113,7 +115,8 @@ async function runActivation(context: ExtensionContext) {
     commandShowConfiguration,
     commandBootstrapConfiguration,
     commandDownloadPolicy,
-    commandTrack
+    commandTrack,
+    commandRaiseAuthenticationError
   );
 
   context.subscriptions.push(registerAnnotationSuppressionsCodeActionsProvider());
