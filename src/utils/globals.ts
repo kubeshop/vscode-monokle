@@ -5,6 +5,7 @@ import { Folder } from './workspace';
 import { RuntimeContext } from './runtime-context';
 import logger from './logger';
 import type { Authenticator } from './authentication';
+import { SuppressionPermissions } from '../core/suppressions/suppressions';
 
 export type FolderStatus = {
   valid: boolean;
@@ -165,6 +166,30 @@ class Globals {
     } catch (err) {
       logger.error('getSuppressions', err);
       return [];
+    }
+  }
+
+  async getSuppressionPermissions(_repoPath: string): Promise<SuppressionPermissions> {
+    if (this._runtimeContext.isLocal) {
+      return 'NONE';
+    }
+
+    if (!this._runtimeContext?.authenticator) {
+      throw new Error('Authenticator not initialized for globals.');
+    }
+
+    if (!this._runtimeContext?.synchronizer) {
+      throw new Error('Synchronizer not initialized for globals.');
+    }
+
+    try {
+      const user = await this._runtimeContext.authenticator.getUser();
+      // @TODO fetch permission based on repoPath (and if it's part of any project) or global project config (this.project)
+      // this should be cached somehow so we don't request it every time
+      return 'ADD'; // tmp
+
+    } catch (err) {
+      return 'NONE';
     }
   }
 

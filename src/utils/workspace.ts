@@ -37,6 +37,10 @@ export function getWorkspaceFolders(): Folder[] {
     }));
 }
 
+export function getOwnerWorkspace(document: TextDocument): Folder {
+  return getWorkspaceFolders().find(folder => isSubpath(folder.uri, document.uri.fsPath));
+}
+
 // Config precedence:
 // 1. Remote policy (if user logged in).
 //   - If there is an error fetching (any other than NO_POLICY), fallback to other options.
