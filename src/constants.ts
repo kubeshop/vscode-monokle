@@ -36,6 +36,7 @@ export const COMMANDS = {
   SYNCHRONIZE: 'monokle.synchronize',
   WATCH: 'monokle.watch',
   TRACK: 'monokle.track',
+  RAISE_AUTHENTICATION_ERROR: 'monokle.raiseAuthenticationError'
 };
 
 export const COMMAND_NAMES = {

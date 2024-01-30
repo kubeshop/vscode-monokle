@@ -1,6 +1,8 @@
 import { ok } from 'assert';
+import { CodeAction, Uri, Range, commands } from 'vscode';
 import { getValidationResult } from '../../utils/validation';
 import type { Folder } from '../../utils/workspace';
+import logger from '../../utils/logger';
 
 export async function assertEmptyValidationResults(workspaceFolder: Folder): Promise<void> {
   const result = await getValidationResult(workspaceFolder.id);
@@ -37,4 +39,25 @@ export async function waitForValidationResults(workspaceFolder: Folder, timeoutM
       }, timeoutMs);
     }
   });
+}
+
+
+export async function waitForCodeActionList(uri: Uri, range: Range, timeoutMs?: number): Promise<CodeAction[]> {
+  
+  if(timeoutMs && timeoutMs > 0) {
+    try {
+      const start = Date.now();
+      const codeActions = await commands.executeCommand<CodeAction[]>('vscode.executeCodeActionProvider', uri, range);
+      if(!!codeActions?.length) {
+        return codeActions;
+      }
+      const end = Date.now();
+      return waitForCodeActionList(uri, range, timeoutMs - (end - start));
+    } catch (error) {
+      logger.error(error.message, {uri, range}, error);
+    }
+
+  }
+
+  return [];
 }

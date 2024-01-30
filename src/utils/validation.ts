@@ -2,7 +2,8 @@ import { mkdir, readFile, unlink, writeFile } from 'fs/promises';
 import { join, normalize, relative } from 'path';
 import { platform } from 'os';
 import { Uri } from 'vscode';
-import { Document } from 'yaml';
+import { Document, stringify } from 'yaml';
+import { diffLines } from 'diff';
 import { getWorkspaceConfig, WorkspaceFolderConfig } from './workspace';
 import { VALIDATION_FILE_SUFFIX, DEFAULT_CONFIG_FILE_NAME, TMP_POLICY_FILE_SUFFIX } from '../constants';
 import { getInvalidConfigError } from './errors';
@@ -12,6 +13,7 @@ import { getResourcesFromFolder } from './file-parser';
 import { getSuppressions } from './suppressions';
 import logger from '../utils/logger';
 import globals from './globals';
+import type { Fix, Replacement, } from 'sarif';
 import type { Folder } from './workspace';
 import type { Resource } from './file-parser';
 
@@ -45,7 +47,7 @@ const DEFAULT_SETTINGS = {
 // Having multiple roots, each with different config will make it inefficient to reconfigure
 // validator multiple times for a single validation run. That's why we will need separate
 // validator for each root (which will be reconfigured only when root related config changes).
-const VALIDATORS = new Map<string, {config: string, validator: ConfigurableValidator}>();
+const VALIDATORS = new Map<string, { config: string, validator: ConfigurableValidator }>();
 
 // Store validation results for each root so those can bo compared.
 const RESULTS = getResultCache<string, any>();
@@ -94,7 +96,7 @@ export async function validateResourcesFromFolder(resources: Resource[], root: F
     status: 'started',
   });
 
-  if(!resources.length) {
+  if (!resources.length) {
     trackEvent('workspace/validate', {
       status: 'cancelled',
       resourceCount: 0,
@@ -136,7 +138,7 @@ export async function validateResourcesFromFolder(resources: Resource[], root: F
   logger.log(root.name, 'validator', validatorObj.validator.config);
   logger.log(root, resources, resourcesRelative);
 
-  let incrementalParam: {resourceIds: string[]} | undefined = undefined;
+  let incrementalParam: { resourceIds: string[] } | undefined = undefined;
   if (incremental) {
     incrementalParam = {
       resourceIds: resourcesRelative.map(resource => resource.id)
@@ -214,6 +216,18 @@ export async function getValidationResult(fileName: string) {
   }
 }
 
+export async function removeValidationResult(folder: Folder) {
+  const filePath = getValidationResultPath(folder.id);
+
+  try {
+    await unlink(filePath);
+    return true;
+  } catch (e) {
+    logger.error(e.message, { folder }, e);
+    return false;
+  }
+}
+
 export async function saveValidationResults(results: any, fileName: string) {
   await mkdir(globals.storagePath, { recursive: true });
 
@@ -240,7 +254,7 @@ export async function createTemporaryConfigFile(config: any, ownerRoot: Folder) 
     ' as described in https://github.com/kubeshop/vscode-monokle#monokle-cloud-integration-setup).',
   ].join('\n');
 
-  return saveConfig(config, globals.storagePath, `${ownerRoot.id}${TMP_POLICY_FILE_SUFFIX}`, {commentBefore});
+  return saveConfig(config, globals.storagePath, `${ownerRoot.id}${TMP_POLICY_FILE_SUFFIX}`, { commentBefore });
 }
 
 export async function createDefaultConfigFile(ownerRootDir: string) {
@@ -259,7 +273,7 @@ export async function createDefaultConfigFile(ownerRootDir: string) {
     ' as described in https://github.com/kubeshop/vscode-monokle#monokle-cloud-integration-setup).',
   ].join('\n');
 
-  return saveConfig(config, ownerRootDir, DEFAULT_CONFIG_FILE_NAME, {commentBefore});
+  return saveConfig(config, ownerRootDir, DEFAULT_CONFIG_FILE_NAME, { commentBefore });
 }
 
 export async function saveConfig(config: any, path: string, fileName: string, options?: ConfigFileOptions) {
@@ -300,12 +314,12 @@ export async function clearResourceCache(root: Folder, resourceIds: string[]) {
   logger.log('clearResourceCache', !!parser, root.name, resourceIds);
 
   if (parser) {
-      parser.clear(resourceIds);
+    parser.clear(resourceIds);
   }
 }
 
 export async function readConfig(path: string) {
-  const {readConfig} = await import('@monokle/validation');
+  const { readConfig } = await import('@monokle/validation');
   return readConfig(path);
 }
 
@@ -313,10 +327,80 @@ export async function getDefaultConfig() {
   return (await getValidatorInstance()).validator.config;
 }
 
-async function getValidatorInstance() {
-  const {MonokleValidator, ResourceParser, SchemaLoader, RemotePluginLoader, requireFromStringCustomPluginLoader, DisabledFixer, AnnotationSuppressor, FingerprintSuppressor, processRefs} = await import('@monokle/validation');
-  const {fetchOriginConfig} = await import('@monokle/synchronizer');
 
+function createSarifFix(params: {
+  path: string;
+  description?: string;
+  replacements: Replacement[];
+  diff?: string
+}) {
+
+  const fix: Fix = {
+    artifactChanges: [
+      {
+        artifactLocation: {
+          uri: params.path,
+        },
+        replacements: params.replacements,
+      },
+    ],
+  };
+
+  if (params.description) {
+    fix.description = { text: params.description };
+  }
+
+  return [fix];
+}
+
+export function createFixer() {
+  return {
+    createFix(resource: any, fixedContent: any, fixMetadata: any) {
+      const oldText = stringify(resource.content);
+      const newText = stringify(fixedContent);
+      const changes = diffLines(oldText, newText);
+      const replacements: Replacement[] = [];
+
+      let lineCursor = +(resource.fileOffset ?? 0);
+      for (let i = 0; i < changes.length; i++) {
+        const change = changes[i];
+
+        if (change.added) {
+          replacements.push({
+            deletedRegion: {
+              startLine: lineCursor,
+            },
+            insertedContent: {
+              text: change.value,
+            },
+          });
+          lineCursor += change.count ?? 0;
+        } else if (change.removed) {
+          replacements.push({
+            deletedRegion: {
+              startLine: lineCursor,
+              endLine: lineCursor + (change.count ?? 0),
+            },
+          });
+        } else {
+          lineCursor += change.count ?? 0;
+        }
+      }
+
+      return createSarifFix({
+        path: resource.filePath,
+        description: fixMetadata?.description,
+        replacements,
+      });
+    }
+  };
+}
+
+async function getValidatorInstance() {
+  const { MonokleValidator, ResourceParser, SchemaLoader, RemotePluginLoader, requireFromStringCustomPluginLoader, DisabledFixer, AnnotationSuppressor, FingerprintSuppressor, processRefs } = await import('@monokle/validation');
+  const { fetchOriginConfig } = await import('@monokle/synchronizer');
+
+  const fixer = createFixer();
   let originConfig = undefined;
   try {
     originConfig = await fetchOriginConfig(globals.origin);
@@ -332,7 +416,7 @@ async function getValidatorInstance() {
     parser,
     schemaLoader: loader,
     suppressors: [new AnnotationSuppressor(), fingerprintSuppressor],
-    fixer: new DisabledFixer(),
+    fixer: fixer as ConstructorParameters<typeof MonokleValidator>[0]['fixer'],
   });
 
   await validator.preload({
@@ -408,3 +492,4 @@ function removeUniqueIds(initialText: string) {
 
   return text;
 }
+
