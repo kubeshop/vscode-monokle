@@ -4,6 +4,7 @@ import { CodeAction, CodeActionContext, CodeActionKind, CodeActionProvider, Text
 import { ValidationResult, ValidationRule } from './../../utils/validation';
 
 export type ValidationResultExtended = ValidationResult & {
+  _id: [string, number, number];
   _rule: ValidationRule;
 };
 

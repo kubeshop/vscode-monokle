@@ -1,4 +1,4 @@
-import { CodeAction, CodeActionKind, TextDocument, Selection, Range, languages, window } from 'vscode';
+import { CodeAction, CodeActionKind, TextDocument, Range, languages } from 'vscode';
 import { BaseCodeActionsProvider, CodeActionContextExtended, DiagnosticExtended } from './base-code-actions-provider';
 import { COMMANDS } from '../../constants';
 
@@ -21,33 +21,28 @@ class ShowDetailsCodeActionsProvider extends BaseCodeActionsProvider<ShowDetails
     const commands = [{
       command: COMMANDS.SHOW_PANEL,
       title: 'Show panel',
+      arguments: [codeAction.firstResult._id]
     }, {
       command: COMMANDS.TRACK,
       title: 'Track',
       arguments: ['code_action/show_details', {status: 'success'}]
     }];
 
-    const afterFn = async () => {
-      const textEditor = window.activeTextEditor;
-      setTimeout(() => {
-        textEditor.selection = new Selection(
-          codeAction.diagnostics[0].range.start,
-          codeAction.diagnostics[codeAction.diagnostics.length - 1].range.end
-        );
-      }, 500);
-    };
-
     codeAction.command = {
       command: COMMANDS.RUN_COMMANDS,
       title: 'Run commands',
-      arguments: [commands, afterFn]
+      arguments: [commands]
     };
 
     return codeAction;
   }
 }
 
-class ShowDetailsCodeAction extends CodeAction {}
+class ShowDetailsCodeAction extends CodeAction {
+  get firstResult() {
+    return (this.diagnostics[0] as DiagnosticExtended).result;
+  }
+}
 
 class ShowSingleDetailsCodeAction extends ShowDetailsCodeAction {
   constructor(diagnostic: DiagnosticExtended) {

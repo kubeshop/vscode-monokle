@@ -3,7 +3,7 @@ import { canRun } from '../utils/commands';
 import { trackEvent } from '../utils/telemetry';
 
 export function getShowPanelCommand() {
-  return async () => {
+  return async (resultId: any) => {
     if (!canRun()) {
       return null;
     }
@@ -18,7 +18,7 @@ export function getShowPanelCommand() {
       await sarifExtension.activate();
     }
 
-    await commands.executeCommand('monokle-sarif.showPanel');
+    await commands.executeCommand('monokle-sarif.showPanel', [resultId]);
 
     trackEvent('command/show_panel', {
       status: 'success'
