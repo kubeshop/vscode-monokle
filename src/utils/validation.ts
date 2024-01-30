@@ -47,7 +47,7 @@ const DEFAULT_SETTINGS = {
 // Having multiple roots, each with different config will make it inefficient to reconfigure
 // validator multiple times for a single validation run. That's why we will need separate
 // validator for each root (which will be reconfigured only when root related config changes).
-const VALIDATORS = new Map<string, {config: string, validator: ConfigurableValidator}>();
+const VALIDATORS = new Map<string, { config: string, validator: ConfigurableValidator }>();
 
 // Store validation results for each root so those can bo compared.
 const RESULTS = getResultCache<string, any>();
@@ -96,7 +96,7 @@ export async function validateResourcesFromFolder(resources: Resource[], root: F
     status: 'started',
   });
 
-  if(!resources.length) {
+  if (!resources.length) {
     trackEvent('workspace/validate', {
       status: 'cancelled',
       resourceCount: 0,
@@ -138,7 +138,7 @@ export async function validateResourcesFromFolder(resources: Resource[], root: F
   logger.log(root.name, 'validator', validatorObj.validator.config);
   logger.log(root, resources, resourcesRelative);
 
-  let incrementalParam: {resourceIds: string[]} | undefined = undefined;
+  let incrementalParam: { resourceIds: string[] } | undefined = undefined;
   if (incremental) {
     incrementalParam = {
       resourceIds: resourcesRelative.map(resource => resource.id)
@@ -216,6 +216,18 @@ export async function getValidationResult(fileName: string) {
   }
 }
 
+export async function removeValidationResult(folder: Folder) {
+  const filePath = getValidationResultPath(folder.id);
+
+  try {
+    await unlink(filePath);
+    return true;
+  } catch (e) {
+    logger.error(e.message, { folder }, e);
+    return false;
+  }
+}
+
 export async function saveValidationResults(results: any, fileName: string) {
   await mkdir(globals.storagePath, { recursive: true });
 
@@ -242,7 +254,7 @@ export async function createTemporaryConfigFile(config: any, ownerRoot: Folder) 
     ' as described in https://github.com/kubeshop/vscode-monokle#monokle-cloud-integration-setup).',
   ].join('\n');
 
-  return saveConfig(config, globals.storagePath, `${ownerRoot.id}${TMP_POLICY_FILE_SUFFIX}`, {commentBefore});
+  return saveConfig(config, globals.storagePath, `${ownerRoot.id}${TMP_POLICY_FILE_SUFFIX}`, { commentBefore });
 }
 
 export async function createDefaultConfigFile(ownerRootDir: string) {
@@ -261,7 +273,7 @@ export async function createDefaultConfigFile(ownerRootDir: string) {
     ' as described in https://github.com/kubeshop/vscode-monokle#monokle-cloud-integration-setup).',
   ].join('\n');
 
-  return saveConfig(config, ownerRootDir, DEFAULT_CONFIG_FILE_NAME, {commentBefore});
+  return saveConfig(config, ownerRootDir, DEFAULT_CONFIG_FILE_NAME, { commentBefore });
 }
 
 export async function saveConfig(config: any, path: string, fileName: string, options?: ConfigFileOptions) {
@@ -302,12 +314,12 @@ export async function clearResourceCache(root: Folder, resourceIds: string[]) {
   logger.log('clearResourceCache', !!parser, root.name, resourceIds);
 
   if (parser) {
-      parser.clear(resourceIds);
+    parser.clear(resourceIds);
   }
 }
 
 export async function readConfig(path: string) {
-  const {readConfig} = await import('@monokle/validation');
+  const { readConfig } = await import('@monokle/validation');
   return readConfig(path);
 }
 

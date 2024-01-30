@@ -112,48 +112,57 @@ async function runSuite(
 }
 
 async function main() {
-  const workspaces = [
-    {
+  const workspaces = {
+
+   withResources: {
       path: './folder-with-resources',
       resources: 2,
       config: 'default',
     },
-    {
+    withoutResources: {
       path: './folder-without-resources',
       resources: 0,
       config: 'file',
     },
-    {
+    workspace: {
       path: './workspace-1/workspace-1.code-workspace',
       resources: 3,
       isWorkspace: true,
       folders: 2,
       config: 'config',
     },
-    // This folder has validation disabled in settings by default.
-    {
+    withConfig: {
+      // This folder has validation disabled in settings by default.
       path: './folder-with-config',
       resources: 1,
       config: 'remote',
       disabled: true,
     },
-  ];
+    withCodeActions: {
+      path: './folder-with-code-actions',
+      resources: 1,
+      config: 'file',
+    }
+  };
 
   // Run basic tests on single workspace.
-  await runSuite('./suite-basic/index', [workspaces[0]]);
+  await runSuite('./suite-basic/index', [workspaces.withResources]);
 
   // Run initialization tests on single workspace.
-  await runSuite('./suite-initialization/index', [workspaces[0]]);
+  await runSuite('./suite-initialization/index', [workspaces.withResources]);
 
   // Run policies tests on single repo.
-  await runSuite('./suite-policies/index', [workspaces[3]], { setupRemoteEnv: true });
+  await runSuite('./suite-policies/index', [workspaces.withConfig], { setupRemoteEnv: true });
+  
+  // Run code-actions tests
+  await runSuite('./suite-code-actions/index', [workspaces.withCodeActions], { skipResultCache: true });
 
   // Run integration-like tests on multiple, different workspaces (local config).
-  await runSuite('./suite-integration/index', workspaces.slice(0, -1), { skipResultCache: true });
-  await runSuite('./suite-integration/index', workspaces.slice(0, -1), { skipResultCache: true, validateOnSave: true });
-
+  await runSuite('./suite-integration/index', [workspaces.withResources, workspaces.withoutResources, workspaces.workspace], { skipResultCache: true });
+  await runSuite('./suite-integration/index', [workspaces.withResources, workspaces.withoutResources, workspaces.workspace], { skipResultCache: true, validateOnSave: true });
+  
   // Run integration-like tests for remote config separately as it needs different setup.
-  await runSuite('./suite-integration/index', [workspaces[3]], { setupRemoteEnv: true });
+  await runSuite('./suite-integration/index', [workspaces.withConfig], { setupRemoteEnv: true });
 }
 
 main();

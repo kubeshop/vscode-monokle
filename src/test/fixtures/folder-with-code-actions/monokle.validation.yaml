@@ -1,0 +1,26 @@
+plugins:
+  pod-security-standards: false
+  yaml-syntax: false
+  resource-links: false
+  kubernetes-schema: false
+  practices: true
+rules:
+  practices/no-mounted-docker-sock: false
+  practices/no-writable-fs: false
+  practices/drop-capabilities: false
+  practices/no-low-group-id: false
+  practices/no-automount-service-account-token: false
+  practices/no-pod-create: false
+  practices/no-pod-execute: false
+  practices/no-no-root-group: err
+  practices/no-sys-admin: false
+  practices/cpu-limit: false
+  practices/no-latest-image: false
+  practices/cpu-request: false
+  practices/memory-request: false
+  practices/memory-limit: false
+  practices/no-low-user-id: err
+  practices/no-root-group: false
+settings:
+  kubernetes-schema:
+    schemaVersion: v1.27.1
