@@ -1,5 +1,11 @@
 # Change Log
 
+## 0.9.1
+
+### Other updates
+
+* Introduced support for more rules from default security policy of RHACS.
+
 ## 0.9.0
 
 ### Features
