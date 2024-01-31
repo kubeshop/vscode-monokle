@@ -42,17 +42,17 @@ export async function waitForValidationResults(workspaceFolder: Folder, timeoutM
 }
 
 
-export async function waitForCodeActionList(uri: Uri, range: Range, timeoutMs?: number): Promise<CodeAction[]> {
-  
+export async function waitForCodeActionList(uri: Uri, range: Range, expectedMinActions?: number, timeoutMs?: number,): Promise<CodeAction[]> {
+
   if(timeoutMs && timeoutMs > 0) {
     try {
       const start = Date.now();
       const codeActions = await commands.executeCommand<CodeAction[]>('vscode.executeCodeActionProvider', uri, range);
-      if(!!codeActions?.length) {
+      if(!!codeActions?.length && codeActions.length >= expectedMinActions) {
         return codeActions;
       }
       const end = Date.now();
-      return waitForCodeActionList(uri, range, timeoutMs - (end - start));
+      return waitForCodeActionList(uri, range, expectedMinActions, timeoutMs - (end - start));
     } catch (error) {
       logger.error(error.message, {uri, range}, error);
     }

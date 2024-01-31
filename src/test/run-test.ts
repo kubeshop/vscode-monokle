@@ -153,14 +153,14 @@ async function main() {
 
   // Run policies tests on single repo.
   await runSuite('./suite-policies/index', [workspaces.withConfig], { setupRemoteEnv: true });
-  
+
   // Run code-actions tests
   await runSuite('./suite-code-actions/index', [workspaces.withCodeActions], { skipResultCache: true });
 
   // Run integration-like tests on multiple, different workspaces (local config).
   await runSuite('./suite-integration/index', [workspaces.withResources, workspaces.withoutResources, workspaces.workspace], { skipResultCache: true });
   await runSuite('./suite-integration/index', [workspaces.withResources, workspaces.withoutResources, workspaces.workspace], { skipResultCache: true, validateOnSave: true });
-  
+
   // Run integration-like tests for remote config separately as it needs different setup.
   await runSuite('./suite-integration/index', [workspaces.withConfig], { setupRemoteEnv: true });
 }
