@@ -24,9 +24,23 @@ This is **Technical Preview** release. We are open to any feedback and eager to 
 
 ## Features
 
+### Validate your resources in a blink of an eye
+
+Monokle extension runs in a background and validates all resources within your workspace in real-time. After installing the extension, default policy is used so you are ready to go!
+
+Policy can be changed using [`Monokle: Bootstrap configuration` command](#adjust-to-your-needs) or by [connecting to Monokle Cloud](#monokle-cloudenterprise-integration-setup) to use centralized policy.
+
+### Fix your resources with ease
+
+You can fix most of the problems with Autofix quick action! Just open a quick fix panel and apply "Fix..." action.
+
+<p align="center">
+  <img src="assets/gifs/autofixes.gif"/>
+</p>
+
 ### Easily navigate through all errors and resources
 
-Monokle validation panel allows you to easily see all validation errors grouped by resource or rule id, see each rule details and navigate to exact line in each resource where violation was detected.
+Monokle validation panel allows you to easily see all validation errors grouped by resource or rule id, see rule details and navigate to exact line in each resource where violation was detected.
 
 <p align="center">
   <img src="assets/gifs/navigation.gif"/>
@@ -46,6 +60,14 @@ Validation runs in a background every time a file is modified and saved. This wa
 
 <p align="center">
   <img src="assets/gifs/realtime-validation.gif"/>
+</p>
+
+### Suppress specific rules for any resource
+
+You can suppress rules for specific resources via "Suppress..." quick fix action. This instructs Monokle extension that the resource is the way you wanted and ignore the rule for this specific resource.
+
+<p align="center">
+  <img src="assets/gifs/suppress.gif"/>
 </p>
 
 ### Adjust to your needs
@@ -139,14 +161,16 @@ After the setup is done, you can run `Monokle: Synchronize` command to speed-up 
 
 This extension contributes the following settings:
 
-* `monokle.enable` - Enable/disable this extension.
-* `monokle.configurationPath` - Set path to validation configuration file.
-* `monokle.verbose` - Log runtime info to VSC Developer Console.
-* `monokle.origin` - Overwrite default Monokle Cloud URL (e.g. when running own Monokle Enterprise instance).
-* `monokle.telemetryEnabled` - Enable/disable anonymous telemetry.
+* `monokle.run` - Run resource validation when typing (`onType`) or only when file is saved (`onSave`).
+* `monokle.automaticallyOpenPanel` - Open **Violations** panel automatically when project is opened (`onProjectOpen`) or never (`never`).
+* `monokle.configurationPath` - Set path to external validation configuration file.
 * `monokle.project` - Define remote project from which policy should be used for validation.
+* `monokle.origin` - Overwrite default Monokle Cloud URL (e.g. when running own Monokle Enterprise instance).
+* `monokle.enabled` - Enable/disable this extension.
+* `monokle.telemetryEnabled` - Enable/disable anonymous telemetry.
+* `monokle.verbose` - Log runtime information to VSC Developer Console.
 
-> **IMPORTANT**: Project id used for `monokle.project` can be obtain on Project details page from current URL `https://app.monokle.com/dashboard/projects/<projectId>`.
+> **IMPORTANT**: Project slug used for `monokle.project` can be found in `Project` > `Settings` tab in a `Project slug` field.
 
 ## Dependencies
 

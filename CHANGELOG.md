@@ -1,5 +1,14 @@
 # Change Log
 
+## 0.9.0
+
+### Features
+
+* Introduced `Fix...` quick action. It allows to automatically fix most of misconfigurations.
+* Introduced `Suppress...` quick action. It allows to suppress each rule within a single resource.
+* Introduced `Show details...` quick action. It allows to navigate quickly to current misconfiguration in Violations panel.
+* Introduced `monokle.automaticallyOpenPanel` configuration option. It allows to define when Violations panel should be shown automatically.
+
 ## 0.8.3
 
 ### Fixes
