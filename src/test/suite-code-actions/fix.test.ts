@@ -60,7 +60,7 @@ suite(`CodeActions - quick fix (${RUN_ON}): ${process.env.ROOT_PATH}`, async fun
         const range = await getRange(validationResponse);
         const document = await workspace.openTextDocument(uri);
         await vscodeWindow.showTextDocument(document);
-        const codeActions = await waitForCodeActionList(uri, range, 5000);
+        const codeActions = await waitForCodeActionList(uri, range, 2, 5000);
 
         if (!codeActions.find(({ kind, title }) => {
           return kind.value === CodeActionKind.QuickFix.value && title.includes('KBP104');

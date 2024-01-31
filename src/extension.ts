@@ -12,6 +12,7 @@ import { getSynchronizeCommand } from './commands/synchronize';
 import { getLogoutCommand } from './commands/logout';
 import { getTrackCommand } from './commands/track';
 import { getRaiseAuthenticationErrorCommand } from './commands/raiseAuthenticationError';
+import { getRunCommandsCommand } from './commands/run-commands';
 import { RuntimeContext } from './utils/runtime-context';
 import { SarifWatcher } from './utils/sarif-watcher';
 import { PolicyPuller } from './utils/policy-puller';
@@ -22,7 +23,7 @@ import { trackEvent, initTelemetry, closeTelemetry } from './utils/telemetry';
 import logger from './utils/logger';
 import globals from './utils/globals';
 import { raiseError } from './utils/errors';
-import { registerAnnotationSuppressionsCodeActionsProvider, registerFixCodeActionsProvider } from './core';
+import { registerAnnotationSuppressionsCodeActionsProvider, registerFixCodeActionsProvider, registerShowDetailsCodeActionsProvider } from './core';
 import type { ExtensionContext } from 'vscode';
 
 let runtimeContext: RuntimeContext;
@@ -105,6 +106,7 @@ async function runActivation(context: ExtensionContext) {
   const commandWatch = commands.registerCommand(COMMANDS.WATCH, getWatchCommand(runtimeContext));
   const commandTrack = commands.registerCommand(COMMANDS.TRACK, getTrackCommand(runtimeContext));
   const commandRaiseAuthenticationError = commands.registerCommand(COMMANDS.RAISE_AUTHENTICATION_ERROR, getRaiseAuthenticationErrorCommand(runtimeContext));
+  const commandRunCommands = commands.registerCommand(COMMANDS.RUN_COMMANDS, getRunCommandsCommand(runtimeContext));
 
   context.subscriptions.push(
     commandLogin,
@@ -116,11 +118,13 @@ async function runActivation(context: ExtensionContext) {
     commandBootstrapConfiguration,
     commandDownloadPolicy,
     commandTrack,
-    commandRaiseAuthenticationError
+    commandRaiseAuthenticationError,
+    commandRunCommands
   );
 
   context.subscriptions.push(registerAnnotationSuppressionsCodeActionsProvider());
   context.subscriptions.push(registerFixCodeActionsProvider());
+  context.subscriptions.push(registerShowDetailsCodeActionsProvider());
 
   const configurationWatcher = workspace.onDidChangeConfiguration(async (event) => {
     if (event.affectsConfiguration(SETTINGS.ENABLED_PATH)) {
