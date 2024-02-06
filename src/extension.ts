@@ -305,7 +305,7 @@ function setupRemoteEventListeners(runtimeContext: RuntimeContext) {
     await commands.executeCommand(COMMANDS.VALIDATE);
   });
 
-  runtimeContext.synchronizer.on('synchronize', async (policy) => {
+  runtimeContext.synchronizer.on('synchronized', async (policy) => {
     logger.log('EVENT:synchronize', policy, globals.isActivated);
 
     if (!globals.isActivated || !globals.enabled) {

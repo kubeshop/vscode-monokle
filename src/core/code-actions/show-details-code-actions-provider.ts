@@ -39,6 +39,8 @@ class ShowDetailsCodeActionsProvider extends BaseCodeActionsProvider<ShowDetails
 }
 
 class ShowDetailsCodeAction extends CodeAction {
+  isPreferred = true;
+
   get firstResult() {
     return (this.diagnostics[0] as DiagnosticExtended).result;
   }

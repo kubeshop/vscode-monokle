@@ -10,7 +10,7 @@ import { getInvalidConfigError } from './errors';
 import { trackEvent } from './telemetry';
 import { getResultCache } from './result-cache';
 import { getResourcesFromFolder } from './file-parser';
-import { getSuppressions } from './suppressions';
+import { getSuppressions } from '../core';
 import logger from '../utils/logger';
 import globals from './globals';
 import type { Fix, Replacement, } from 'sarif';
@@ -145,7 +145,7 @@ export async function validateResourcesFromFolder(resources: Resource[], root: F
     };
   }
 
-  const suppressions = await getSuppressions(root.uri.fsPath);
+  const suppressions = getSuppressions(root.uri.fsPath);
 
   let result: ValidationResponse = null;
   try {

@@ -7,7 +7,7 @@ import { shouldUseFingerprintSuppressions } from '../suppressions/suppressions';
 class AnnotationSuppressionsCodeActionsProvider extends BaseCodeActionsProvider<AnnotationSuppressionsCodeAction> {
   public async provideCodeActions(document: TextDocument, _range: Range, context: CodeActionContextExtended) {
     const workspaceRoot = getOwnerWorkspace(document);
-    const fingerprintSuppressionsPermissions = await shouldUseFingerprintSuppressions(workspaceRoot.uri.fsPath);
+    const fingerprintSuppressionsPermissions = shouldUseFingerprintSuppressions(workspaceRoot.uri.fsPath);
 
     // We allow either annotation or fingerprint suppressions at the same time, but not both.
     if (fingerprintSuppressionsPermissions.allowed) {

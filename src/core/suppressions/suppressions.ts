@@ -1,3 +1,4 @@
+import { FingerprintSuppression } from '@monokle/types';
 import globals from '../../utils/globals';
 
 export type SuppressionPermissions = 'ADD' | 'REQUEST' | 'NONE';
@@ -6,19 +7,42 @@ export type SuppressionsStatus = {
   allowed: boolean;
 };
 
-export async function shouldUseFingerprintSuppressions(repoRootPath: string): Promise<SuppressionsStatus> {
-  const isAuthenticated = (await globals.getUser()).isAuthenticated;
+export function getSuppressions(path: string) {
+  const fingerprintSuppressions = globals.getSuppressions(path).map((suppression) => {
+    return {
+      guid: suppression.id,
+      kind: 'external',
+      status: toSuppressionStatus(suppression.status),
+      fingerprint: suppression.fingerprint,
+    } as FingerprintSuppression;
+  });
 
-  if (!isAuthenticated) {
-      return {
-        permissions: 'NONE',
-        allowed: false,
-      };
-  }
+  return {
+    suppressions: fingerprintSuppressions,
+  };
+}
 
-  const projectPermissions = await globals.getSuppressionPermissions(repoRootPath);
+export function shouldUseFingerprintSuppressions(repoRootPath: string): SuppressionsStatus {
+  const projectPermissions = globals.getProjectPermissions(repoRootPath);
+
   return {
     permissions: projectPermissions,
     allowed: projectPermissions !== 'NONE',
   };
+}
+
+function toSuppressionStatus(status: string) {
+  switch (status) {
+    case 'ACCEPTED':
+    case 'accepted':
+      return 'accepted';
+    case 'REJECTED':
+    case 'rejected':
+      return 'rejected';
+    case 'UNDER_REVIEW':
+    case 'underReview':
+      return 'underReview';
+    default:
+      return status;
+  }
 }

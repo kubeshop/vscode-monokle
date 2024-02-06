@@ -95,33 +95,16 @@ class Globals {
     return this._runtimeContext.authenticator.getUser();
   }
 
-  async getRemoteProjectName(path: string) {
-    if (this._runtimeContext.isLocal) {
+  getRemoteProjectName(path: string) {
+    if (this._runtimeContext.isLocal || !this._runtimeContext.authenticator.user.isAuthenticated) {
       return '';
     }
 
-    if (!this._runtimeContext?.authenticator) {
-      throw new Error('Authenticator not initialized for globals.');
-    }
-
-    if (!this._runtimeContext?.synchronizer) {
-      throw new Error('Synchronizer not initialized for globals.');
-    }
-
-    try {
-      const user = await this._runtimeContext.authenticator.getUser();
-      const projectInfo = this.project?.length ?
-        await this._runtimeContext.synchronizer.getProjectInfo({slug: this.project}, user.tokenInfo) :
-        await this._runtimeContext.synchronizer.getProjectInfo(path, user.tokenInfo);
-
-      return projectInfo?.name ?? '';
-    } catch (err) {
-      return '';
-    }
+    return (this._runtimeContext?.synchronizer.getProjectInfo(path, this.project ?? undefined) || {}).name ?? '';
   }
 
-  async getRemotePolicy(path: string) {
-    if (this._runtimeContext.isLocal) {
+  getRemotePolicy(path: string) {
+    if (this._runtimeContext.isLocal || !this._runtimeContext.authenticator.user.isAuthenticated) {
       return {
         valid: false,
         path: '',
@@ -129,68 +112,29 @@ class Globals {
       };
     }
 
-    if (!this._runtimeContext?.synchronizer) {
-      throw new Error('Synchronizer not initialized for globals.');
-    }
-
-    try {
-      const policy = this.project?.length ?
-        await this._runtimeContext.synchronizer.getPolicy({slug: this.project}) :
-        await this._runtimeContext.synchronizer.getPolicy(path);
-
-      return policy;
-    } catch (err) {
-      return {
-        valid: false,
-        path: '',
-        policy: {},
-      };
-    }
+    return this._runtimeContext?.synchronizer.getProjectPolicy(path, this.project ?? undefined);
   }
 
-  async getSuppressions(path: string, token: any) {
-    if (this._runtimeContext.isLocal) {
+  getSuppressions(path: string) {
+    if (this._runtimeContext.isLocal || !this._runtimeContext.authenticator.user.isAuthenticated) {
       return [];
     }
 
-    if (!this._runtimeContext?.synchronizer) {
-      throw new Error('Synchronizer not initialized for globals.');
-    }
-
-    try {
-      const suppressions = this.project?.length ?
-        await this._runtimeContext.synchronizer.getSuppressions({slug: this.project}, token) :
-        await this._runtimeContext.synchronizer.getSuppressions(path, token);
-
-      return suppressions;
-    } catch (err) {
-      logger.error('getSuppressions', err);
-      return [];
-    }
+    return this._runtimeContext?.synchronizer.getRepositorySuppressions(path, this.project ?? undefined);
   }
 
-  async getSuppressionPermissions(_repoPath: string): Promise<SuppressionPermissions> {
-    if (this._runtimeContext.isLocal) {
+  getProjectPermissions(path: string): SuppressionPermissions {
+    if (this._runtimeContext.isLocal || !this._runtimeContext.authenticator.user.isAuthenticated) {
       return 'NONE';
     }
 
-    if (!this._runtimeContext?.authenticator) {
-      throw new Error('Authenticator not initialized for globals.');
-    }
+    const permissions = this._runtimeContext?.synchronizer.getProjectPermissions(path, this.project ?? undefined);
 
-    if (!this._runtimeContext?.synchronizer) {
-      throw new Error('Synchronizer not initialized for globals.');
-    }
-
-    try {
-      const user = await this._runtimeContext.authenticator.getUser();
-      // @TODO fetch permission based on repoPath (and if it's part of any project) or global project config (this.project)
-      // this should be cached somehow so we don't request it every time
-      return 'ADD'; // tmp
-
-    } catch (err) {
+    if (!permissions) {
       return 'NONE';
     }
+
+    return permissions.repositories.write ? 'ADD' : 'REQUEST';
   }
 
   getFolderStatus(folder: Folder) {

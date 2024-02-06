@@ -112,9 +112,7 @@ export class PolicyPuller {
       }
 
       const user = await globals.getUser();
-      const policy = globals.project?.length ?
-        await this._synchronizer.synchronize({slug: globals.project}, user.tokenInfo) :
-        await this._synchronizer.synchronize(root.uri.fsPath, user.tokenInfo);
+      const policy = await this._synchronizer.synchronize(user.tokenInfo, root.uri.fsPath, globals.project ?? undefined);
 
       return policy;
     }, {
@@ -164,9 +162,9 @@ export class PolicyPuller {
 
   private async removeOutdatedPolicy(path: string) {
     try {
-      const outdatedPolicy = await this._synchronizer.getPolicy(path);
+      const outdatedPolicy = this._synchronizer.getProjectPolicy(path);
 
-      if (outdatedPolicy.path) {
+      if (outdatedPolicy?.path) {
         await rm(outdatedPolicy.path, { force: true });
       }
     } catch (err) {

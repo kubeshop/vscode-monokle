@@ -8,7 +8,7 @@ import { SuppressionPermissions, shouldUseFingerprintSuppressions } from '../sup
 class FingerprintSuppressionsCodeActionsProvider extends BaseCodeActionsProvider<FingerprintSuppressionsCodeAction> {
   public async provideCodeActions(document: TextDocument, _range: Range, context: CodeActionContextExtended) {
     const workspaceRoot = getOwnerWorkspace(document);
-    const fingerprintSuppressionsPermissions = await shouldUseFingerprintSuppressions(workspaceRoot.uri.fsPath);
+    const fingerprintSuppressionsPermissions = shouldUseFingerprintSuppressions(workspaceRoot.uri.fsPath);
 
     if (!fingerprintSuppressionsPermissions.allowed) {
       return [];

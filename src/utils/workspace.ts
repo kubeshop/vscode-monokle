@@ -52,8 +52,8 @@ export async function getWorkspaceConfig(workspaceFolder: Folder): Promise<Works
   const user = await globals.getUser();
 
   if (user.isAuthenticated) {
-    const policyData = await globals.getRemotePolicy(workspaceFolder.uri.fsPath);
-    const projectName = await globals.getRemoteProjectName(workspaceFolder.uri.fsPath);
+    const policyData = globals.getRemotePolicy(workspaceFolder.uri.fsPath);
+    const projectName = globals.getRemoteProjectName(workspaceFolder.uri.fsPath);
     const folderStatus = globals.getFolderStatus(workspaceFolder);
 
     // Use remote config when it is valid or when there is NO_POLICY error (meaning repo is already part
