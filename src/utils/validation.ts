@@ -205,6 +205,65 @@ export async function validateResourcesFromFolder(resources: Resource[], root: F
   return Uri.file(resultFilePath);
 }
 
+export async function applySuppressions(root: Folder) {
+  const resources = await getResourcesFromFolder(root.uri.fsPath);
+
+  if (!resources.length) {
+    return null;
+  }
+
+  const workspaceConfig = await getWorkspaceConfig(root);
+
+  if (workspaceConfig.isValid === false) {
+    return null;
+  }
+
+  const validatorObj = await getValidator(root.id, workspaceConfig.config);
+  const response = await getValidationResult(root.id);
+  const suppressions = getSuppressions(root.uri.fsPath);
+
+  let result: ValidationResponse = null;
+  try {
+    const resourcesRelative = resources.map(resource => {
+      return {
+        ...resource,
+        filePath: relative(root.uri.fsPath, resource.filePath),
+      };
+    });
+
+    result = await validatorObj.validator.applySuppressions(response, resourcesRelative, suppressions.suppressions);
+  } catch(err: any) {
+    logger.error('Applying suppressions failed', err);
+  }
+
+  if (!result) {
+    return null;
+  }
+
+  result.runs.forEach(run => {
+    run.results.forEach((result: any) => {
+      const location = result.locations.find(location => location.physicalLocation?.artifactLocation?.uriBaseId === 'SRCROOT');
+
+      if (location && location.physicalLocation.artifactLocation.uri) {
+        location.physicalLocation.artifactLocation.uri = normalizePathForWindows(location.physicalLocation.artifactLocation.uri);
+      }
+    });
+  });
+
+  // This causes SARIF panel to reload so we want to write new results only when they are different.
+  const resultUnchanged = await areValidationResultsSame(RESULTS.get(root.id), result);
+  if (!resultUnchanged) {
+    await saveValidationResults(result, root.id);
+  }
+
+  RESULTS.set(root.id, result);
+  globals.setFolderStatus(root);
+
+  const resultFilePath = await getValidationResultPath(root.id);
+
+  return Uri.file(resultFilePath);
+}
+
 export async function getValidationResult(fileName: string) {
   const filePath = getValidationResultPath(fileName);
 

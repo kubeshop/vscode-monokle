@@ -25,6 +25,7 @@ import globals from './utils/globals';
 import { raiseError } from './utils/errors';
 import { registerAnnotationSuppressionsCodeActionsProvider, registerFingerprintSuppressionsCodeActionsProvider, registerFixCodeActionsProvider, registerShowDetailsCodeActionsProvider } from './core';
 import type { ExtensionContext } from 'vscode';
+import { getSuppressCommand } from './commands/suppress';
 
 let runtimeContext: RuntimeContext;
 
@@ -107,6 +108,7 @@ async function runActivation(context: ExtensionContext) {
   const commandTrack = commands.registerCommand(COMMANDS.TRACK, getTrackCommand(runtimeContext));
   const commandRaiseAuthenticationError = commands.registerCommand(COMMANDS.RAISE_AUTHENTICATION_ERROR, getRaiseAuthenticationErrorCommand(runtimeContext));
   const commandRunCommands = commands.registerCommand(COMMANDS.RUN_COMMANDS, getRunCommandsCommand(runtimeContext));
+  const commandSuppress = commands.registerCommand(COMMANDS.SUPPRESS, getSuppressCommand(runtimeContext));
 
   context.subscriptions.push(
     commandLogin,
@@ -119,7 +121,8 @@ async function runActivation(context: ExtensionContext) {
     commandDownloadPolicy,
     commandTrack,
     commandRaiseAuthenticationError,
-    commandRunCommands
+    commandRunCommands,
+    commandSuppress,
   );
 
   context.subscriptions.push(registerAnnotationSuppressionsCodeActionsProvider());

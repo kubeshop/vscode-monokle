@@ -8,7 +8,7 @@ export type SuppressionsStatus = {
 };
 
 export function getSuppressions(path: string) {
-  const fingerprintSuppressions = globals.getSuppressions(path).map((suppression) => {
+  const fingerprintSuppressions: FingerprintSuppression[] = globals.getSuppressions(path).map((suppression) => {
     return {
       guid: suppression.id,
       kind: 'external',

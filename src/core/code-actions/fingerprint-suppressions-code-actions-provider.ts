@@ -1,7 +1,7 @@
-import { CodeAction, CodeActionKind, TextDocument, Range, languages } from 'vscode';
+import { CodeAction, CodeActionKind, TextDocument, Range, languages, Uri } from 'vscode';
 import { BaseCodeActionsProvider, CodeActionContextExtended, DiagnosticExtended, ValidationResultExtended } from './base-code-actions-provider';
 import { COMMANDS } from '../../constants';
-import { getOwnerWorkspace } from '../../utils/workspace';
+import { Folder, getOwnerWorkspace } from '../../utils/workspace';
 import globals from '../../utils/globals';
 import { SuppressionPermissions, shouldUseFingerprintSuppressions } from '../suppressions/suppressions';
 
@@ -15,7 +15,7 @@ class FingerprintSuppressionsCodeActionsProvider extends BaseCodeActionsProvider
     }
 
     return this.getMonokleDiagnostics(context).map((diagnostic: DiagnosticExtended) => {
-      return new FingerprintSuppressionsCodeAction(diagnostic, fingerprintSuppressionsPermissions.permissions);
+      return new FingerprintSuppressionsCodeAction(diagnostic, fingerprintSuppressionsPermissions.permissions, workspaceRoot);
     });
   }
 
@@ -38,16 +38,10 @@ class FingerprintSuppressionsCodeActionsProvider extends BaseCodeActionsProvider
         }]
       };
     } else {
-      // suppress + track
-      // what about removal, removal option should be shown in SARIF panel
       codeAction.command = {
-        command: COMMANDS.TRACK,
-        title: 'Track',
-        arguments: ['code_action/fingerprint_suppression', {
-          status: 'success',
-          action: codeAction.permissions === 'ADD' ? 'add' : 'request',
-          ruleId: codeAction.result.ruleId
-        }]
+        command: COMMANDS.SUPPRESS,
+        title: 'Suppress misconfiguration',
+        arguments: [codeAction.result, codeAction.permissions, codeAction.root]
       };
     }
 
@@ -58,13 +52,15 @@ class FingerprintSuppressionsCodeActionsProvider extends BaseCodeActionsProvider
 class FingerprintSuppressionsCodeAction extends CodeAction {
   private readonly _result: ValidationResultExtended;
   private readonly _permissions: SuppressionPermissions;
+  private readonly _root: Folder;
 
-  constructor(diagnostic: DiagnosticExtended, permissions: SuppressionPermissions) {
+  constructor(diagnostic: DiagnosticExtended, permissions: SuppressionPermissions, root: Folder) {
     super(`${permissions === 'ADD' ? 'Suppress' : 'Request suppression of'} this "${diagnostic.result._rule.name} (${diagnostic.result._rule.id})" problem`, CodeActionKind.QuickFix);
 
     this.diagnostics = [diagnostic];
     this._result = diagnostic.result;
     this._permissions = permissions;
+    this._root = root;
   }
 
   get result() {
@@ -73,6 +69,10 @@ class FingerprintSuppressionsCodeAction extends CodeAction {
 
   get permissions() {
     return this._permissions;
+  }
+
+  get root() {
+    return this._root;
   }
 }
 
