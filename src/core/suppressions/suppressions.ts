@@ -1,5 +1,7 @@
 import { FingerprintSuppression } from '@monokle/types';
 import globals from '../../utils/globals';
+import { ValidationResult } from '../../utils/validation';
+import { ValidationResultExtended } from '../code-actions/base-code-actions-provider';
 
 export type SuppressionPermissions = 'ADD' | 'REQUEST' | 'NONE';
 export type SuppressionsStatus = {
@@ -29,6 +31,10 @@ export function shouldUseFingerprintSuppressions(repoRootPath: string): Suppress
     permissions: projectPermissions,
     allowed: projectPermissions !== 'NONE',
   };
+}
+
+export function isUnderReview(result: ValidationResult | ValidationResultExtended) {
+  return result.suppressions.length > 0 && result.suppressions.every(s => s.status === 'underReview');
 }
 
 function toSuppressionStatus(status: string) {

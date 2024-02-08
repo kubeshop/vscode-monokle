@@ -3,7 +3,7 @@ import { BaseCodeActionsProvider, CodeActionContextExtended, DiagnosticExtended,
 import { COMMANDS } from '../../constants';
 import { Folder, getOwnerWorkspace } from '../../utils/workspace';
 import globals from '../../utils/globals';
-import { SuppressionPermissions, shouldUseFingerprintSuppressions } from '../suppressions/suppressions';
+import { SuppressionPermissions, isUnderReview, shouldUseFingerprintSuppressions } from '../suppressions/suppressions';
 
 class FingerprintSuppressionsCodeActionsProvider extends BaseCodeActionsProvider<FingerprintSuppressionsCodeAction> {
   public async provideCodeActions(document: TextDocument, _range: Range, context: CodeActionContextExtended) {
@@ -14,9 +14,11 @@ class FingerprintSuppressionsCodeActionsProvider extends BaseCodeActionsProvider
       return [];
     }
 
-    return this.getMonokleDiagnostics(context).map((diagnostic: DiagnosticExtended) => {
-      return new FingerprintSuppressionsCodeAction(diagnostic, fingerprintSuppressionsPermissions.permissions, workspaceRoot);
-    });
+    return this.getMonokleDiagnostics(context)
+      .filter((diagnostic: DiagnosticExtended) => !isUnderReview(diagnostic.result))
+      .map((diagnostic: DiagnosticExtended) => {
+        return new FingerprintSuppressionsCodeAction(diagnostic, fingerprintSuppressionsPermissions.permissions, workspaceRoot);
+      });
   }
 
   public async resolveCodeAction(codeAction: FingerprintSuppressionsCodeAction) {
