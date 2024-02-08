@@ -156,6 +156,7 @@ async function main() {
 
   // Run code-actions tests
   await runSuite('./suite-code-actions/index', [workspaces.withCodeActions], { skipResultCache: true });
+  await runSuite('./suite-code-actions/index', [workspaces.withCodeActions], { skipResultCache: true, setupRemoteEnv: true });
 
   // Run integration-like tests on multiple, different workspaces (local config).
   await runSuite('./suite-integration/index', [workspaces.withResources, workspaces.withoutResources, workspaces.workspace], { skipResultCache: true });

@@ -9,6 +9,7 @@ import { Fix } from 'sarif';
 import { removeValidationResult } from '../../utils/validation';
 
 const RUN_ON = process.env.MONOKLE_TEST_VALIDATE_ON_SAVE === 'Y' ? 'onSave' : 'onType';
+const IS_REMOTE = process.env.MONOKLE_TEST_SERVER_URL?.length > 0;
 
 function getMisconfigurations(validationResponse) {
   return validationResponse.runs[0].results ?? [];
@@ -26,12 +27,9 @@ async function getRange(validationResponse): Promise<Range> {
   return new Range(startLine - 1, startColumn, endLine - 1, endColumn);
 }
 
-
-
 suite(`CodeActions - quick fix (${RUN_ON}): ${process.env.ROOT_PATH}`, async function () {
   this.timeout(25000);
   const isDisabled = process.env.WORKSPACE_DISABLED === 'true';
-
 
   suiteSetup(async function () {
     await doSuiteSetup();
@@ -44,7 +42,6 @@ suite(`CodeActions - quick fix (${RUN_ON}): ${process.env.ROOT_PATH}`, async fun
   suiteTeardown(async () => {
     await doSuiteTeardown();
   });
-
 
   test('Fix is available in the CodeAction quickfix list', async function () {
     const folders = getWorkspaceFolders();
@@ -63,7 +60,97 @@ suite(`CodeActions - quick fix (${RUN_ON}): ${process.env.ROOT_PATH}`, async fun
         const codeActions = await waitForCodeActionList(uri, range, 2, 5000);
 
         if (!codeActions.find(({ kind, title }) => {
-          return kind.value === CodeActionKind.QuickFix.value && title.includes('KBP104');
+          return kind.value === CodeActionKind.QuickFix.value && title.includes('KBP104') && title.startsWith('Fix');
+        })) {
+          fail('Quick fix missing');
+        }
+
+      } catch (error) {
+        fail(error.message);
+      }
+    });
+  });
+
+  test('Show details is available in the CodeAction quickfix list', async function () {
+    const folders = getWorkspaceFolders();
+
+    await runForFolders(folders, async (folder) => {
+      try {
+        const file = resolve(folder.uri.fsPath, 'deployment.yaml');
+        const uri = Uri.file(file);
+
+        const validationResponse = await waitForValidationResults(folder);
+        assertValidationResults(validationResponse);
+
+        const range = await getRange(validationResponse);
+        const document = await workspace.openTextDocument(uri);
+        await vscodeWindow.showTextDocument(document);
+        const codeActions = await waitForCodeActionList(uri, range, 3, 5000);
+
+        if (!codeActions.find(({ kind, title }) => {
+          return kind.value === CodeActionKind.QuickFix.value && title.startsWith('Show details');
+        })) {
+          fail('Quick fix missing');
+        }
+
+      } catch (error) {
+        fail(error.message);
+      }
+    });
+  });
+
+  test('Suppress (annotation-based) is available in the CodeAction quickfix list', async function () {
+    if (IS_REMOTE) {
+      this.skip();
+    }
+    const folders = getWorkspaceFolders();
+
+    await runForFolders(folders, async (folder) => {
+      try {
+        const file = resolve(folder.uri.fsPath, 'deployment.yaml');
+        const uri = Uri.file(file);
+
+        const validationResponse = await waitForValidationResults(folder);
+        assertValidationResults(validationResponse);
+
+        const range = await getRange(validationResponse);
+        const document = await workspace.openTextDocument(uri);
+        await vscodeWindow.showTextDocument(document);
+        const codeActions = await waitForCodeActionList(uri, range, 3, 5000);
+
+        if (!codeActions.find(({ kind, title }) => {
+          return kind.value === CodeActionKind.QuickFix.value && title.includes('for this resource') && title.startsWith('Suppress');
+        })) {
+          fail('Quick fix missing');
+        }
+
+      } catch (error) {
+        fail(error.message);
+      }
+    });
+  });
+
+  test('Suppress (fingerprint-based) is available in the CodeAction quickfix list', async function () {
+    if (!IS_REMOTE) {
+      this.skip();
+    }
+    const folders = getWorkspaceFolders();
+
+    await runForFolders(folders, async (folder) => {
+      try {
+        const file = resolve(folder.uri.fsPath, 'deployment.yaml');
+        const uri = Uri.file(file);
+
+        const validationResponse = await waitForValidationResults(folder);
+        assertValidationResults(validationResponse);
+
+        const range = await getRange(validationResponse);
+        const document = await workspace.openTextDocument(uri);
+        await vscodeWindow.showTextDocument(document);
+        const codeActions = await waitForCodeActionList(uri, range, 3, 5000);
+
+        if (!codeActions.find(({ kind, title }) => {
+          return kind.value === CodeActionKind.QuickFix.value && title.startsWith('Request suppression of');
         })) {
           fail('Quick fix missing');
         }

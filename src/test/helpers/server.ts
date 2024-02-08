@@ -4,6 +4,12 @@ import { mockServer } from '@graphql-tools/mock';
 import { Server } from 'http';
 
 const schema = `
+  scalar JSON
+  scalar DateISO
+  scalar ID
+  scalar TRUE
+  scalar FALSE
+
   type Query {
     me: UserModel!
     getProject(input: GetProjectInput!): ProjectModel!
@@ -76,8 +82,8 @@ const schema = `
   }
 
   type PermissionsModel2 {
-    read: Boolean!
-    write: Boolean!
+    read: TRUE!
+    write: FALSE!
   }
 
   enum RepositoryProviderEnum {
@@ -85,12 +91,6 @@ const schema = `
     GITHUB
     GITLAB
   }
-
-  scalar JSON
-
-  scalar DateISO
-
-  scalar ID
 
   type ProjectPolicyModel {
     id: String!
@@ -117,7 +117,29 @@ const schema = `
 
 export const DEFAULT_POLICY = {
   plugins: {
-    'open-policy-agent': true
+    'pod-security-standards': false,
+    'yaml-syntax': false,
+    'resource-links': false,
+    'kubernetes-schema': false,
+    'practices': true,
+  },
+  rules: {
+    'practices/no-mounted-docker-sock': false,
+    'practices/no-writable-fs': false,
+    'practices/drop-capabilities': false,
+    'practices/no-low-group-id': false,
+    'practices/no-automount-service-account-token': false,
+    'practices/no-pod-create': false,
+    'practices/no-pod-execute': false,
+    'practices/no-no-root-group': 'err',
+    'practices/no-sys-admin': false,
+    'practices/cpu-limit': false,
+    'practices/no-latest-image': false,
+    'practices/cpu-request': false,
+    'practices/memory-request': false,
+    'practices/memory-limit': false,
+    'practices/no-low-user-id': 'err',
+    'practices/no-root-group': false,
   }
 };
 
@@ -129,7 +151,9 @@ const mockData = {
   }),
   JSON: () => (DEFAULT_POLICY),
   DateISO: () => (new Date()).toISOString(),
-  ID: () => 100
+  ID: () => 100,
+  TRUE: () => true,
+  FALSE: () => false
 };
 
 export function startMockServer(host = '0.0.0.0', port = 5000): Promise<Server> {
