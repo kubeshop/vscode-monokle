@@ -7,6 +7,7 @@ const schema = `
   type Query {
     me: UserModel!
     getProject(input: GetProjectInput!): ProjectModel!
+    getSuppressions(input: GetSuppressionsInput!): [SuppressionsModel!]!
   }
 
   type UserModel {
@@ -24,6 +25,8 @@ const schema = `
     slug: String!
     name: String!
     repositories: [ProjectRepositoryModel!]!
+    repository(input: GetRepositoryInput!): ProjectRepositoryModel
+    permissions: ProjectPermissionsModel
     policy: ProjectPolicyModel
   }
 
@@ -37,6 +40,46 @@ const schema = `
     canEnablePrChecks: Boolean
   }
 
+  type ProjectPermissionsModel {
+    project: PermissionsModel1!
+    members: PermissionsModel1!
+    repositories: PermissionsModel2
+  }
+
+  type SuppressionsModel {
+    isSnapshot: Boolean!,
+    data: [SuppressionModel!]!
+  }
+
+  type SuppressionModel {
+    id: String!
+    fingerprint: String!
+    description: String!
+    location: String!
+    status: String!
+    justification: String!
+    expiresAt: String!
+    updatedAt: String!
+    createdAt: String!
+    isUnderReview: Boolean!
+    isAccepted: Boolean!
+    isRejected: Boolean!
+    isExpired: Boolean!
+    isDeleted: Boolean!
+    repositoryId: String!
+  }
+
+  type PermissionsModel1 {
+    view: Boolean!
+    update: Boolean!
+    delete: Boolean!
+  }
+
+  type PermissionsModel2 {
+    read: Boolean!
+    write: Boolean!
+  }
+
   enum RepositoryProviderEnum {
     BITBUCKET
     GITHUB
@@ -45,14 +88,30 @@ const schema = `
 
   scalar JSON
 
+  scalar DateISO
+
+  scalar ID
+
   type ProjectPolicyModel {
     id: String!
     json: JSON!
+    updatedAt: DateISO
   }
 
   input GetProjectInput {
     id: Int
     slug: String
+  }
+
+  input GetRepositoryInput {
+    owner: String!
+    name: String!
+    provider: String!
+  }
+
+  input GetSuppressionsInput {
+    repositoryId: ID!,
+    from: String
   }
 `;
 
@@ -68,7 +127,9 @@ const mockData = {
     owner: 'kubeshop',
     name: 'monokle-demo',
   }),
-  JSON: () => (DEFAULT_POLICY)
+  JSON: () => (DEFAULT_POLICY),
+  DateISO: () => (new Date()).toISOString(),
+  ID: () => 100
 };
 
 export function startMockServer(host = '0.0.0.0', port = 5000): Promise<Server> {
