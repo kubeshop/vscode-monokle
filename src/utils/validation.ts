@@ -52,6 +52,9 @@ const VALIDATORS = new Map<string, { config: string, validator: ConfigurableVali
 // Store validation results for each root so those can bo compared.
 const RESULTS = getResultCache<string, any>();
 
+// Store parsed resources.
+const RESOURCES = new Map<string, Resource[]>();
+
 export async function getValidator(validatorId: string, config?: any) {
   const validatorItem = VALIDATORS.get(validatorId);
   const validatorObj = validatorItem?.validator ?? await getValidatorInstance();
@@ -131,6 +134,8 @@ export async function validateResourcesFromFolder(resources: Resource[], root: F
     };
   });
 
+  RESOURCES.set(root.id, resourcesRelative);
+
   logger.log(root.name, 'workspaceConfig', workspaceConfig);
 
   const validatorObj = await getValidator(root.id, workspaceConfig.config);
@@ -206,7 +211,17 @@ export async function validateResourcesFromFolder(resources: Resource[], root: F
 }
 
 export async function applySuppressions(root: Folder) {
-  const resources = await getResourcesFromFolder(root.uri.fsPath);
+  let resources: Resource[] = RESOURCES.get(root.id);
+
+  if (!resources || resources.length === 0) {
+    resources = await getResourcesFromFolder(root.uri.fsPath);
+    resources = resources.map(resource => {
+      return {
+        ...resource,
+        filePath: relative(root.uri.fsPath, resource.filePath),
+      };
+    });
+  }
 
   if (!resources.length) {
     return null;
@@ -224,14 +239,7 @@ export async function applySuppressions(root: Folder) {
 
   let result: ValidationResponse = null;
   try {
-    const resourcesRelative = resources.map(resource => {
-      return {
-        ...resource,
-        filePath: relative(root.uri.fsPath, resource.filePath),
-      };
-    });
-
-    result = await validatorObj.validator.applySuppressions(response, resourcesRelative, suppressions.suppressions);
+    result = await validatorObj.validator.applySuppressions(response, resources, suppressions.suppressions);
   } catch(err: any) {
     logger.error('Applying suppressions failed', err);
   }
