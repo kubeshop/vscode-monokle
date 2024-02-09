@@ -6,6 +6,7 @@ import { ValidationResult, ValidationRule } from './../../utils/validation';
 export type ValidationResultExtended = ValidationResult & {
   _id: [string, number, number];
   _rule: ValidationRule;
+  _uri: string;
 };
 
 export type DiagnosticExtended = Diagnostic & {

@@ -47,8 +47,9 @@ export function getSuppressCommand(context: RuntimeContext) {
 
     await context.synchronizer.toggleSuppression(
         user.tokenInfo,
-        result.fingerprints[MONOKLE_FINGERPRINT_FIELD],
-        result.message.text,
+        result.fingerprints?.[MONOKLE_FINGERPRINT_FIELD],
+        `${result.ruleId} - ${result.message.text}`,
+        result.locations.at(1).logicalLocations?.at(0)?.fullyQualifiedName,
         root.uri.fsPath,
         globals.project || undefined
     );
