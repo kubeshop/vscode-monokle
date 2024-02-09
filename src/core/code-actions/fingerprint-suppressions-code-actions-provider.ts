@@ -14,9 +14,15 @@ class FingerprintSuppressionsCodeActionsProvider extends BaseCodeActionsProvider
       return [];
     }
 
-    return this.getMonokleDiagnostics(context)
-      .filter((diagnostic: DiagnosticExtended) => !isUnderReview(diagnostic.result))
-      .map((diagnostic: DiagnosticExtended) => {
+    const diagnostics = this.getMonokleDiagnostics(context);
+
+    // Filter out 'under review' violations if user has only 'request suppression' rights. There is no sense in requesting again.
+    // However, for 'Admin' there should be still an ability to suppress such violation (so it's like accepting a request).
+    const roleRelevantDiagnostics = fingerprintSuppressionsPermissions.permissions === 'ADD' ?
+      diagnostics :
+      diagnostics.filter((diagnostic: DiagnosticExtended) => !isUnderReview(diagnostic.result));
+
+    return roleRelevantDiagnostics.map((diagnostic: DiagnosticExtended) => {
         return new FingerprintSuppressionsCodeAction(diagnostic, fingerprintSuppressionsPermissions.permissions, workspaceRoot);
       });
   }
