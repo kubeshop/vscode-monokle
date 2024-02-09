@@ -184,7 +184,7 @@
   },
   "dependencies": {
     "@monokle/parser": "^0.3.2",
-    "@monokle/synchronizer": "^0.14.0",
+    "@monokle/synchronizer": "^0.14.1",
     "@monokle/validation": "^0.33.0",
     "@segment/analytics-node": "^1.1.0",
     "diff": "^5.1.0",
