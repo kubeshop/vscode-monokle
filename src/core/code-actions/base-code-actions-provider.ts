@@ -29,11 +29,11 @@ export abstract class BaseCodeActionsProvider<T_ACTION extends CodeAction> imple
 
   public abstract resolveCodeAction(codeAction: T_ACTION);
 
-  protected getMonokleDiagnostics(context: CodeActionContextExtended) {
+  protected getMonokleDiagnostics(context: CodeActionContextExtended, groupByRule = true) {
     // Filter out diagnostic objects without Monokle fingerprint, because this is not Monokle related diagnostics.
     const monokleDiagnostics = context.diagnostics.filter(diagnostic => diagnostic?.result?.fingerprints?.[MONOKLE_FINGERPRINT_FIELD]);
 
-    return this.getUniqueDiagnosticsByRule(monokleDiagnostics);
+    return groupByRule ? this.getUniqueDiagnosticsByRule(monokleDiagnostics) : monokleDiagnostics;
   }
 
   protected getParsedDocument(document: TextDocument, result: ValidationResult) {

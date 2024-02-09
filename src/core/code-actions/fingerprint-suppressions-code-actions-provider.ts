@@ -14,7 +14,7 @@ class FingerprintSuppressionsCodeActionsProvider extends BaseCodeActionsProvider
       return [];
     }
 
-    const diagnostics = this.getMonokleDiagnostics(context);
+    const diagnostics = this.getMonokleDiagnostics(context, false);
 
     // Filter out 'under review' violations if user has only 'request suppression' rights. There is no sense in requesting again.
     // However, for 'Admin' there should be still an ability to suppress such violation (so it's like accepting a request).
@@ -63,7 +63,7 @@ class FingerprintSuppressionsCodeAction extends CodeAction {
   private readonly _root: Folder;
 
   constructor(diagnostic: DiagnosticExtended, permissions: SuppressionPermissions, root: Folder) {
-    super(`${permissions === 'ADD' ? 'Suppress' : 'Request suppression of'} this "${diagnostic.result._rule.name} (${diagnostic.result._rule.id})" problem`, CodeActionKind.QuickFix);
+    super(`${permissions === 'ADD' ? 'Suppress' : 'Request suppression of'}: ${diagnostic.result.message.text}`, CodeActionKind.QuickFix);
 
     this.diagnostics = [diagnostic];
     this._result = diagnostic.result;
