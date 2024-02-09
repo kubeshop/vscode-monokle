@@ -24,6 +24,15 @@ export function getSuppressions(path: string) {
   };
 }
 
+export function generateSuppression(fingerprint: string, permissions: SuppressionPermissions) {
+  return {
+    guid: `sup-${Date.now()}`,
+    kind: 'external',
+    status: toSuppressionStatus(permissions === 'ADD' ? 'accepted' : 'underReview'),
+    fingerprint: fingerprint,
+  } as FingerprintSuppression;
+}
+
 export function shouldUseFingerprintSuppressions(repoRootPath: string): SuppressionsStatus {
   const projectPermissions = globals.getProjectPermissions(repoRootPath);
 

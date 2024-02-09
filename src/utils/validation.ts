@@ -14,6 +14,7 @@ import { getSuppressions } from '../core';
 import logger from '../utils/logger';
 import globals from './globals';
 import type { Fix, Replacement, } from 'sarif';
+import type { FingerprintSuppression } from '@monokle/types';
 import type { Folder } from './workspace';
 import type { Resource } from './file-parser';
 
@@ -210,7 +211,7 @@ export async function validateResourcesFromFolder(resources: Resource[], root: F
   return Uri.file(resultFilePath);
 }
 
-export async function applySuppressions(root: Folder) {
+export async function applySuppressions(root: Folder, localSuppression?: FingerprintSuppression) {
   let resources: Resource[] = RESOURCES.get(root.id);
 
   if (!resources || resources.length === 0) {
@@ -236,6 +237,10 @@ export async function applySuppressions(root: Folder) {
   const validatorObj = await getValidator(root.id, workspaceConfig.config);
   const response = await getValidationResult(root.id);
   const suppressions = getSuppressions(root.uri.fsPath);
+
+  if (localSuppression && !suppressions.suppressions.find(sup => sup.fingerprint === localSuppression.fingerprint)) {
+    suppressions.suppressions.push(localSuppression);
+  }
 
   let result: ValidationResponse = null;
   try {

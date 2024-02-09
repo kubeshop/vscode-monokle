@@ -1,14 +1,13 @@
-import { Uri, commands } from 'vscode';
-import { canRun, disabledForLocal } from '../utils/commands';
-import { COMMANDS, COMMAND_NAMES } from '../constants';
+import { canRun } from '../utils/commands';
+import { COMMAND_NAMES } from '../constants';
 import { raiseWarning } from '../utils/errors';
 import { trackEvent } from '../utils/telemetry';
-import globals from '../utils/globals';
-import type { RuntimeContext } from '../utils/runtime-context';
 import { MONOKLE_FINGERPRINT_FIELD, ValidationResultExtended } from '../core/code-actions/base-code-actions-provider';
-import { SuppressionPermissions } from '../core';
+import { SuppressionPermissions, generateSuppression } from '../core';
 import { applySuppressions } from '../utils/validation';
 import { Folder } from '../utils/workspace';
+import globals from '../utils/globals';
+import type { RuntimeContext } from '../utils/runtime-context';
 
 export function getSuppressCommand(context: RuntimeContext) {
   return async (result: ValidationResultExtended, permissions: SuppressionPermissions, root: Folder) => {
@@ -45,6 +44,11 @@ export function getSuppressCommand(context: RuntimeContext) {
       return null;
     }
 
+
+    const localSuppression = generateSuppression(result.fingerprints?.[MONOKLE_FINGERPRINT_FIELD], permissions);
+
+    await applySuppressions(root, localSuppression);
+
     await context.synchronizer.toggleSuppression(
         user.tokenInfo,
         result.fingerprints?.[MONOKLE_FINGERPRINT_FIELD],
@@ -54,7 +58,7 @@ export function getSuppressCommand(context: RuntimeContext) {
         globals.project || undefined
     );
 
-    await applySuppressions(root);
+    await applySuppressions(root, localSuppression);
 
     trackEvent('command/suppress', {
       status: 'success'
