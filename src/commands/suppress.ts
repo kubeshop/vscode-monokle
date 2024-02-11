@@ -58,7 +58,7 @@ export function getSuppressCommand(context: RuntimeContext) {
         globals.project || undefined
     );
 
-    await applySuppressions(root, localSuppression);
+    await applySuppressions(root);
 
     trackEvent('command/suppress', {
       status: 'success'
