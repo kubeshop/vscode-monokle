@@ -314,7 +314,6 @@ function setupRemoteEventListeners(runtimeContext: RuntimeContext) {
       return;
     }
 
-    await runtimeContext.refreshPolicyPuller();
     await commands.executeCommand(COMMANDS.VALIDATE);
   });
 }
