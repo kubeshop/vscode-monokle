@@ -293,8 +293,7 @@ function setupRemoteEventListeners(runtimeContext: RuntimeContext) {
       return;
     }
 
-    await runtimeContext.refreshPolicyPuller();
-    await commands.executeCommand(COMMANDS.VALIDATE);
+    await runtimeContext.refreshPolicyPuller(true);
   });
 
   runtimeContext.authenticator.on('logout', async () => {
