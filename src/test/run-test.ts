@@ -156,13 +156,11 @@ async function main() {
 
   // Run code-actions tests
   await runSuite('./suite-code-actions/index', [workspaces.withCodeActions], { skipResultCache: true });
+  await runSuite('./suite-code-actions/index', [workspaces.withCodeActions], { skipResultCache: true, setupRemoteEnv: true });
 
   // Run integration-like tests on multiple, different workspaces (local config).
   await runSuite('./suite-integration/index', [workspaces.withResources, workspaces.withoutResources, workspaces.workspace], { skipResultCache: true });
   await runSuite('./suite-integration/index', [workspaces.withResources, workspaces.withoutResources, workspaces.workspace], { skipResultCache: true, validateOnSave: true });
-
-  // Run integration-like tests for remote config separately as it needs different setup.
-  await runSuite('./suite-integration/index', [workspaces.withConfig], { setupRemoteEnv: true });
 }
 
 main();

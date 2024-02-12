@@ -23,8 +23,9 @@ import { trackEvent, initTelemetry, closeTelemetry } from './utils/telemetry';
 import logger from './utils/logger';
 import globals from './utils/globals';
 import { raiseError } from './utils/errors';
-import { registerAnnotationSuppressionsCodeActionsProvider, registerFixCodeActionsProvider, registerShowDetailsCodeActionsProvider } from './core';
+import { registerAnnotationSuppressionsCodeActionsProvider, registerFingerprintSuppressionsCodeActionsProvider, registerFixCodeActionsProvider, registerShowDetailsCodeActionsProvider } from './core';
 import type { ExtensionContext } from 'vscode';
+import { getSuppressCommand } from './commands/suppress';
 
 let runtimeContext: RuntimeContext;
 
@@ -107,6 +108,7 @@ async function runActivation(context: ExtensionContext) {
   const commandTrack = commands.registerCommand(COMMANDS.TRACK, getTrackCommand(runtimeContext));
   const commandRaiseAuthenticationError = commands.registerCommand(COMMANDS.RAISE_AUTHENTICATION_ERROR, getRaiseAuthenticationErrorCommand(runtimeContext));
   const commandRunCommands = commands.registerCommand(COMMANDS.RUN_COMMANDS, getRunCommandsCommand(runtimeContext));
+  const commandSuppress = commands.registerCommand(COMMANDS.SUPPRESS, getSuppressCommand(runtimeContext));
 
   context.subscriptions.push(
     commandLogin,
@@ -119,12 +121,14 @@ async function runActivation(context: ExtensionContext) {
     commandDownloadPolicy,
     commandTrack,
     commandRaiseAuthenticationError,
-    commandRunCommands
+    commandRunCommands,
+    commandSuppress,
   );
 
   context.subscriptions.push(registerAnnotationSuppressionsCodeActionsProvider());
   context.subscriptions.push(registerFixCodeActionsProvider());
   context.subscriptions.push(registerShowDetailsCodeActionsProvider());
+  context.subscriptions.push(registerFingerprintSuppressionsCodeActionsProvider());
 
   const configurationWatcher = workspace.onDidChangeConfiguration(async (event) => {
     if (event.affectsConfiguration(SETTINGS.ENABLED_PATH)) {
@@ -289,8 +293,7 @@ function setupRemoteEventListeners(runtimeContext: RuntimeContext) {
       return;
     }
 
-    await runtimeContext.refreshPolicyPuller();
-    await commands.executeCommand(COMMANDS.VALIDATE);
+    await runtimeContext.refreshPolicyPuller(true);
   });
 
   runtimeContext.authenticator.on('logout', async () => {
@@ -304,14 +307,13 @@ function setupRemoteEventListeners(runtimeContext: RuntimeContext) {
     await commands.executeCommand(COMMANDS.VALIDATE);
   });
 
-  runtimeContext.synchronizer.on('synchronize', async (policy) => {
+  runtimeContext.synchronizer.on('synchronized', async (policy) => {
     logger.log('EVENT:synchronize', policy, globals.isActivated);
 
     if (!globals.isActivated || !globals.enabled) {
       return;
     }
 
-    await runtimeContext.refreshPolicyPuller();
     await commands.executeCommand(COMMANDS.VALIDATE);
   });
 }

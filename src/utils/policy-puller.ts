@@ -11,6 +11,7 @@ const REFETCH_POLICY_INTERVAL_MS = 1000 * 30;
 
 export class PolicyPuller {
 
+  private _force = false;
   private _isPulling = false;
   private _pullPromise: Promise<void> | undefined;
   private _policyFetcherId: NodeJS.Timer | undefined;
@@ -19,7 +20,9 @@ export class PolicyPuller {
     private _synchronizer: Synchronizer
   ) {}
 
-  async refresh() {
+  async refresh(force = false) {
+    this._force = force;
+
     const user = await globals.getUser();
 
     if (!user.isAuthenticated) {
@@ -101,6 +104,7 @@ export class PolicyPuller {
       }
     }
 
+    this._force = false;
     this._isPulling = false;
     this._pullPromise = undefined;
   }
@@ -112,9 +116,9 @@ export class PolicyPuller {
       }
 
       const user = await globals.getUser();
-      const policy = globals.project?.length ?
-        await this._synchronizer.synchronize({slug: globals.project}, user.tokenInfo) :
-        await this._synchronizer.synchronize(root.uri.fsPath, user.tokenInfo);
+      const policy = this._force ?
+        await this._synchronizer.forceSynchronize(user.tokenInfo, root.uri.fsPath, globals.project ?? undefined) :
+        await this._synchronizer.synchronize(user.tokenInfo, root.uri.fsPath, globals.project ?? undefined);
 
       return policy;
     }, {
@@ -164,9 +168,9 @@ export class PolicyPuller {
 
   private async removeOutdatedPolicy(path: string) {
     try {
-      const outdatedPolicy = await this._synchronizer.getPolicy(path);
+      const outdatedPolicy = this._synchronizer.getProjectPolicy(path);
 
-      if (outdatedPolicy.path) {
+      if (outdatedPolicy?.path) {
         await rm(outdatedPolicy.path, { force: true });
       }
     } catch (err) {

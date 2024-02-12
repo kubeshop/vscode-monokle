@@ -1,4 +1,4 @@
-import { ok, deepEqual } from 'assert';
+import { ok, deepEqual, equal } from 'assert';
 import { workspace, commands, ConfigurationTarget } from 'vscode';
 import { join } from 'path';
 import { existsSync } from 'fs';
@@ -36,12 +36,13 @@ suite(`Policies - Remote: ${process.env.ROOT_PATH}`, function () {
 
     await workspace.getConfiguration('monokle').update('enabled', true, ConfigurationTarget.Workspace);
 
-    const configRemote = await waitForValidationConfig(folder, 10000);
+    const configRemote = await waitForValidationConfig(folder, 15000, 'remote');
 
     ok(configRemote);
     ok(configRemote.isValid);
+    equal(configRemote.type, 'remote');
     deepEqual(configRemote.config, DEFAULT_POLICY);
-  }).timeout(15000);
+  }).timeout(25000);
 
   test('Refetches policy from remote API when authenticated and synchronize command run', async function () {
     const folders = getWorkspaceFolders();
@@ -69,7 +70,7 @@ suite(`Policies - Remote: ${process.env.ROOT_PATH}`, function () {
   }).timeout(35000);
 });
 
-async function waitForValidationConfig(workspaceFolder: Folder, timeoutMs?: number): Promise<WorkspaceFolderConfig> {
+async function waitForValidationConfig(workspaceFolder: Folder, timeoutMs?: number, requiredType?: string): Promise<WorkspaceFolderConfig> {
   return new Promise((res) => {
     let timeoutId = null;
     let result = null;
@@ -78,9 +79,11 @@ async function waitForValidationConfig(workspaceFolder: Folder, timeoutMs?: numb
       result = await getWorkspaceConfig(workspaceFolder);
 
       if (result && result.isValid) {
-        clearInterval(intervalId);
-        timeoutId && clearTimeout(timeoutId);
-        res(result);
+        if (requiredType && result.type === requiredType || requiredType === undefined) {
+          clearInterval(intervalId);
+          timeoutId && clearTimeout(timeoutId);
+          res(result);
+        }
       }
     }, 250);
 

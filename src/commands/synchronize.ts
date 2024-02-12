@@ -29,7 +29,7 @@ export function getSynchronizeCommand(context: RuntimeContext) {
       return null;
     }
 
-    await context.refreshPolicyPuller();
+    await context.refreshPolicyPuller(true);
 
     trackEvent('command/synchronize', {
       status: 'success'

@@ -106,6 +106,8 @@ export type EventMap = {
   'code_action/annotation_suppression': BaseEvent & {[key: string]: string | number | boolean};
   'code_action/fix': BaseEvent & {[key: string]: string | number | boolean};
   'code_action/show_details': BaseEvent;
+  // Fingerprint-based suppressions.
+  'command/suppress': BaseEvent & {[key: string]: string | number | boolean};
 };
 
 function getAppVersion(): string {

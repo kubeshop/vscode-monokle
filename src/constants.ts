@@ -40,6 +40,7 @@ export const COMMANDS = {
   TRACK: 'monokle.track',
   RAISE_AUTHENTICATION_ERROR: 'monokle.raiseAuthenticationError',
   RUN_COMMANDS: 'monokle.runCommands',
+  SUPPRESS: 'monokle.suppress',
 };
 
 export const COMMAND_NAMES = {

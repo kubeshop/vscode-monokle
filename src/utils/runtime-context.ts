@@ -60,12 +60,12 @@ export class RuntimeContext {
     }
   }
 
-  async refreshPolicyPuller() {
+  async refreshPolicyPuller(force = false) {
     if (!this.policyPuller) {
       return;
     }
 
-    await this.policyPuller.refresh();
+    await this.policyPuller.refresh(force);
   }
 
   async reconfigure(

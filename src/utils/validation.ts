@@ -10,10 +10,11 @@ import { getInvalidConfigError } from './errors';
 import { trackEvent } from './telemetry';
 import { getResultCache } from './result-cache';
 import { getResourcesFromFolder } from './file-parser';
-import { getSuppressions } from './suppressions';
+import { getSuppressions } from '../core';
 import logger from '../utils/logger';
 import globals from './globals';
 import type { Fix, Replacement, } from 'sarif';
+import type { FingerprintSuppression } from '@monokle/types';
 import type { Folder } from './workspace';
 import type { Resource } from './file-parser';
 
@@ -51,6 +52,9 @@ const VALIDATORS = new Map<string, { config: string, validator: ConfigurableVali
 
 // Store validation results for each root so those can bo compared.
 const RESULTS = getResultCache<string, any>();
+
+// Store parsed resources.
+const RESOURCES = new Map<string, Resource[]>();
 
 export async function getValidator(validatorId: string, config?: any) {
   const validatorItem = VALIDATORS.get(validatorId);
@@ -131,6 +135,8 @@ export async function validateResourcesFromFolder(resources: Resource[], root: F
     };
   });
 
+  RESOURCES.set(root.id, resourcesRelative);
+
   logger.log(root.name, 'workspaceConfig', workspaceConfig);
 
   const validatorObj = await getValidator(root.id, workspaceConfig.config);
@@ -145,7 +151,7 @@ export async function validateResourcesFromFolder(resources: Resource[], root: F
     };
   }
 
-  const suppressions = await getSuppressions(root.uri.fsPath);
+  const suppressions = getSuppressions(root.uri.fsPath);
 
   let result: ValidationResponse = null;
   try {
@@ -201,6 +207,72 @@ export async function validateResourcesFromFolder(resources: Resource[], root: F
   logger.log(root.name, 'resultFilePath', resultFilePath, 'resultUnchanged', resultUnchanged);
 
   sendSuccessValidationTelemetry(resourcesRelative.length, workspaceConfig, result);
+
+  return Uri.file(resultFilePath);
+}
+
+export async function applySuppressions(root: Folder, localSuppression?: FingerprintSuppression) {
+  let resources: Resource[] = RESOURCES.get(root.id);
+
+  if (!resources || resources.length === 0) {
+    resources = await getResourcesFromFolder(root.uri.fsPath);
+    resources = resources.map(resource => {
+      return {
+        ...resource,
+        filePath: relative(root.uri.fsPath, resource.filePath),
+      };
+    });
+  }
+
+  if (!resources.length) {
+    return null;
+  }
+
+  const workspaceConfig = await getWorkspaceConfig(root);
+
+  if (workspaceConfig.isValid === false) {
+    return null;
+  }
+
+  const validatorObj = await getValidator(root.id, workspaceConfig.config);
+  const response = await getValidationResult(root.id);
+  const suppressions = getSuppressions(root.uri.fsPath);
+
+  if (localSuppression && !suppressions.suppressions.find(sup => sup.fingerprint === localSuppression.fingerprint)) {
+    suppressions.suppressions.push(localSuppression);
+  }
+
+  let result: ValidationResponse = null;
+  try {
+    result = await validatorObj.validator.applySuppressions(response, resources, suppressions.suppressions);
+  } catch(err: any) {
+    logger.error('Applying suppressions failed', err);
+  }
+
+  if (!result) {
+    return null;
+  }
+
+  result.runs.forEach(run => {
+    run.results.forEach((result: any) => {
+      const location = result.locations.find(location => location.physicalLocation?.artifactLocation?.uriBaseId === 'SRCROOT');
+
+      if (location && location.physicalLocation.artifactLocation.uri) {
+        location.physicalLocation.artifactLocation.uri = normalizePathForWindows(location.physicalLocation.artifactLocation.uri);
+      }
+    });
+  });
+
+  // This causes SARIF panel to reload so we want to write new results only when they are different.
+  const resultUnchanged = await areValidationResultsSame(RESULTS.get(root.id), result);
+  if (!resultUnchanged) {
+    await saveValidationResults(result, root.id);
+  }
+
+  RESULTS.set(root.id, result);
+  globals.setFolderStatus(root);
+
+  const resultFilePath = await getValidationResultPath(root.id);
 
   return Uri.file(resultFilePath);
 }
