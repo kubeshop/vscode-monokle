@@ -1,5 +1,9 @@
 # Change Log
 
+## 0.10.0
+
+* Introduced support for globally managed suppressions (fingerprint-based suppressions) via `Suppress...` / `Request suppression...` quick actions.
+
 ## 0.9.1
 
 ### Other updates

@@ -96,14 +96,13 @@ Quickly define and manage polices in Monokle Cloud or self-hosted Monokle Enterp
 
 #### Manage suppressions globally
 
-When connected to Monokle Cloud or self-hosted Monokle Enterprise you can suppress any misconfiguration directly from VSCode using `Suppress...` / `Request suppression` quick action. These suppressions are synchronized and can be managed globally from Monokle Cloud and Monokle Enterprise.
+When connected to Monokle Cloud or self-hosted Monokle Enterprise you can suppress any misconfiguration directly from VSCode using `Suppress...` / `Request suppression...` quick action. These suppressions are synchronized and can be managed globally from Monokle Cloud and Monokle Enterprise.
 
 <p align="center">
   <img src="assets/gifs/cloud-suppress.gif"/>
 </p>
 
 See [**Monokle Cloud/Enterprise integration setup** section](#monokle-cloudenterprise-integration-setup) below on how to configure it.
-
 
 ### Runs with commands
 
